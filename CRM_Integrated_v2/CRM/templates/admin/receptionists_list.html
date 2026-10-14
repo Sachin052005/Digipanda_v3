@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% block title %}Receptionists - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">RECEPTIONISTS</h1>
+      <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 9999px;">
+        {{ total_receptionists }} Total
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Front-desk personnel management across all center branches.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px;">
+    <a href="{% url 'admin_walkin_desk' %}" class="btn btn-secondary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      Walk-in Desk
+    </a>
+    <a href="{% url 'admin_receptionist_create' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      + Add Receptionist
+    </a>
+  </div>
+</div>
+
+<!-- KPI SUMMARY CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Total Receptionists</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ total_receptionists }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Front desk staff on record</div>
+  </div>
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Active Staff</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #059669; margin: 4px 0;">{{ active_count }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Ready to log visitors</div>
+  </div>
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Inactive Accounts</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #dc2626; margin: 4px 0;">{{ inactive_count }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Deactivated / Suspended</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-card" style="margin-bottom: 20px;">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <div class="filter-col" style="flex: 2 1 200px;">
+      <label>Search Staff</label>
+      <input type="text" name="search" class="form-control" placeholder="Search name, username, email, phone..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col" style="flex: 1 1 150px;">
+      <label>Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1 1 160px;">
+      <label>Branch</label>
+      <select name="branch" class="form-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="display: flex; gap: 8px;">
+      <a href="{% url 'admin_receptionists_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- RECEPTIONISTS TABLE -->
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="table" style="margin: 0;">
+      <thead>
+        <tr>
+          <th>Name / Username</th>
+          <th>Assigned Branch</th>
+          <th>Contact</th>
+          <th>Status</th>
+          <th>Joined Date</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in page_obj %}
+        <tr>
+          <td>
+            <div style="font-weight: 700; color: #1e293b;">
+              {{ rec.get_full_name|default:rec.username }}
+            </div>
+            <div style="font-size: 0.75rem; color: #64748b; font-family: monospace;">
+              @{{ rec.username }}
+            </div>
+          </td>
+          <td>
+            {% if rec.branch %}
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 600;">
+              {{ rec.branch.name }}
+            </span>
+            {% else %}
+            <span class="badge" style="background: #fee2e2; color: #991b1b;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-size: 0.85rem; font-family: monospace;">{{ rec.phone|default:"-" }}</div>
+            {% if rec.email %}
+            <div style="font-size: 0.75rem; color: #64748b;">{{ rec.email }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if rec.is_active %}
+            <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 600;">Active</span>
+            {% else %}
+            <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 600;">Inactive</span>
+            {% endif %}
+            {% if rec.invitation_status == 'SENT' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem;">Invite Sent</span></div>
+            {% elif rec.invitation_status == 'FAILED' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.68rem;">Invite Failed</span></div>
+            {% elif rec.invitation_status == 'ACTIVATED' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.68rem;">Activated</span></div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-size: 0.85rem; color: #475569;">{{ rec.date_joined|date:"M d, Y" }}</div>
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            <a href="{% url 'resend_user_invitation' rec.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;" title="Resend Welcome Email & Setup Link">
+              Resend Invite
+            </a>
+            <a href="{% url 'admin_receptionist_change_password' rec.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;">
+              Reset Password
+            </a>
+            <form method="POST" action="{% url 'admin_receptionist_toggle_status' rec.id %}" style="display: inline-block; margin-left: 4px;">
+              {% csrf_token %}
+              <button type="submit" class="btn {% if rec.is_active %}btn-secondary{% else %}btn-primary{% endif %}" style="font-size: 0.75rem; padding: 4px 8px;">
+                {% if rec.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 48px 16px; color: #6b7280;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: #9ca3af;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">No Receptionists Found</div>
+            <div style="font-size: 0.85rem; margin-top: 4px; color: #64748b;">Click "+ Add Receptionist" above to create a new front-desk account for a branch.</div>
+            <div style="margin-top: 14px;">
+              <a href="{% url 'admin_receptionist_create' %}" class="btn btn-primary">+ Add Receptionist</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 0.85rem; color: #6b7280;">
+      Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} receptionists)
+    </div>
+    <div style="display: flex; gap: 6px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

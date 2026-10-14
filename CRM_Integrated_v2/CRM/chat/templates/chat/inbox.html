@@ -1,0 +1,463 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}WhatsApp Chats - TECHPANDA CRM{% endblock %}
+
+{% block extra_head %}
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'chat/css/inbox.css' %}">
+    <script>
+        /* CRM: add the CSRF token to every same-origin save / delete request (needed for logged-in users). */
+        (function () {
+            const token = '{{ csrf_token }}';
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = function (input, init) {
+                init = init || {};
+                const method = (init.method || (input && input.method) || 'GET').toUpperCase();
+                const url = typeof input === 'string' ? input : (input && input.url) || '';
+                const sameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+                if (sameOrigin && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                    const headers = new Headers(init.headers || {});
+                    if (!headers.has('X-CSRFToken')) headers.set('X-CSRFToken', token);
+                    init.headers = headers;
+                }
+                return originalFetch(input, init);
+            };
+        })();
+    </script>
+{% endblock %}
+
+{% block content_wrapper_class %}inbox-content-wrapper{% endblock %}
+
+{% block content %}
+<div class="whatsapp-workspace">
+    <!-- App Container: Strictly 2 columns on Desktop/Tablet -->
+    <div class="crm-app-container" id="appContainer">
+
+        <!-- Mobile Sidebar Backdrop Overlay -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <!-- ========================================== -->
+        <!-- 1. CONVERSATIONS SECTION (Left Column)      -->
+        <!-- ========================================== -->
+        <aside class="conversations-panel" id="conversationsPanel">
+            <!-- Sidebar Header -->
+            <header class="panel-header conversations-header">
+                <div class="header-branding">
+                    <button class="icon-btn sidebar-collapse-btn" id="btnCollapseSidebar" title="Collapse conversations panel" aria-label="Collapse conversations panel">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                            <polyline points="15 9 12 12 15 15"></polyline>
+                        </svg>
+                    </button>
+                    <div class="branding-badge" title="WhatsApp Business CRM">
+                        <svg class="brand-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l5.02-1.24C8.55 21.49 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+                        </svg>
+                    </div>
+                    <h1 class="panel-title">CHATS</h1>
+                </div>
+
+                <div class="header-actions">
+                    <a href="{% url 'login_redirect' %}" class="header-link-btn crm-link" title="Back to the CRM Dashboard" aria-label="CRM">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span class="link-label">CRM</span>
+                    </a>
+{% if can_manage_automation %}
+                    <a href="{% url 'automation-list' %}" class="header-link-btn flow-link" id="btnOpenFlowBuilder" title="WhatsApp Automation Dashboard & Flow Builder" aria-label="Automations">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        <span class="link-label">Flows</span>
+                    </a>
+{% endif %}
+                    <button class="icon-btn" id="btnRefreshConversations" title="Refresh conversations" aria-label="Refresh conversations">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn new-chat-btn" id="btnNewChat" title="New conversation" aria-label="New conversation">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Business Account Switcher (Multi-Number Filter) -->
+            <div class="business-account-bar" id="businessAccountBar">
+                <div class="business-account-header">
+                    <span class="business-account-label">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/>
+                        </svg>
+                        <span>Business Line</span>
+                    </span>
+                    <div class="business-header-actions">
+                        <button class="add-line-btn" id="btnAddBusinessLine" title="Add WhatsApp Business Number" aria-label="Add WhatsApp Business Number">
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span>Add</span>
+                        </button>
+                        <button class="automation-toggle-btn" id="btnToggleAutomation" title="Toggle Bot Automation for selected line">
+                            <span class="toggle-dot" id="automationToggleDot"></span>
+                            <span class="toggle-text" id="automationToggleText">Bot: ON</span>
+                        </button>
+                        <span class="business-status-pill" id="activeBusinessStatus">Active</span>
+                    </div>
+                </div>
+                <div class="business-select-wrap">
+                    <select id="businessAccountSelect" class="business-account-select" aria-label="Select WhatsApp Business Account">
+                        <option value="">Loading accounts...</option>
+                    </select>
+                    <button class="icon-btn delete-line-btn" id="btnDeleteBusinessLine" title="Remove selected business line" aria-label="Remove selected business line">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Area -->
+            <div class="conversations-search-wrap">
+                <div class="search-input-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="conversationSearchInput" placeholder="Search customer or message..." autocomplete="off">
+                    <button class="search-clear-btn" id="searchClearBtn" title="Clear search" style="display: none;">&times;</button>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="conversations-filters">
+                <button class="filter-tab active" data-filter="all" id="tabFilterAll">
+                    All
+                </button>
+                <button class="filter-tab" data-filter="unread" id="tabFilterUnread">
+                    Unread
+                    <span class="filter-unread-count" id="totalUnreadBadge" style="display: none;">0</span>
+                </button>
+            </div>
+
+            <!-- Conversations List Scroll Container -->
+            <div class="conversations-list-container" id="conversationsListContainer">
+                <div class="conversations-loading" id="conversationsLoading">
+                    <div class="spinner"></div>
+                    <span>Loading conversations...</span>
+                </div>
+
+                <div class="conversations-empty" id="conversationsEmpty" style="display: none;">
+                    <div class="empty-icon">💬</div>
+                    <h3 class="empty-title">No conversations yet</h3>
+                    <p class="empty-subtitle">Your WhatsApp conversations will appear here.</p>
+                </div>
+
+                <div class="conversations-empty" id="conversationsNotFound" style="display: none;">
+                    <div class="empty-icon">🔍</div>
+                    <h3 class="empty-title">No conversations found</h3>
+                    <p class="empty-subtitle">Try searching with a different name or number.</p>
+                </div>
+
+                <!-- List of conversation items dynamically inserted here -->
+                <ul class="conversations-list" id="conversationsList" role="list"></ul>
+            </div>
+        </aside>
+
+        <!-- ========================================== -->
+        <!-- 2. CHAT SECTION (Right Column)              -->
+        <!-- ========================================== -->
+        <main class="chat-panel" id="chatPanel">
+
+            <!-- Empty State (When no conversation is selected) -->
+            <div class="chat-placeholder" id="chatPlaceholder">
+                <div class="placeholder-graphic">
+                    <div class="placeholder-circle">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <h2 class="placeholder-title">Select a conversation</h2>
+                <p class="placeholder-text">Choose a conversation from the left to start chatting with your customer.</p>
+                <div class="placeholder-badge">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+                    </svg>
+                    End-to-end encrypted CRM integration ready
+                </div>
+                <button class="btn-open-sidebar-placeholder" id="btnOpenSidebarEmpty" title="Open conversations drawer">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <polyline points="13 9 16 12 13 15"></polyline>
+                    </svg>
+                    <span>Open Conversations</span>
+                </button>
+            </div>
+
+            <!-- Active Chat Interface -->
+            <div class="chat-interface" id="chatInterface" style="display: none;">
+
+                <!-- 2.1 Chat Header -->
+                <header class="panel-header chat-header" id="chatHeader">
+                    <div class="chat-header-user">
+                        <!-- Sliding Sidebar Toggle button -->
+                        <button class="icon-btn sidebar-toggle-btn" id="btnToggleSidebar" title="Toggle conversations panel" aria-label="Toggle conversations panel">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                            </svg>
+                        </button>
+
+                        <!-- Back button for mobile responsiveness -->
+                        <button class="icon-btn back-btn" id="btnBackToConversations" title="Back to conversations" aria-label="Back">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+
+                        <div class="user-avatar-wrap">
+                            <div class="user-avatar" id="activeAvatar">PK</div>
+                            <span class="user-online-dot" id="activeOnlineDot"></span>
+                        </div>
+
+                        <div class="user-info">
+                            <h2 class="user-name" id="activeCustomerName">Customer Name</h2>
+                            <p class="user-status" id="activeCustomerStatus">online</p>
+                        </div>
+                    </div>
+
+                    <div class="chat-header-actions">
+                        <div class="handover-pill-wrap" id="handoverPillWrap" style="display: none;">
+                            <span class="handover-badge">👤 Handed Over</span>
+                            <button class="btn-resume-bot" id="btnResumeBot" title="Resume Automated Bot Flow">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                                <span>Resume Bot</span>
+                            </button>
+                        </div>
+                        <button class="icon-btn" id="btnHeaderSearch" title="Search in chat" aria-label="Search">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                        <div class="dropdown-wrap">
+                            <button class="icon-btn" id="btnChatMenu" title="Menu" aria-label="Menu">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                    <circle cx="12" cy="5" r="2"></circle>
+                                    <circle cx="12" cy="12" r="2"></circle>
+                                    <circle cx="12" cy="19" r="2"></circle>
+                                </svg>
+                            </button>
+                            <div class="dropdown-menu" id="chatMenuDropdown">
+                                <button class="dropdown-item" id="menuItemMarkUnread">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                                    <span>Mark as unread</span>
+                                </button>
+                                <button class="dropdown-item" id="menuItemCopyNumber">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    <span>Copy phone number</span>
+                                </button>
+                                <button class="dropdown-item danger" id="menuItemClearChat">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    <span>Clear chat view</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- In-Chat Search Bar -->
+                <div class="chat-search-bar" id="chatSearchBar" style="display: none;">
+                    <div class="chat-search-input-wrap">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="chatSearchInput" placeholder="Search in this conversation..." autocomplete="off">
+                        <span class="chat-search-count" id="chatSearchCount" style="display: none;">0 matches</span>
+                        <button class="chat-search-close-btn" id="btnChatSearchClose" title="Close search">&times;</button>
+                    </div>
+                </div>
+
+                <!-- 2.2 Chat Messages Area -->
+                <div class="chat-messages-container" id="chatMessagesContainer">
+                    <div class="messages-loading" id="messagesLoading" style="display: none;">
+                        <div class="spinner"></div>
+                    </div>
+
+                    <!-- Date divider & Messages will be injected here -->
+                    <div class="messages-flow" id="messagesFlow"></div>
+
+                    <!-- Scroll anchor -->
+                    <div id="messagesEndAnchor"></div>
+                </div>
+
+                <!-- 2.3 Chat Composer Area -->
+                <footer class="chat-composer" id="chatComposer">
+                    <!-- Attachment Picker Dropup -->
+                    <div class="attachment-popup" id="attachmentPopup" style="display: none;">
+                        <button class="attachment-option" data-type="image">
+                            <span class="attachment-icon img-icon">🖼️</span>
+                            <span>Photos & Videos</span>
+                        </button>
+                        <button class="attachment-option" data-type="document">
+                            <span class="attachment-icon doc-icon">📄</span>
+                            <span>Document</span>
+                        </button>
+                    </div>
+
+                    <!-- Hidden File Input -->
+                    <input type="file" id="mediaFileInput" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+
+                    <!-- Selected Attachment Preview Pill -->
+                    <div class="attached-file-preview" id="attachedFilePreview" style="display: none;">
+                        <span class="attached-file-name" id="attachedFileName">sample.pdf</span>
+                        <button type="button" class="remove-attachment-btn" id="removeAttachmentBtn">&times;</button>
+                    </div>
+
+                    <form class="composer-form" id="composerForm" autocomplete="off">
+                        {% csrf_token %}
+                        <!-- Attachment Button -->
+                        <button type="button" class="icon-btn composer-btn" id="btnAttachment" title="Attach file" aria-label="Attach file">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                            </svg>
+                        </button>
+
+                        <!-- Input field -->
+                        <div class="composer-input-wrap">
+                            <textarea
+                                id="messageTextInput"
+                                class="composer-textarea"
+                                placeholder="Type a message..."
+                                rows="1"
+                                maxlength="4096"
+                            ></textarea>
+                        </div>
+
+                        <!-- Voice UI Button -->
+                        <button type="button" class="icon-btn composer-btn mic-btn" id="btnMicrophone" title="Voice message" aria-label="Voice message">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
+
+                        <!-- Send Button -->
+                        <button type="submit" class="send-btn" id="btnSendMessage" title="Send message" aria-label="Send" disabled>
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                            </svg>
+                        </button>
+                    </form>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification for Friendly Error Messages -->
+    <div class="toast-notification" id="toastNotification" role="alert" aria-live="assertive">
+        <span class="toast-message" id="toastMessage"></span>
+        <button class="toast-close" id="toastClose">&times;</button>
+    </div>
+
+    <!-- New Chat Modal -->
+    <div class="modal-backdrop" id="newChatModal" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Start New WhatsApp Conversation</h3>
+                <button class="modal-close-btn" id="newChatModalClose">&times;</button>
+            </div>
+            <form id="newChatForm">
+                <div class="modal-field">
+                    <label for="newCustomerName">Customer Name</label>
+                    <input type="text" id="newCustomerName" required placeholder="e.g. Anand Sharma">
+                </div>
+                <div class="modal-field">
+                    <label for="newPhoneNumber">Phone Number (E.164)</label>
+                    <input type="text" id="newPhoneNumber" required placeholder="e.g. +919876543219">
+                </div>
+                <div class="modal-field">
+                    <label for="newInitialMessage">Initial Message</label>
+                    <textarea id="newInitialMessage" rows="3" required placeholder="Hello! How can we assist you today?"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="newChatModalCancel">Cancel</button>
+                    <button type="submit" class="btn-primary" id="newChatModalSubmit">Create & Open</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Business Number Modal -->
+    <div class="modal-backdrop" id="addBusinessModal" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Add WhatsApp Business Number</h3>
+                <button class="modal-close-btn" id="addBusinessModalClose">&times;</button>
+            </div>
+            <form id="addBusinessForm">
+                <div class="modal-field">
+                    <label for="bizName">Account / Line Name *</label>
+                    <input type="text" id="bizName" required placeholder="e.g. Admissions Office, Billing, Branch 2">
+                </div>
+                <div class="modal-field">
+                    <label for="bizPhoneNumber">Display Phone Number *</label>
+                    <input type="text" id="bizPhoneNumber" required placeholder="e.g. +91 98765 43210 or +1 555-0199">
+                </div>
+                <div class="modal-field">
+                    <label for="bizPhoneNumberId">Meta Phone Number ID *</label>
+                    <input type="text" id="bizPhoneNumberId" required placeholder="e.g. 1294166677119820">
+                    <small style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 4px; display: block;">Found in Meta Developer Dashboard &rarr; WhatsApp &rarr; API Setup &rarr; Phone number ID.</small>
+                </div>
+                <div class="modal-field">
+                    <label for="bizAccountId">Meta WABA ID (Optional)</label>
+                    <input type="text" id="bizAccountId" placeholder="e.g. 1107454935187904">
+                </div>
+                <div class="modal-field">
+                    <label for="bizAccessToken">Custom Access Token (Optional)</label>
+                    <textarea id="bizAccessToken" rows="2" placeholder="Leave blank to use default token from .env"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="addBusinessModalCancel">Cancel</button>
+                    <button type="submit" class="btn-primary" id="addBusinessModalSubmit">Save & Add Line</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- Pass Django Context / Static URL configuration to JavaScript -->
+    <script>
+        window.CRM_CONFIG = {
+            csrfToken: '{{ csrf_token }}',
+            defaultAvatarUrl: "{% static 'chat/images/default-avatar.png' %}",
+            api: {
+                businessAccounts: "{% url 'api-business-accounts' %}",
+                conversations: "{% url 'api-conversations' %}",
+                search: "{% url 'api-search' %}",
+                sendMessage: "{% url 'api-message-send' %}",
+            }
+        };
+    </script>
+
+    <!-- Vanilla JS Application -->
+    <script src="{% static 'chat/js/inbox.js' %}"></script>
+{% endblock %}

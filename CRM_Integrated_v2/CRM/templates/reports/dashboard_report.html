@@ -1,0 +1,456 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Marketing & Performance Reports" }} - TECHPANDA CRM{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/dashboard-report.css' %}?v=20261012_report">
+{% endblock %}
+
+{% block content %}
+<div class="crm-report-dashboard">
+
+  <!-- Top Header & Filter Controls -->
+  <header class="report-header-row">
+    <div class="report-title-wrap">
+      <h1>CRM Dashboard</h1>
+      <p>Track leads from all channels across all branches and call outcomes</p>
+    </div>
+
+    <div class="report-filter-group">
+      <!-- Date Selector Pill -->
+      <div class="tp-filter-pill tp-pill-date" id="dateFilterPill">
+        <span class="tp-date-pill-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        </span>
+        <div class="tp-date-pill-text">
+          <span class="tp-date-pill-label" id="datePillLabel">{{ period_label }}</span>
+          <span class="tp-date-pill-val" id="datePillVal">Filter Date</span>
+        </div>
+        <span class="tp-pill-chevron">▼</span>
+        <select id="dateFilter" class="tp-pill-select-overlay" aria-label="Date Filter">
+          <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+          <option value="yesterday" {% if date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+          <option value="this_week" {% if date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+          <option value="last_7_days" {% if date_filter == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
+          <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+          <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
+          <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Date Range…</option>
+        </select>
+      </div>
+
+      <!-- Branch Selector Pill -->
+      <div class="tp-filter-pill tp-pill-select" id="branchFilterPill">
+        <span class="tp-pill-current-text" id="branchPillText">
+          {% if branch_filter %}
+            {% for b in accessible_branches %}
+              {% if branch_filter == b.id|stringformat:"s" %}{{ b.name }}{% endif %}
+            {% endfor %}
+          {% else %}
+            All Branches
+          {% endif %}
+        </span>
+        <span class="tp-pill-chevron">▼</span>
+        <select id="branchFilter" class="tp-pill-select-overlay" aria-label="Branch Filter">
+          <option value="" {% if not branch_filter %}selected{% endif %}>All Branches</option>
+          {% for b in accessible_branches %}
+          <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Channel Selector Pill -->
+      <div class="tp-filter-pill tp-pill-select" id="channelFilterPill">
+        <span class="tp-pill-current-text" id="channelPillText">
+          {% if channel_filter %}{{ channel_filter }}{% else %}All Channels{% endif %}
+        </span>
+        <span class="tp-pill-chevron">▼</span>
+        <select id="channelFilter" class="tp-pill-select-overlay" aria-label="Channel Filter">
+          <option value="" {% if not channel_filter %}selected{% endif %}>All Channels</option>
+          {% for c in canonical_channels %}
+          <option value="{{ c }}" {% if channel_filter == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Refresh Database Data Button -->
+      <button type="button" class="tp-filter-pill tp-pill-action" id="btnRefreshSync" title="Refresh live data directly from CRM database">
+        <svg id="syncIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        <span>Refresh</span>
+      </button>
+
+      <!-- Export CSV Action Button -->
+      <button type="button" class="tp-filter-pill tp-pill-action" id="btnExportCsv" title="Export branch summary as CSV">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Export CSV</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="tp-sync-status-line">
+    <span class="tp-live-dot"></span>
+    <span id="lastSyncText">Live CRM Application Database Connected</span>
+  </div>
+
+  <!-- 1. Top 4 Pastel KPI Cards Row -->
+  <section class="report-kpi-row">
+    <!-- Total Leads (Blue) -->
+    <div class="tp-ui-kpi-card card-blue">
+      <div class="tp-kpi-left-section">
+        <div class="tp-kpi-avatar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+        <div class="tp-kpi-meta">
+          <span class="tp-kpi-title-txt">Total Leads</span>
+          <span class="tp-kpi-big-num" id="kpiTotalLeads">{{ kpi_total_leads }}</span>
+        </div>
+      </div>
+      <div class="tp-kpi-sub-trend">
+        <span class="tp-kpi-trend-badge" id="kpiTotalPct">{% if kpi_total_change_pct >= 0 %}+{% endif %}{{ kpi_total_change_pct }}%</span>
+        <span class="tp-kpi-trend-label" id="kpiTotalPctLabel">vs previous period</span>
+      </div>
+    </div>
+
+    <!-- Connected Leads (Green) -->
+    <div class="tp-ui-kpi-card card-green">
+      <div class="tp-kpi-left-section">
+        <div class="tp-kpi-avatar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </div>
+        <div class="tp-kpi-meta">
+          <span class="tp-kpi-title-txt" id="kpiTitle1">Connected</span>
+          <span class="tp-kpi-big-num" id="kpiVal1">{{ kpi_connected_leads }}</span>
+        </div>
+      </div>
+      <div class="tp-kpi-sub-trend">
+        <span class="tp-kpi-trend-badge" id="kpiPct1">{{ kpi_connected_pct }}%</span>
+        <span class="tp-kpi-trend-label">of total leads</span>
+      </div>
+    </div>
+
+    <!-- Prospected Leads (Yellow) -->
+    <div class="tp-ui-kpi-card card-yellow">
+      <div class="tp-kpi-left-section">
+        <div class="tp-kpi-avatar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+        </div>
+        <div class="tp-kpi-meta">
+          <span class="tp-kpi-title-txt" id="kpiTitle2">Prospected</span>
+          <span class="tp-kpi-big-num" id="kpiVal2">{{ kpi_prospected_leads }}</span>
+        </div>
+      </div>
+      <div class="tp-kpi-sub-trend">
+        <span class="tp-kpi-trend-badge" id="kpiPct2">{{ kpi_prospected_pct }}%</span>
+        <span class="tp-kpi-trend-label">of total leads</span>
+      </div>
+    </div>
+
+    <!-- Call Not Connected (Red) -->
+    <div class="tp-ui-kpi-card card-red">
+      <div class="tp-kpi-left-section">
+        <div class="tp-kpi-avatar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9a3 3 0 0 0 3 3"></path><path d="M19.12 15.12a3 3 0 0 0 .88-2.12v-3a2 2 0 0 0-2-2h-3a2 2 0 0 0-1.72 1"></path><path d="M5.4 5.4A19.79 19.79 0 0 0 2.12 7.18a2 2 0 0 0-.12 2.82l2.35 2.35a2 2 0 0 0 2.83 0l1.27-1.27a2 2 0 0 1 2.11-.45"></path></svg>
+        </div>
+        <div class="tp-kpi-meta">
+          <span class="tp-kpi-title-txt" id="kpiTitle3">Call not connected</span>
+          <span class="tp-kpi-big-num" id="kpiVal3">{{ kpi_not_connected_leads }}</span>
+        </div>
+      </div>
+      <div class="tp-kpi-sub-trend">
+        <span class="tp-kpi-trend-badge" id="kpiPct3">{{ kpi_not_connected_pct }}%</span>
+        <span class="tp-kpi-trend-label">of total leads</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Leads by Channel Grid (Flat White Panel) -->
+  <section class="tp-panel-card">
+    <div class="tp-panel-header-title">Leads by Channel <span data-period>({{ period_label }})</span></div>
+
+    <div class="tp-channels-cards-grid">
+      <!-- 1. Meta WhatsApp -->
+      <div class="tp-channel-box">
+        <div class="tp-channel-box-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#22c55e"/>
+            <path d="M18 9C13.03 9 9 13.03 9 18C9 19.64 9.44 21.18 10.22 22.51L9 27L13.62 25.8C14.9 26.54 16.4 27 18 27C22.97 27 27 22.97 27 18C27 13.03 22.97 9 18 9ZM22.5 21.75C22.31 22.28 21.57 22.7 20.94 22.84C20.5 22.94 19.94 23.01 18.01 22.21C15.54 21.19 13.95 18.68 13.83 18.52C13.71 18.36 12.83 17.19 12.83 15.98C12.83 14.77 13.45 14.18 13.69 13.93C13.89 13.72 14.22 13.63 14.52 13.63C14.62 13.63 14.71 13.63 14.79 13.64C15.03 13.65 15.15 13.66 15.31 14.04C15.51 14.52 16 15.71 16.06 15.83C16.12 15.96 16.18 16.12 16.1 16.28C16.01 16.45 15.94 16.53 15.82 16.67C15.7 16.81 15.58 16.92 15.46 17.07C15.33 17.22 15.19 17.38 15.34 17.64C15.49 17.9 16.01 18.75 16.78 19.43C17.77 20.31 18.58 20.59 18.87 20.71C19.16 20.83 19.33 20.81 19.5 20.61C19.67 20.41 20.23 19.76 20.45 19.45C20.67 19.14 20.89 19.19 21.19 19.3C21.49 19.41 23.09 20.2 23.42 20.36C23.75 20.52 23.97 20.6 24.05 20.74C24.13 20.88 24.13 21.52 22.5 21.75Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="tp-channel-box-details">
+          <span class="tp-channel-box-title">Meta WhatsApp</span>
+          <span class="tp-channel-box-count" data-chan-count="Meta WhatsApp">0</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Meta WhatsApp">0%</span>
+        </div>
+      </div>
+
+      <!-- 2. Meta Lead Form -->
+      <div class="tp-channel-box">
+        <div class="tp-channel-box-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#e0f2fe"/>
+            <path d="M12.44 14.5C10.54 14.5 9 16.07 9 18C9 19.93 10.54 21.5 12.44 21.5C14.73 21.5 16.32 19.37 17.43 17.73C16.33 16.14 14.73 14.5 12.44 14.5ZM23.56 14.5C21.27 14.5 19.67 16.14 18.57 17.73C19.68 19.37 21.27 21.5 23.56 21.5C25.46 21.5 27 19.93 27 18C27 16.07 25.46 14.5 23.56 14.5Z" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="tp-channel-box-details">
+          <span class="tp-channel-box-title">Meta Lead Form</span>
+          <span class="tp-channel-box-count" data-chan-count="Meta Lead Form">0</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Meta Lead Form">0%</span>
+        </div>
+      </div>
+
+      <!-- 3. Website (Google Ad) -->
+      <div class="tp-channel-box">
+        <div class="tp-channel-box-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#fef9c3"/>
+            <path d="M24.8 16.4H18V19.8H21.9C21.4 21.6 19.8 22.8 18 22.8C15.3 22.8 13.2 20.6 13.2 18C13.2 15.4 15.3 13.2 18 13.2C19.2 13.2 20.3 13.6 21.1 14.4L23.5 12C22 10.6 20.1 9.8 18 9.8C13.5 9.8 9.8 13.5 9.8 18C9.8 22.5 13.5 26.2 18 26.2C22.6 26.2 25.5 22.9 25.5 18.3C25.5 17.6 25.4 17 24.8 16.4Z" fill="#ea4335"/>
+          </svg>
+        </div>
+        <div class="tp-channel-box-details">
+          <span class="tp-channel-box-title">Website (Google Ad)</span>
+          <span class="tp-channel-box-count" data-chan-count="Website (Google Ad)">0</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Website (Google Ad)">0%</span>
+        </div>
+      </div>
+
+      <!-- 4. Website (Google SEO) -->
+      <div class="tp-channel-box">
+        <div class="tp-channel-box-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#8b5cf6"/>
+            <path d="M18 10C13.58 10 10 13.58 10 18C10 22.42 13.58 26 18 26C22.42 26 26 22.42 26 18C26 13.58 22.42 10 18 10ZM17.2 12.08C15.14 12.55 13.43 14.07 12.63 16.1H14.82C15.25 14.28 16.09 12.85 17.2 12.08ZM18.8 12.08C19.91 12.85 20.75 14.28 21.18 16.1H23.37C22.57 14.07 20.86 12.55 18.8 12.08ZM16.32 18C16.32 17.34 16.41 16.7 16.58 16.1H19.42C19.59 16.7 19.68 17.34 19.68 18C19.68 18.66 19.59 19.3 19.42 19.9H16.58C16.41 19.3 16.32 18.66 16.32 18ZM17.2 23.92C16.09 23.15 15.25 21.72 14.82 19.9H12.63C13.43 21.93 15.14 23.45 17.2 23.92ZM18.8 23.92C20.86 23.45 22.57 21.93 23.37 19.9H21.18C20.75 21.72 19.91 23.15 18.8 23.92ZM23.82 18C23.82 18.67 23.72 19.31 23.54 19.9H21.62C21.73 19.29 21.8 18.65 21.8 18C21.8 17.35 21.73 16.71 21.62 16.1H23.54C23.72 16.69 23.82 17.33 23.82 18ZM14.38 18C14.38 18.65 14.45 19.29 14.56 19.9H12.46C12.28 19.31 12.18 18.67 12.18 18C12.18 17.33 12.28 16.69 12.46 16.1H14.56C14.45 16.71 14.38 17.35 14.38 18Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="tp-channel-box-details">
+          <span class="tp-channel-box-title">Website (Google SEO)</span>
+          <span class="tp-channel-box-count" data-chan-count="Website (Google SEO)">0</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Website (Google SEO)">0%</span>
+        </div>
+      </div>
+
+      <!-- 5. Instagram -->
+      <div class="tp-channel-box">
+        <div class="tp-channel-box-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#fdf2f8"/>
+            <path d="M22 10H14C11.79 10 10 11.79 10 14V22C10 24.21 11.79 26 14 26H22C24.21 26 26 24.21 26 22V14C26 11.79 24.21 10 22 10ZM24 22C24 23.1 23.1 24 22 24H14C12.9 24 12 23.1 12 22V14C12 12.9 12.9 12 14 12H22C23.1 12 24 12.9 24 14V22ZM18 14C15.79 14 14 15.79 14 18C14 20.21 15.79 22 18 22C20.21 22 22 20.21 22 18C22 15.79 20.21 14 18 14ZM18 20.2C16.78 20.2 15.8 19.22 15.8 18C15.8 16.78 16.78 15.8 18 15.8C19.22 15.8 20.2 16.78 20.2 18C20.2 19.22 19.22 20.2 18 20.2ZM22.5 14.2C22.5 14.64 22.14 15 21.7 15C21.26 15 20.9 14.64 20.9 14.2C20.9 13.76 21.26 13.4 21.7 13.4C22.14 13.4 22.5 13.76 22.5 14.2Z" fill="#db2777"/>
+          </svg>
+        </div>
+        <div class="tp-channel-box-details">
+          <span class="tp-channel-box-title">Instagram</span>
+          <span class="tp-channel-box-count" data-chan-count="Instagram">0</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Instagram">0%</span>
+        </div>
+      </div>
+
+      <!-- 6. Google Calls -->
+      <div class="tp-channel-box">
+        <div class="tp-channel-box-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#10b981"/>
+            <path d="M24.5 20.8C23.2 20.8 22 20.6 20.9 20.2C20.5 20.1 20.1 20.2 19.8 20.5L18.2 22.1C15.8 20.8 14.2 19.2 12.9 16.8L14.5 15.2C14.8 14.9 14.9 14.5 14.8 14.1C14.4 13 14.2 11.8 14.2 10.5C14.2 9.9 13.7 9.5 13.2 9.5H10.5C10 9.5 9.5 9.9 9.5 10.5C9.5 18.8 16.2 25.5 24.5 25.5C25.1 25.5 25.5 25 25.5 24.5V21.8C25.5 21.2 25.1 20.8 24.5 20.8Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="tp-channel-box-details">
+          <span class="tp-channel-box-title">Google Calls</span>
+          <span class="tp-channel-box-count" data-chan-count="Google Calls">0</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Google Calls">0%</span>
+        </div>
+      </div>
+
+      <!-- 7. Influencer -->
+      <div class="tp-channel-box">
+        <div class="tp-channel-box-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#6366f1"/>
+            <path d="M12 14V22H15L20 26V10L15 14H12ZM22.5 15.5C23.4 16.2 24 17 24 18C24 19 23.4 19.8 22.5 20.5V15.5ZM22.5 12V13.6C24.6 14.5 26 16.1 26 18C26 19.9 24.6 21.5 22.5 22.4V24C25.5 23 27.5 20.7 27.5 18C27.5 15.3 25.5 13 22.5 12Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="tp-channel-box-details">
+          <span class="tp-channel-box-title">Influencer</span>
+          <span class="tp-channel-box-count" data-chan-count="Influencer">0</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Influencer">0%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Branch Wise Lead Summary Table -->
+  <section class="tp-panel-card">
+    <div class="tp-panel-header-title tp-panel-header-flex">
+      <span>Branch Wise Lead Summary <span data-period>({{ period_label }})</span></span>
+      <button type="button" class="tp-export-btn" id="btnExportCsvTable" onclick="window.CRMReportDashboard && window.CRMReportDashboard.exportCSV()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Export CSV</span>
+      </button>
+    </div>
+
+    <div class="tp-summary-table-wrap">
+      <table class="tp-branch-summary-table" id="branchSummaryTable">
+        <thead>
+          <tr>
+            <th class="th-branch">Branch</th>
+            <th class="th-total">Total Leads</th>
+            <th class="th-whatsapp">Meta WhatsApp</th>
+            <th class="th-meta-form">Meta Lead Form</th>
+            <th class="th-google-ad">Website (Google Ad)</th>
+            <th class="th-google-seo">Website (Google SEO)</th>
+            <th class="th-instagram">Instagram</th>
+            <th class="th-google-call">Google Calls</th>
+            <th class="th-influencer">Influencer</th>
+            <th class="th-status-normal">New Leads</th>
+            <th class="th-status-normal">Contacted</th>
+            <th class="th-status-normal">Missed</th>
+          </tr>
+        </thead>
+        <tbody id="branchTableBody">
+          {% for r in branch_rows %}
+          <tr>
+            <td class="td-branch">{{ r.branch }}</td>
+            <td class="td-total">{{ r.total_leads }}</td>
+            <td class="td-whatsapp">{{ r.channels.0 }}</td>
+            <td class="td-meta-form">{{ r.channels.1 }}</td>
+            <td class="td-ad">{{ r.channels.2 }}</td>
+            <td class="td-seo">{{ r.channels.3 }}</td>
+            <td class="td-ig">{{ r.channels.4 }}</td>
+            <td class="td-call">{{ r.channels.5 }}</td>
+            <td class="td-influencer">{{ r.channels.6 }}</td>
+            <td class="td-status-normal">{{ r.new_leads }}</td>
+            <td class="td-status-normal">{{ r.contacted_leads }}</td>
+            <td class="td-status-normal">{{ r.missed_leads }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="12" style="text-align: center; color: var(--text-muted); padding: 24px;">No branch lead records found for this period.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr id="branchTableFooter">
+            <td class="td-branch">Total</td>
+            <td class="td-total">{{ branch_totals.total_leads }}</td>
+            <td class="td-whatsapp">{{ branch_totals.channels.0 }}</td>
+            <td class="td-meta-form">{{ branch_totals.channels.1 }}</td>
+            <td class="td-ad">{{ branch_totals.channels.2 }}</td>
+            <td class="td-seo">{{ branch_totals.channels.3 }}</td>
+            <td class="td-ig">{{ branch_totals.channels.4 }}</td>
+            <td class="td-call">{{ branch_totals.channels.5 }}</td>
+            <td class="td-influencer">{{ branch_totals.channels.6 }}</td>
+            <td class="td-status-normal">{{ branch_totals.new_leads }}</td>
+            <td class="td-status-normal">{{ branch_totals.contacted_leads }}</td>
+            <td class="td-status-normal">{{ branch_totals.missed_leads }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. Bottom 3 Visual Charts Row -->
+  <section class="report-charts-row">
+    <!-- Chart 1: Leads by Channel Donut -->
+    <div class="tp-chart-panel">
+      <div class="tp-chart-panel-title">Leads by Channel <span data-period>({{ period_label }})</span></div>
+      <div class="tp-donut-chart-container">
+        <div class="tp-donut-canvas-wrap">
+          <canvas id="channelDonutChart"></canvas>
+          <div class="tp-donut-center-badge">
+            <div class="tp-donut-center-num" id="donutChannelTotal">{{ kpi_total_leads }}</div>
+            <div class="tp-donut-center-sub">Total Leads</div>
+          </div>
+        </div>
+        <div class="tp-chart-custom-legend" id="channelCustomLegend">
+          <!-- Populated by dashboard-report.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart 2: Branch Wise Lead Distribution Stacked Chart -->
+    <div class="tp-chart-panel">
+      <div class="tp-chart-panel-title">Branch Wise Lead Distribution</div>
+      <div class="tp-stacked-canvas-wrap">
+        <canvas id="branchStackedChart"></canvas>
+      </div>
+      <div class="tp-stacked-bottom-legend" id="branchStackedLegend">
+        <!-- Populated by dashboard-report.js -->
+      </div>
+    </div>
+
+    <!-- Chart 3: Call Outcomes & Lead Quality Bar Chart -->
+    <div class="tp-chart-panel">
+      <div class="tp-chart-panel-title">Call Outcomes &amp; Lead Quality <span data-period>({{ period_label }})</span></div>
+      <div class="tp-outcomes-note" id="outcomesNote">% of total calls/leads</div>
+      <div class="tp-outcomes-canvas-wrap">
+        <canvas id="outcomesChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Custom Date Range Modal -->
+<div id="customDateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
+  <div style="background: var(--bg-card, #ffffff); border-radius: 12px; padding: 24px; width: 340px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color, #e2e8f0);">
+    <h3 style="margin: 0 0 16px; font-size: 1.1rem; color: var(--text-main, #0f172a);">Select Date Range</h3>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted, #475569);">Start Date</label>
+      <input type="date" id="customStartDate" value="{{ start_date }}" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1);">
+    </div>
+    <div style="margin-bottom: 20px;">
+      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted, #475569);">End Date</label>
+      <input type="date" id="customEndDate" value="{{ end_date }}" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1);">
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+      <button type="button" class="btn btn-secondary" onclick="document.getElementById('customDateModal').style.display='none';">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="document.getElementById('customDateModal').style.display='none'; window.CRMReportDashboard && window.CRMReportDashboard.fetch();">Apply Range</button>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded Initial Report State JSON -->
+{{ donut_chart|json_script:"initial-donut-data" }}
+{{ stacked_chart|json_script:"initial-stacked-data" }}
+{{ outcomes_chart|json_script:"initial-outcomes-data" }}
+
+<script id="initial-report-data" type="application/json">
+{
+  "period_label": "{{ period_label|escapejs }}",
+  "kpi_total_leads": {{ kpi_total_leads }},
+  "kpi_total_change_pct": {{ kpi_total_change_pct }},
+  "kpi_connected_leads": {{ kpi_connected_leads }},
+  "kpi_connected_pct": {{ kpi_connected_pct }},
+  "kpi_prospected_leads": {{ kpi_prospected_leads }},
+  "kpi_prospected_pct": {{ kpi_prospected_pct }},
+  "kpi_not_connected_leads": {{ kpi_not_connected_leads }},
+  "kpi_not_connected_pct": {{ kpi_not_connected_pct }},
+  "donut_chart": {
+    "labels": {{ donut_chart.labels|safe }},
+    "values": {{ donut_chart.values|safe }},
+    "colors": {{ donut_chart.colors|safe }},
+    "percentages": {{ donut_chart.percentages|safe }},
+    "total": {{ donut_chart.total }}
+  },
+  "stacked_chart": {
+    "labels": {{ stacked_chart.labels|safe }},
+    "datasets": [
+      {% for ds in stacked_chart.datasets %}
+      {
+        "label": "{{ ds.label|escapejs }}",
+        "data": {{ ds.data|safe }},
+        "backgroundColor": "{{ ds.backgroundColor|escapejs }}"
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ]
+  },
+  "outcomes_chart": {
+    "labels": {{ outcomes_chart.labels|safe }},
+    "values": {{ outcomes_chart.values|safe }},
+    "percentages": {{ outcomes_chart.percentages|safe }},
+    "total": {{ outcomes_chart.total }}
+  }
+}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard-report.js' %}?v=20261012_report"></script>
+{% endblock %}

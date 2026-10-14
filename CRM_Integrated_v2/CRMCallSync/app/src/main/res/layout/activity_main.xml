@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="12dp"
+            android:text="CRM Call Sync"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/permissionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Allow call log &amp; audio access" />
+
+        <!-- Shown when logged out -->
+        <LinearLayout
+            android:id="@+id/loginSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/serverUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="CRM URL, e.g. https://crm.yourcompany.com"
+                android:inputType="textUri" />
+
+            <EditText
+                android:id="@+id/username"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="CRM username"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="CRM password"
+                android:inputType="textPassword" />
+
+            <Button
+                android:id="@+id/loginButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Log in" />
+        </LinearLayout>
+
+        <!-- Shown when logged in -->
+        <LinearLayout
+            android:id="@+id/statusSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/syncButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sync now" />
+
+            <Button
+                android:id="@+id/googleCallsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Google Ads number: Off" />
+
+            <Button
+                android:id="@+id/recordingFolderButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recording folder: auto-detect" />
+
+            <Button
+                android:id="@+id/overlayPermissionButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Allow background auto-call (Appear on top)" />
+
+            <!-- Background Reliability Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="14dp"
+                android:paddingBottom="6dp"
+                android:text="Background Reliability"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/batteryStateText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="8dp"
+                android:text="Battery Optimization: Checking..."
+                android:textSize="14sp" />
+
+            <Button
+                android:id="@+id/batteryButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Disable Battery Optimization (Unrestricted)" />
+
+            <Button
+                android:id="@+id/manufacturerSettingsButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Manufacturer Settings (Auto-start / Lock app)" />
+
+            <Button
+                android:id="@+id/logoutButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Log out" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

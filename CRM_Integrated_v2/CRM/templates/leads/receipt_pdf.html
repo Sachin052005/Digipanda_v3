@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fee Receipt #{{ txn.receipt_number }} - TECHPANDA</title>
+  <style>
+    @page {
+      size: a4 portrait;
+      margin: 8mm 12mm 8mm 12mm;
+    }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 9.5pt;
+      color: #192B45;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 1. Header */
+    .header-table {
+      width: 100%;
+      background-color: #192B45;
+      color: #FFFFFF;
+      padding: 14px 18px;
+    }
+    .header-table td {
+      vertical-align: middle;
+    }
+    .logo-brand {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #38BDF8;
+      letter-spacing: -0.5px;
+    }
+    .logo-brand-white {
+      color: #FFFFFF;
+    }
+    .header-divider {
+      color: #64748B;
+      font-size: 16pt;
+      padding: 0 10px;
+    }
+    .receipt-title {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .receipt-sub {
+      font-size: 7.5pt;
+      color: #CBD5E1;
+      margin-top: 2px;
+    }
+
+    /* 2. Top Meta & QR */
+    .meta-qr-table {
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+    .meta-qr-table td {
+      vertical-align: top;
+    }
+    .verified-pill {
+      background-color: #E6F8F1;
+      color: #07865C;
+      font-size: 7.5pt;
+      font-weight: bold;
+      padding: 3px 8px;
+      display: inline-block;
+      text-transform: uppercase;
+      border: 0.5px solid #A7F3D0;
+      margin-bottom: 4px;
+    }
+    .doc-heading {
+      font-size: 15pt;
+      font-weight: bold;
+      color: #192B45;
+      margin: 2px 0;
+    }
+    .doc-meta {
+      font-size: 8pt;
+      color: #60718A;
+    }
+    .doc-meta strong {
+      color: #192B45;
+    }
+
+    .qr-box-table {
+      width: 100%;
+      background-color: #F4F8FD;
+      border: 1px solid #D0E5F5;
+      padding: 8px 10px;
+    }
+    .qr-box-table td {
+      vertical-align: middle;
+    }
+    .qr-title {
+      font-size: 8.5pt;
+      font-weight: bold;
+      color: #192B45;
+      margin-bottom: 2px;
+    }
+    .qr-desc {
+      font-size: 7pt;
+      color: #60718A;
+      margin-bottom: 3px;
+    }
+    .qr-secure {
+      font-size: 7pt;
+      font-weight: bold;
+      color: #07865C;
+    }
+
+    /* 3. Hero Amount Card */
+    .hero-table {
+      width: 100%;
+      background-color: #F0FDF8;
+      border: 1px solid #A7F3D0;
+      border-left: 5px solid #07865C;
+      padding: 10px 14px;
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+    .hero-table td {
+      vertical-align: middle;
+    }
+    .rupee-circle {
+      width: 34px;
+      height: 34px;
+      background-color: #07865C;
+      color: #FFFFFF;
+      font-size: 18pt;
+      font-weight: bold;
+      text-align: center;
+      line-height: 34px;
+    }
+    .hero-label {
+      font-size: 7.5pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #60718A;
+      letter-spacing: 0.5px;
+    }
+    .hero-amount {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #07865C;
+      margin: 1px 0;
+    }
+    .hero-sub {
+      font-size: 7.5pt;
+      color: #60718A;
+    }
+    .hero-right-box {
+      border-left: 1px solid #A7F3D0;
+      padding-left: 12px;
+    }
+    .hero-status {
+      font-size: 8pt;
+      font-weight: bold;
+      color: #07865C;
+      margin-bottom: 4px;
+    }
+    .hero-line {
+      font-size: 7.5pt;
+      color: #60718A;
+      padding: 1px 0;
+    }
+    .hero-line strong {
+      color: #192B45;
+    }
+
+    /* 4. Section Card */
+    .card-wrap {
+      width: 100%;
+      border: 1px solid #E2E8F0;
+      margin-bottom: 10px;
+    }
+    .card-header-bar {
+      background-color: #F4F8FD;
+      color: #192B45;
+      font-size: 8.5pt;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .info-table {
+      width: 100%;
+      font-size: 8pt;
+    }
+    .info-table td {
+      padding: 4px 10px;
+      border-bottom: 0.5px solid #F1F5F9;
+    }
+    .info-label {
+      color: #60718A;
+      width: 35%;
+    }
+    .info-val {
+      color: #192B45;
+      font-weight: bold;
+    }
+    .info-val-blue {
+      color: #2563EB;
+      font-weight: bold;
+    }
+
+    /* 5. Two column layout */
+    .two-col-table {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .two-col-table td {
+      vertical-align: top;
+    }
+    .grid-cell {
+      border: 1px solid #E2E8F0;
+    }
+    .grid-data-table {
+      width: 100%;
+      font-size: 7.8pt;
+    }
+    .grid-data-table td {
+      padding: 4px 8px;
+      border-bottom: 0.5px solid #F1F5F9;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .text-green {
+      color: #07865C;
+      font-weight: bold;
+    }
+    .text-orange {
+      color: #E45A08;
+      font-weight: bold;
+      font-size: 8.5pt;
+    }
+    .row-divider {
+      border-top: 1px solid #CBD5E1;
+    }
+
+    /* 6. Outstanding Balance Alert */
+    .alert-balance-table {
+      width: 100%;
+      background-color: #FFF5EB;
+      border: 1px solid #FCD9BD;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+    }
+    .alert-balance-table td {
+      vertical-align: middle;
+    }
+    .alert-balance-title {
+      font-size: 8.5pt;
+      font-weight: bold;
+      color: #E45A08;
+    }
+    .alert-balance-sub {
+      font-size: 7.5pt;
+      color: #9A3412;
+      margin-top: 2px;
+    }
+    .alert-balance-amount {
+      font-size: 14pt;
+      font-weight: bold;
+      color: #E45A08;
+      text-align: right;
+    }
+
+    /* 7. Notice */
+    .notice-box {
+      width: 100%;
+      background-color: #EBF3FC;
+      border: 1px solid #CDE0F7;
+      padding: 6px 10px;
+      font-size: 7.5pt;
+      color: #1E40AF;
+      margin-bottom: 10px;
+    }
+
+    /* 8. Footer */
+    .footer-table {
+      width: 100%;
+      border-top: 1px solid #E2E8F0;
+      padding-top: 8px;
+    }
+    .footer-table td {
+      vertical-align: middle;
+    }
+    .footer-contact {
+      font-size: 7.5pt;
+      color: #60718A;
+    }
+    .footer-thankyou {
+      text-align: right;
+      font-size: 11pt;
+      font-weight: bold;
+      color: #327BC4;
+    }
+    .footer-sub {
+      font-size: 7pt;
+      color: #60718A;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Brand Header -->
+  <table class="header-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="width: 58%;">
+        <span class="logo-brand">tech<span class="logo-brand-white">panda</span></span>
+        <span class="header-divider">|</span>
+        <span class="receipt-title">OFFICIAL FEE RECEIPT</span>
+        <div class="receipt-sub">Your Learning Journey, Our Priority</div>
+      </td>
+      <td style="width: 42%; text-align: right;">
+        <div style="font-size: 7.5pt; color: #CBD5E1;">{{ branch_name }} &bull; {{ branch_address }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- 2. Top Meta & QR Verification -->
+  <table class="meta-qr-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="width: 62%;">
+        <div class="verified-pill">&bull; PAYMENT VERIFIED</div>
+        <div class="doc-heading">Payment Receipt</div>
+        <div class="doc-meta">
+          Receipt Number: <strong>{{ txn.receipt_number }}</strong> &bull; Date: <strong>{{ txn.payment_date|date:"d M Y, h:i A" }}</strong>
+        </div>
+      </td>
+      <td style="width: 38%;">
+        <table class="qr-box-table" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="width: 54px; text-align: center;">
+              {% if qr_b64 %}
+              <img src="data:image/png;base64,{{ qr_b64 }}" width="50" height="50" style="display: block;" />
+              {% endif %}
+            </td>
+            <td style="padding-left: 8px;">
+              <div class="qr-title">Verify This Receipt</div>
+              <div class="qr-desc">Scan the QR code to verify this receipt online.</div>
+              <div class="qr-secure">&bull; Secure &amp; Authentic</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- 3. Hero Amount Card -->
+  <table class="hero-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="width: 58%;">
+        <table cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding-right: 10px;">
+              <div class="rupee-circle">INR</div>
+            </td>
+            <td>
+              <div class="hero-label">Amount Received</div>
+              <div class="hero-amount">INR {{ txn.amount|floatformat:2 }}</div>
+              <div class="hero-sub">Paid via {{ txn.payment_method }} &bull; Transaction ID: {{ txn.transaction_reference|default:txn.receipt_number }}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td style="width: 42%;">
+        <div class="hero-right-box">
+          <div class="hero-status">&bull; Payment Successful</div>
+          <div class="hero-line">Date &amp; Time: <strong>{{ txn.payment_date|date:"d M Y, h:i A" }}</strong></div>
+          <div class="hero-line">Payment Method: <strong>{{ txn.payment_method }}</strong></div>
+          <div class="hero-line">UPI / Txn Ref: <strong>{{ txn.transaction_reference|default:txn.receipt_number }}</strong></div>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- 4. Student Information -->
+  <div class="card-wrap">
+    <div class="card-header-bar">&bull; Student Information</div>
+    <table class="info-table" cellpadding="0" cellspacing="0">
+      <tr>
+        <td class="info-label">Student Name</td>
+        <td class="info-val">{{ enrollment.student_name }}</td>
+      </tr>
+      <tr>
+        <td class="info-label">Student ID</td>
+        <td class="info-val">{{ student_id }}</td>
+      </tr>
+      <tr>
+        <td class="info-label">Enrollment Number</td>
+        <td class="info-val-blue">{{ enrollment.enrollment_number }}</td>
+      </tr>
+      <tr>
+        <td class="info-label">Course / Program</td>
+        <td class="info-val">{{ enrollment.product.name|default:"Course Program" }}</td>
+      </tr>
+      <tr>
+        <td class="info-label">Branch / Campus</td>
+        <td class="info-val">{{ branch_name }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 5. Two-Column Grid: Fee Summary & GST Breakdown -->
+  <table class="two-col-table" cellpadding="0" cellspacing="6">
+    <tr>
+      <!-- Left: Fee Summary -->
+      <td style="width: 50%;">
+        <div class="grid-cell">
+          <div class="card-header-bar">&bull; Fee Summary</div>
+          <table class="grid-data-table" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>Total Course Fee</td>
+              <td class="text-right"><strong>INR {{ total_payable|floatformat:2 }}</strong></td>
+            </tr>
+            <tr>
+              <td>Previously Paid Amount</td>
+              <td class="text-right">INR {{ prior_paid|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td class="text-green">Current Paid Amount</td>
+              <td class="text-right text-green">INR {{ this_payment|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td class="text-green">Total Paid to Date</td>
+              <td class="text-right text-green">INR {{ cumulative_paid|floatformat:2 }}</td>
+            </tr>
+            <tr class="row-divider">
+              <td><strong>Outstanding Balance</strong></td>
+              <td class="text-right text-orange">INR {{ remaining_balance_after_txn|floatformat:2 }}</td>
+            </tr>
+          </table>
+        </div>
+      </td>
+
+      <!-- Right: GST Breakdown -->
+      <td style="width: 50%;">
+        <div class="grid-cell">
+          <div class="card-header-bar">&bull; GST Breakdown</div>
+          <table class="grid-data-table" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>GST Treatment</td>
+              <td class="text-right"><strong>{{ enrollment.get_gst_treatment_display|default:enrollment.gst_treatment }}</strong></td>
+            </tr>
+            <tr>
+              <td>Taxable Course Fee</td>
+              <td class="text-right">INR {{ taxable_amount|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td>GST Rate &amp; Component</td>
+              <td class="text-right">INR {{ tax_amount|floatformat:2 }} ({{ tax_rate|floatformat:2 }}% GST)</td>
+            </tr>
+            <tr class="row-divider">
+              <td><strong>Total Payable</strong></td>
+              <td class="text-right"><strong>INR {{ total_payable|floatformat:2 }}</strong></td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- 6. Outstanding Balance Alert (Shown when balance > 0) -->
+  {% if remaining_balance_after_txn > 0 %}
+  <table class="alert-balance-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="width: 65%;">
+        <div class="alert-balance-title">Outstanding Balance</div>
+        <div class="alert-balance-sub">Next installment due date: <strong>{{ next_installment.due_date|date:"d M Y"|default:enrollment.next_installment_date|date:"d M Y"|default:"To be scheduled" }}</strong></div>
+      </td>
+      <td style="width: 35%;">
+        <div class="alert-balance-amount">INR {{ remaining_balance_after_txn|floatformat:2 }}</div>
+      </td>
+    </tr>
+  </table>
+  {% endif %}
+
+  <!-- 7. Notice -->
+  <div class="notice-box">
+    &bull; This is an official system generated electronic receipt issued by TECHPANDA. No signature is required.
+  </div>
+
+  <!-- 8. Footer -->
+  <table class="footer-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td style="width: 60%;" class="footer-contact">
+        www.techpanda.in &bull; support@techpanda.in &bull; +91 98765 43210
+      </td>
+      <td style="width: 40%; text-align: right;">
+        <div class="footer-thankyou">Thank You!</div>
+        <div class="footer-sub">for choosing TECHPANDA</div>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

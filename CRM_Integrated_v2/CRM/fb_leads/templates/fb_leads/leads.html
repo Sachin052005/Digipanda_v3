@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% block title %}Facebook Leads - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>Facebook Lead Ads</h1>
+    <p>Every Facebook lead is added to the CRM as a lead with source <strong>Facebook</strong> and assigned by your branch rules</p>
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <a href="{% url 'fb_leads:fb_accounts' %}" class="btn btn-secondary">⚙ Manage Accounts & Pages</a>
+    <form method="post" action="{% url 'fb_leads:facebook_leads_sync' %}" style="margin: 0;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary" {% if not configured %}disabled title="Add FB_PAGE_TOKEN and FB_PAGE_ID to .env first"{% endif %}>⟳ Sync All Leads</button>
+    </form>
+  </div>
+</div>
+
+{% if not configured %}
+<div class="alert alert-warning" style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; background: #fef3c7; color: #92400e;">
+  Facebook isn't connected yet: add <code>FB_VERIFY_TOKEN</code>, <code>FB_APP_SECRET</code>, <code>FB_PAGE_TOKEN</code> and <code>FB_PAGE_ID</code> to your <code>.env</code> file and restart the server.
+</div>
+{% endif %}
+
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-info"><h4>Facebook leads received</h4><div class="kpi-value">{{ total }}</div></div>
+    <div class="kpi-icon-wrap blue"><circle cx="12" cy="12" r="10"></circle></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info"><h4>Not added to CRM</h4>
+      <div class="kpi-value" {% if errors %}style="color: var(--danger);"{% endif %}>{{ errors }}</div>
+    </div>
+    <div class="kpi-icon-wrap rose"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon></div>
+  </div>
+</div>
+
+<div class="filter-card">
+  <form method="get" class="filter-form">
+    <div class="filter-col">
+      <label>Search</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Name, phone, email, form, ad or campaign">
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button type="submit" class="btn btn-primary">Search</button>
+      {% if errors %}<a href="?crm=error" class="btn btn-secondary">Show errors</a>{% endif %}
+      <a href="{% url 'fb_leads:facebook_leads' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="crm-card">
+  <div class="crm-card-body" style="padding: 12px 24px;">
+    {% if page.object_list %}
+    <div class="table-responsive">
+      <table class="crm-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Received</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Form / Ad</th>
+            <th>CRM lead</th>
+            <th>Answers</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fb in page.object_list %}
+          <tr>
+            <td>{{ fb.created_on_facebook|default:fb.received_at|date:"d M Y, h:i A" }}</td>
+            <td><strong>{{ fb.full_name|default:"—" }}</strong>{% if fb.email %}<br><span style="color: var(--text-muted); font-size: 0.8rem;">{{ fb.email }}</span>{% endif %}</td>
+            <td><a href="tel:{{ fb.phone }}" style="font-family: monospace;">{{ fb.phone|default:"—" }}</a></td>
+            <td style="font-size: 0.85rem;">
+              {{ fb.form_name|default:"—" }}
+              {% if fb.ad_name %}<br><span style="color: var(--text-muted);">Ad: {{ fb.ad_name }}</span>{% endif %}
+              {% if fb.campaign_name %}<br><span style="color: var(--text-muted);">Campaign: {{ fb.campaign_name }}</span>{% endif %}
+            </td>
+            <td style="font-size: 0.85rem;">
+              {% if fb.lead %}
+                <a href="{% url lead_url_name fb.lead.pk %}" style="font-weight: 600;">{{ fb.lead.name }}</a>
+                {% if fb.crm_result == 'new' %}<span class="badge" style="background:#dcfce7;color:#15803d;">New lead</span>{% else %}<span class="badge" style="background:#e0f2fe;color:#0369a1;">Existing lead</span>{% endif %}
+                <br><span style="color: var(--text-muted);">{{ fb.lead.branch.name|default:"No branch" }} · {% if fb.lead.assigned_telecaller %}{{ fb.lead.assigned_telecaller.get_full_name|default:fb.lead.assigned_telecaller.username }}{% else %}{{ fb.lead.assignment_status|default:"Unassigned" }}{% endif %}</span>
+              {% elif fb.crm_result == 'error' %}
+                <span class="badge" style="background:#fee2e2;color:#b91c1c;">Not added</span><br><span style="color: var(--text-muted);">{{ fb.crm_error }}</span>
+              {% else %}
+                <span style="color: var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if fb.all_answers %}
+              <details><summary style="cursor: pointer;">All answers</summary>
+                <ul style="margin: 6px 0 0; padding-left: 16px; font-size: 0.82rem;">
+                  {% for k, v in fb.all_answers.items %}<li><strong>{{ k }}</strong>: {{ v }}</li>{% endfor %}
+                </ul>
+              </details>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.has_other_pages %}
+    <div style="display: flex; gap: 8px; justify-content: center; padding: 12px 0;">
+      {% if page.has_previous %}<a class="btn btn-sm btn-secondary" href="?q={{ q|urlencode }}&page={{ page.previous_page_number }}">← Previous</a>{% endif %}
+      <span style="align-self: center;">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a class="btn btn-sm btn-secondary" href="?q={{ q|urlencode }}&page={{ page.next_page_number }}">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div style="text-align: center; color: var(--text-muted); padding: 32px 16px;">
+      <p style="margin: 0;">No Facebook leads yet.</p>
+      <p style="margin: 4px 0 0; font-size: 0.8rem;">New leads arrive automatically through the webhook. Use <strong>Sync from Facebook</strong> to bring in leads your ads already collected.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function() {
+  // Safe local polling for incoming Facebook leads (Issue 2)
+  // Polls ONLY local CRM database every 3 seconds - never calls external Graph API!
+  const pollUrl = "{% url 'fb_leads:facebook_leads_recent_api' %}?q={{ q|urlencode }}{% if request.GET.crm == 'error' %}&crm=error{% endif %}";
+  let isPolling = false;
+
+  function pollLocalLeads() {
+    if (isPolling || document.hidden) return;
+    isPolling = true;
+
+    fetch(pollUrl, {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      isPolling = false;
+      if (!data || !data.success) return;
+
+      // Update total counters if elements exist
+      const totalKpi = document.querySelector('.kpi-card:nth-child(1) .kpi-value');
+      if (totalKpi && data.total !== undefined) totalKpi.textContent = data.total;
+
+      const errorKpi = document.querySelector('.kpi-card:nth-child(2) .kpi-value');
+      if (errorKpi && data.errors !== undefined) errorKpi.textContent = data.errors;
+
+      const tbody = document.querySelector('.crm-table tbody');
+      if (!tbody || !data.leads || data.leads.length === 0) return;
+
+      // Check if new leads arrived by comparing top lead ID or leadgen_id
+      const currentTopRow = tbody.querySelector('tr');
+      const currentTopId = currentTopRow ? currentTopRow.getAttribute('data-lead-id') : null;
+      const latestLead = data.leads[0];
+
+      if (latestLead && String(latestLead.id) !== String(currentTopId)) {
+        // Re-render rows safely using DOM
+        let newHtml = '';
+        data.leads.forEach(fb => {
+          let leadHtml = '<span style="color: var(--text-muted);">—</span>';
+          if (fb.lead) {
+            const badgeClass = fb.crm_result === 'new' 
+              ? 'background:#dcfce7;color:#15803d;' 
+              : 'background:#e0f2fe;color:#0369a1;';
+            const badgeText = fb.crm_result === 'new' ? 'New lead' : 'Existing lead';
+            leadHtml = `
+              <a href="${fb.lead.url}" style="font-weight: 600;">${fb.lead.name}</a>
+              <span class="badge" style="${badgeClass}">${badgeText}</span>
+              <br><span style="color: var(--text-muted);">${fb.lead.branch} · ${fb.lead.assigned_to}</span>
+            `;
+          } else if (fb.crm_result === 'error') {
+            leadHtml = `<span class="badge" style="background:#fee2e2;color:#b91c1c;">Not added</span><br><span style="color: var(--text-muted);">${fb.crm_error || ''}</span>`;
+          }
+
+          let answersHtml = '';
+          const answersEntries = Object.entries(fb.all_answers || {});
+          if (answersEntries.length > 0) {
+            answersHtml = `
+              <details><summary style="cursor: pointer;">All answers</summary>
+                <ul style="margin: 6px 0 0; padding-left: 16px; font-size: 0.82rem;">
+                  ${answersEntries.map(([k, v]) => `<li><strong>${k}</strong>: ${v}</li>`).join('')}
+                </ul>
+              </details>
+            `;
+          }
+
+          let metaDetails = '';
+          if (fb.ad_name) metaDetails += `<br><span style="color: var(--text-muted);">Ad: ${fb.ad_name}</span>`;
+          if (fb.campaign_name) metaDetails += `<br><span style="color: var(--text-muted);">Campaign: ${fb.campaign_name}</span>`;
+
+          newHtml += `
+            <tr data-lead-id="${fb.id}">
+              <td>${fb.created_str}</td>
+              <td><strong>${fb.full_name}</strong>${fb.email ? `<br><span style="color: var(--text-muted); font-size: 0.8rem;">${fb.email}</span>` : ''}</td>
+              <td><a href="tel:${fb.phone}" style="font-family: monospace;">${fb.phone}</a></td>
+              <td style="font-size: 0.85rem;">${fb.form_name}${metaDetails}</td>
+              <td style="font-size: 0.85rem;">${leadHtml}</td>
+              <td>${answersHtml}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = newHtml;
+      }
+    })
+    .catch(err => {
+      isPolling = false;
+      console.warn('Local FB leads poll warning:', err);
+    });
+  }
+
+  // Poll local DB every 3 seconds
+  setInterval(pollLocalLeads, 3000);
+})();
+</script>
+{% endblock %}

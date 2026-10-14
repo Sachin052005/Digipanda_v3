@@ -1,0 +1,1416 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lead.name }} - Lead Details - TECHPANDA CRM{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/lead-details-modern.css' %}?v=20261012_lead_detail">
+{% endblock %}
+
+{% block content %}
+<div class="lead-detail-wrapper" id="leadDetailContainer">
+
+  <!-- Top Notification Banner & Record Navigation -->
+  <div class="lead-top-ribbon">
+    <div class="lead-notification-banner" id="leadNotificationBanner">
+      <span>🔔 Stay on top of your pipeline — enable browser notifications for instant lead and task alerts. <a href="javascript:void(0);" onclick="requestNotificationPerm()">Enable</a></span>
+      <button type="button" class="btn-close-banner" onclick="dismissBanner()" title="Dismiss">&times;</button>
+    </div>
+
+    <div class="lead-nav-controls">
+      <span class="lead-record-counter">{{ nav.current_index }} of {{ nav.total_count }}</span>
+      {% if nav.prev_lead_id %}
+        <a href="{% url detail_url_name nav.prev_lead_id %}" class="lead-nav-btn" title="Previous Lead">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          Prev
+        </a>
+      {% else %}
+        <span class="lead-nav-btn disabled">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          Prev
+        </span>
+      {% endif %}
+
+      {% if nav.next_lead_id %}
+        <a href="{% url detail_url_name nav.next_lead_id %}" class="lead-nav-btn" title="Next Lead">
+          Next
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
+      {% else %}
+        <span class="lead-nav-btn disabled">
+          Next
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Sticky Main Header -->
+  <header class="lead-main-header">
+    <div class="lead-header-left">
+      <div class="lead-header-title-row">
+        <h1 class="lead-name-heading" id="leadNameDisplay" title="Click to edit lead name" onclick="activateNameEdit()">{{ lead.name }}</h1>
+        <button type="button" class="lead-name-edit-btn" id="leadNameEditBtn" onclick="activateNameEdit()" title="Edit lead name">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        </button>
+        <div class="lead-name-inline-editor" id="leadNameEditor" style="display: none;">
+          <input type="text" class="lead-inline-input" id="input-lead-name" value="{{ lead.name }}" placeholder="Lead Name">
+          <span class="lead-field-status" id="status-lead-name"></span>
+        </div>
+      </div>
+
+      <div class="lead-header-subrow">
+        <!-- Lead Status Dropdown Pill -->
+        <div class="lead-status-pill-wrap">
+          <div class="lead-status-pill" id="leadStatusPill">
+            <span id="leadStatusLabel">{{ lead.status }}</span>
+            <span class="pill-chevron">▼</span>
+            <select class="lead-status-select-hidden" id="leadStatusSelect" onchange="changeLeadStatusAjax(this.value)">
+              {% for code, label in lead_status_choices %}
+              <option value="{{ code }}" {% if lead.status == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- 5-Star Rating Control -->
+        <div class="lead-star-rating" id="leadStarRating" title="Click to set lead priority rating">
+          <span class="star filled" data-rating="1">★</span>
+          <span class="star filled" data-rating="2">★</span>
+          <span class="star filled" data-rating="3">★</span>
+          <span class="star" data-rating="4">★</span>
+          <span class="star" data-rating="5">★</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header Right Actions & Assignee Info -->
+    <div class="lead-header-right">
+      <div class="lead-action-icons-group">
+        <!-- Start Call Button -->
+        <button type="button" class="lead-action-icon-btn call-btn" onclick="openCallDialer('{{ lead.pk }}', '{{ lead.name|escapejs }}', '{{ lead.phone|escapejs }}')" title="Start phone call with {{ lead.name }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </button>
+
+        <!-- WhatsApp Messaging Action -->
+        <button type="button" class="lead-action-icon-btn whatsapp-btn" onclick="openWhatsAppModal()" title="Send WhatsApp Message">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
+        </button>
+
+        {% if chat_conversation %}
+        <!-- Direct WHATSAPP & FACEBOOK Inbox Link -->
+        <a href="{% url 'inbox' %}?conversation={{ chat_conversation.pk }}" class="lead-action-icon-btn" title="WHATSAPP &amp; FACEBOOK Chat (#{{ chat_conversation.pk }})" style="color: #25D366; position: relative;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </a>
+        {% endif %}
+
+        <!-- WhatsApp Voice Calling Action -->
+        <button type="button" class="lead-action-icon-btn" onclick="openWhatsAppVoiceModal()" title="WhatsApp Voice Calling Capability" style="color: #25D366;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </button>
+
+        <!-- Email Action -->
+        {% if lead.email %}
+        <a href="mailto:{{ lead.email }}" class="lead-action-icon-btn" title="Send Email ({{ lead.email }})">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></svg>
+        </a>
+        {% else %}
+        <span class="lead-action-icon-btn disabled" title="No Email available" style="opacity: 0.4; cursor: not-allowed;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></svg>
+        </span>
+        {% endif %}
+
+        <!-- Tag / Channel Icon -->
+        <span class="lead-action-icon-btn" title="Lead Source: {% if lead.source %}{{ lead.source }}{% elif lead.channel %}{{ lead.channel.name }}{% else %}Direct{% endif %}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+        </span>
+
+        <!-- More Actions Dropdown -->
+        <div class="more-actions-wrap">
+          <button type="button" class="lead-action-icon-btn" onclick="toggleMoreActionsMenu()" title="More actions">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+          </button>
+          <div class="more-actions-menu" id="moreActionsMenu">
+            <button type="button" class="more-actions-item" onclick="openCallDialer('{{ lead.pk }}', '{{ lead.name|escapejs }}', '{{ lead.phone|escapejs }}')">
+              📞 Start Outgoing Call
+            </button>
+            <button type="button" class="more-actions-item" onclick="focusCallNotesSection()">
+              📝 Log Call Outcome &amp; Notes
+            </button>
+            {% if chat_conversation %}
+            <a href="{% url 'inbox' %}?conversation={{ chat_conversation.pk }}" class="more-actions-item" style="color: #16a34a; font-weight: 600;">
+              💬 WHATSAPP &amp; FACEBOOK Chat (#{{ chat_conversation.pk }})
+            </a>
+            {% endif %}
+            {% if edit_url_name %}
+            <a href="{% url edit_url_name lead.pk %}" class="more-actions-item">
+              ✏️ Edit Lead Record
+            </a>
+            {% endif %}
+            {% if user.is_admin_user or user.is_sales_head_user or user.is_branch_head_user or lead.assigned_counselor == user %}
+            <a href="{% url 'lead_enroll' lead.pk %}" class="more-actions-item" style="color: #0284c7; font-weight: 600;">
+              🎓 {% if lead.enrollment %}View/Edit Enrollment{% else %}Enroll Student &amp; Setup Fees{% endif %}
+            </a>
+            {% endif %}
+            {% if list_url_name %}
+            <a href="{% url list_url_name %}" class="more-actions-item">
+              📋 Back to Leads List
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if user.is_admin_user or user.is_sales_head_user or user.is_branch_head_user or lead.assigned_counselor == user %}
+          {% if lead.enrollment %}
+          <a href="{% url 'lead_enroll' lead.pk %}" class="btn btn-sm" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 600; text-decoration: none; border-radius: 6px; border: 1px solid #0284c7; color: #0284c7; background: #f0f9ff;">
+            🎓 Enrolled ({{ lead.enrollment.enrollment_number }})
+          </a>
+          {% else %}
+          <a href="{% url 'lead_enroll' lead.pk %}" class="btn btn-sm" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 600; text-decoration: none; border-radius: 6px; background: #0284c7; color: #fff;">
+            🎓 Enroll Student
+          </a>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <!-- Assignee Badge -->
+      <div class="lead-assignee-badge">
+        <span class="lead-assignee-name">{{ assignee_name }}</span>
+        <div class="lead-assignee-avatar" title="Assigned Staff: {{ assignee_name }}">
+          {{ assignee_initials }}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Lead Details Body (Two-Column Balanced Grid) -->
+  <div class="lead-details-body">
+    <div class="lead-fields-grid">
+
+      <!-- COLUMN 1 (LEFT COLUMN) -->
+      <div class="lead-col">
+        {% for f in col1_fields %}
+        <div class="lead-field-item {% if f.is_empty %}is-empty-field{% endif %} {% if f.is_editable %}is-editable{% else %}is-readonly{% endif %}"
+             data-key="{{ f.key }}"
+             data-control="{{ f.control_type }}"
+             data-editable="{{ f.is_editable|yesno:'1,0' }}"
+             data-raw="{{ f.raw_value|escape }}">
+          <div class="lead-field-label">
+            {% if f.type == 'text' %}
+              <span class="field-icon">T</span>
+            {% elif f.type == 'select' %}
+              <span class="field-icon icon-select">▾</span>
+            {% elif f.type == 'phone' %}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            {% elif f.type == 'date' %}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            {% else %}
+              <span class="field-icon">#</span>
+            {% endif %}
+            <span>{{ f.label }}</span>
+            {% if f.badge %}
+              <span class="lead-phone-sim-badge">{{ f.badge }}</span>
+            {% endif %}
+            {% if not f.is_editable %}
+              <span class="field-readonly-lock" title="{{ f.read_only_reason }}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Static Display Area -->
+          <div class="lead-field-value {% if f.is_empty %}text-empty{% endif %}" id="display-{{ f.key }}" {% if f.is_editable %}title="Click to edit {{ f.label }}" onclick="activateFieldEdit('{{ f.key }}')"{% else %}title="{{ f.read_only_reason }}"{% endif %}>
+            <span class="lead-field-text" id="text-{{ f.key }}">
+              {% if f.type == 'phone' and not f.is_empty %}
+                <span class="lead-phone-flag">{{ f.flag }}</span>
+                <span>{{ f.value }}</span>
+              {% else %}
+                <span>{{ f.value }}</span>
+              {% endif %}
+            </span>
+            {% if f.is_editable %}
+              <span class="lead-field-edit-btn" title="Edit {{ f.label }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              </span>
+            {% endif %}
+            <span class="lead-field-status inline-status-badge" id="status-badge-{{ f.key }}"></span>
+            {% if f.info_tooltip %}
+              <span class="field-info-icon" title="{{ f.info_tooltip }}">i</span>
+            {% endif %}
+          </div>
+
+          <!-- Inline Editor -->
+          {% if f.is_editable %}
+          <div class="lead-inline-editor" id="editor-{{ f.key }}" style="display: none;">
+            <div class="lead-inline-input-wrap">
+              {% if f.control_type == 'select' %}
+                <select class="lead-inline-input form-select" id="input-{{ f.key }}">
+                  <option value="">-- Select {{ f.label }} --</option>
+                  {% for opt in f.options %}
+                  <option value="{{ opt.value }}" {% if opt.value == f.raw_value or opt.label == f.raw_value or opt.value == f.value or opt.label == f.value %}selected{% endif %}>{{ opt.label }}</option>
+                  {% endfor %}
+                </select>
+              {% elif f.control_type == 'number' %}
+                <input type="number" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" min="1950" max="2050" placeholder="{{ f.label }}...">
+              {% elif f.control_type == 'datetime' %}
+                <input type="datetime-local" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+              {% elif f.control_type == 'date' %}
+                <input type="date" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+              {% elif f.control_type == 'phone' %}
+                <input type="tel" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="10-digit mobile number">
+              {% elif f.control_type == 'email' %}
+                <input type="email" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="email@example.com">
+              {% else %}
+                <input type="text" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="Enter {{ f.label }}...">
+              {% endif %}
+            </div>
+            <div class="lead-inline-status-wrap">
+              <span class="lead-field-status" id="status-{{ f.key }}"></span>
+            </div>
+            <div class="lead-inline-error" id="error-{{ f.key }}" style="display: none;"></div>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- COLUMN 2 (RIGHT COLUMN) -->
+      <div class="lead-col">
+        {% for f in col2_fields %}
+        <div class="lead-field-item {% if f.is_empty %}is-empty-field{% endif %} {% if f.is_editable %}is-editable{% else %}is-readonly{% endif %}"
+             data-key="{{ f.key }}"
+             data-control="{{ f.control_type }}"
+             data-editable="{{ f.is_editable|yesno:'1,0' }}"
+             data-raw="{{ f.raw_value|escape }}">
+          <div class="lead-field-label">
+            {% if f.type == 'text' %}
+              <span class="field-icon">T</span>
+            {% elif f.type == 'select' %}
+              <span class="field-icon icon-select">▾</span>
+            {% elif f.type == 'number' %}
+              <span class="field-icon">#</span>
+            {% elif f.type == 'date' %}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            {% else %}
+              <span class="field-icon">#</span>
+            {% endif %}
+            <span>{{ f.label }}</span>
+            {% if not f.is_editable %}
+              <span class="field-readonly-lock" title="{{ f.read_only_reason }}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+            {% endif %}
+          </div>
+
+          <!-- Static Display Area -->
+          <div class="lead-field-value {% if f.is_empty %}text-empty{% endif %}" id="display-{{ f.key }}" {% if f.is_editable %}title="Click to edit {{ f.label }}" onclick="activateFieldEdit('{{ f.key }}')"{% else %}title="{{ f.read_only_reason }}"{% endif %}>
+            <span class="lead-field-text" id="text-{{ f.key }}">
+              <span>{{ f.value }}</span>
+            </span>
+            {% if f.is_editable %}
+              <span class="lead-field-edit-btn" title="Edit {{ f.label }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              </span>
+            {% endif %}
+            <span class="lead-field-status inline-status-badge" id="status-badge-{{ f.key }}"></span>
+            {% if f.info_tooltip %}
+              <span class="field-info-icon" title="{{ f.info_tooltip }}">i</span>
+            {% endif %}
+          </div>
+
+          <!-- Inline Editor -->
+          {% if f.is_editable %}
+          <div class="lead-inline-editor" id="editor-{{ f.key }}" style="display: none;">
+            <div class="lead-inline-input-wrap">
+              {% if f.control_type == 'select' %}
+                <select class="lead-inline-input form-select" id="input-{{ f.key }}">
+                  <option value="">-- Select {{ f.label }} --</option>
+                  {% for opt in f.options %}
+                  <option value="{{ opt.value }}" {% if opt.value == f.raw_value or opt.label == f.raw_value or opt.value == f.value or opt.label == f.value %}selected{% endif %}>{{ opt.label }}</option>
+                  {% endfor %}
+                </select>
+              {% elif f.control_type == 'number' %}
+                <input type="number" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" min="0" max="1000" placeholder="{{ f.label }}...">
+              {% elif f.control_type == 'datetime' %}
+                <input type="datetime-local" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+              {% elif f.control_type == 'date' %}
+                <input type="date" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+              {% elif f.control_type == 'phone' %}
+                <input type="tel" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="10-digit mobile number">
+              {% elif f.control_type == 'email' %}
+                <input type="email" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="email@example.com">
+              {% else %}
+                <input type="text" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="Enter {{ f.label }}...">
+              {% endif %}
+            </div>
+            <div class="lead-inline-status-wrap">
+              <span class="lead-field-status" id="status-{{ f.key }}"></span>
+            </div>
+            <div class="lead-inline-error" id="error-{{ f.key }}" style="display: none;"></div>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+
+    <!-- Hide / Show Empty Fields Toggle Divider -->
+    <div class="lead-empty-toggle-divider">
+      <button type="button" class="lead-empty-toggle-btn" id="btnToggleEmptyFields" onclick="toggleEmptyFields()">
+        <span id="emptyToggleLabel">Hide Empty Fields</span>
+        <span class="toggle-chevron" id="emptyToggleChevron">▲ Show less</span>
+      </button>
+    </div>
+
+    <!-- Integrated Call Logging & Notes Panel (Preserves Section 48 & 49 atomic workflow) -->
+    <section class="lead-call-logging-card" id="callNotesSection">
+      <div class="lead-call-logging-header">
+        <h3 class="lead-call-logging-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          <span>Log Call Outcome &amp; Notes</span>
+        </h3>
+        <span class="lead-call-duration-chip" id="callDurationBadge" style="display: none;">
+          Duration: <span id="callDurationVal">00:00</span>
+        </span>
+      </div>
+
+      <form id="lead-page-call-form" method="POST" action="{% url 'complete_call_record' %}">
+        {% csrf_token %}
+        <input type="hidden" name="lead_id" value="{{ lead.pk }}">
+        <input type="hidden" name="call_id" id="page-call-id" value="">
+        <input type="hidden" name="duration" id="page-call-duration" value="0">
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" style="font-weight: 600;">
+            Call Notes <span class="required" style="color: #dc2626;">*</span>
+          </label>
+          <textarea name="notes" id="page-call-notes" rows="3" class="form-control" required placeholder="What was discussed during the call? (Mandatory for record completion)..."></textarea>
+          <div id="page-call-notes-error" style="display: none; color: #dc2626; font-size: 0.8125rem; margin-top: 4px; font-weight: 600;">
+            Call notes are required before completing this record.
+          </div>
+        </div>
+
+        <div class="lead-call-form-grid">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Call Outcome <span class="required" style="color: #dc2626;">*</span></label>
+            <select name="call_outcome" id="page-call-outcome" class="form-select" required>
+              {% for val, lbl in call_outcome_choices %}
+              <option value="{{ val }}" {% if val == 'Follow-up Required' %}selected{% endif %}>{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Update Lead Status</label>
+            <select name="lead_status" id="page-lead-status-update" class="form-select">
+              <option value="">-- Keep Current ({{ lead.status }}) --</option>
+              {% for val, lbl in lead_status_choices %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Next Follow-Up</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="date" name="follow_up_date" id="page-followup-date" class="form-control" placeholder="Date">
+              <input type="time" name="follow_up_time" id="page-followup-time" class="form-control" placeholder="Time">
+            </div>
+          </div>
+        </div>
+
+        <div class="call-logging-actions">
+          <button type="button" class="btn btn-secondary" onclick="resetCallNotesForm()">
+            Clear
+          </button>
+          <button type="submit" id="btnSaveLeadCallNotes" class="btn btn-primary" style="padding: 9px 24px; font-weight: 700;">
+            Save Call Notes &amp; Outcome
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- CALL HISTORY SECTION -->
+    <!-- ========================================================================= -->
+    <div style="margin-top: 32px;" id="leadCallHistorySection">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--ld-text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          Call History ({{ calls|length }})
+        </span>
+      </h3>
+      {% if calls %}
+      <div class="table-responsive" style="border: 1px solid var(--ld-border-subtle); border-radius: 8px; overflow: hidden; background: #fff;">
+        <table class="crm-table" style="font-size: 0.85rem; width: 100%;">
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Telecaller</th>
+              <th>Direction / Status</th>
+              <th>Duration</th>
+              <th>Outcome</th>
+              <th>Notes</th>
+              <th style="min-width: 140px;">Audio Recording</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in calls %}
+            <tr>
+              <td style="white-space: nowrap;">{{ c.call_started_at|date:"d M Y, h:i A" }}</td>
+              <td><strong>{{ c.caller.get_full_name|default:c.caller.username|default:"-" }}</strong></td>
+              <td>
+                <span class="badge" style="background: {% if c.call_status == 'Missed' or c.call_status == 'RNR' %}#fee2e2; color: #991b1b;{% else %}#e0f2fe; color: #0369a1;{% endif %} font-size: 0.75rem;">
+                  {{ c.call_direction|default:"Outgoing"|title }} &bull; {{ c.call_status|default:"Completed" }}
+                </span>
+              </td>
+              <td><code>{{ c.formatted_duration|default:"00:00" }}</code></td>
+              <td><span class="badge" style="background: #f1f5f9; color: #334155;">{{ c.call_outcome|default:c.call_status }}</span></td>
+              <td>{{ c.notes|default:"-" }}</td>
+              <td>
+                {% with rec=c.drive_recordings.first %}
+                  {% if rec %}
+                    <audio controls preload="none" src="{% url 'drive_stream_recording' rec.id %}" style="height: 30px; width: 160px; vertical-align: middle;"></audio>
+                  {% else %}
+                    <span style="color: #94a3b8; font-size: 0.78rem;">No Recording</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; color: #64748b; font-size: 0.875rem;">
+        No call attempts recorded for this lead yet. Use the call dialer above to log incoming or outgoing calls.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- CALL RECORDINGS SECTION -->
+    <!-- ========================================================================= -->
+    <div style="margin-top: 32px;" id="leadCallRecordingsSection">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--ld-text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>
+          Call Recordings ({{ call_recordings|length }})
+        </span>
+      </h3>
+      {% if call_recordings %}
+      <div class="table-responsive" style="border: 1px solid var(--ld-border-subtle); border-radius: 8px; overflow: hidden; background: #fff;">
+        <table class="crm-table" style="font-size: 0.85rem; width: 100%;">
+          <thead>
+            <tr>
+              <th>Recording Date</th>
+              <th>Telecaller</th>
+              <th>Duration</th>
+              <th>Audio Player</th>
+              <th>Match Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in call_recordings %}
+            <tr>
+              <td style="white-space: nowrap;">{{ r.recording_date|default:r.created_at|date:"d M Y, h:i A" }}</td>
+              <td><strong>{{ r.telecaller.get_full_name|default:r.telecaller.username|default:"Telecaller" }}</strong></td>
+              <td><code>{{ r.duration|default:"-" }}</code></td>
+              <td style="min-width: 200px;">
+                <audio controls preload="none" src="{% url 'drive_stream_recording' r.id %}" style="height: 32px; width: 220px; vertical-align: middle;">
+                  Your browser does not support audio playback.
+                </audio>
+              </td>
+              <td>
+                <span class="badge" style="{% if r.match_status == 'MATCHED' %}background: #dcfce7; color: #166534;{% else %}background: #f1f5f9; color: #475569;{% endif %} font-size: 0.75rem;">
+                  {{ r.get_match_status_display|default:r.match_status }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; color: #64748b; font-size: 0.875rem;">
+        No call audio recordings linked to this lead. Recordings uploaded via the CRM Call Sync App or Drive will be listed here automatically.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Toggle Empty Fields Handler
+function toggleEmptyFields() {
+  const container = document.getElementById('leadDetailContainer');
+  const label = document.getElementById('emptyToggleLabel');
+  const chevron = document.getElementById('emptyToggleChevron');
+  
+  if (!container) return;
+  const isHidden = container.classList.toggle('hide-empty-active');
+  
+  if (isHidden) {
+    if (label) label.textContent = 'Show Empty Fields';
+    if (chevron) chevron.textContent = '▼ Show more';
+  } else {
+    if (label) label.textContent = 'Hide Empty Fields';
+    if (chevron) chevron.textContent = '▲ Show less';
+  }
+}
+
+// Lead Status Dropdown via AJAX
+function changeLeadStatusAjax(newStatus) {
+  if (!newStatus) return;
+  const pillLabel = document.getElementById('leadStatusLabel');
+  const leadId = '{{ lead.pk }}';
+  
+  fetch('/leads/api/update-status/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      lead_id: leadId,
+      new_status: newStatus,
+      remarks: 'Updated via Lead Details Interface'
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      if (pillLabel) pillLabel.textContent = newStatus;
+      showToast('Lead status updated to ' + newStatus, 'success');
+    } else {
+      showToast(data.error || 'Failed to update status', 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Status update failed:', err);
+    showToast('Failed to update status', 'error');
+  });
+}
+
+// 5-Star Rating Control
+document.addEventListener('DOMContentLoaded', function() {
+  const stars = document.querySelectorAll('#leadStarRating .star');
+  stars.forEach(star => {
+    star.addEventListener('click', function() {
+      const rating = parseInt(this.getAttribute('data-rating') || '0', 10);
+      stars.forEach(s => {
+        const r = parseInt(s.getAttribute('data-rating') || '0', 10);
+        if (r <= rating) {
+          s.classList.add('filled');
+        } else {
+          s.classList.remove('filled');
+        }
+      });
+      showToast('Lead priority set to ' + rating + ' stars', 'info');
+    });
+  });
+
+  // Check URL query parameters for auto-focused call completion
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('call_completed') === '1' || urlParams.get('call_id')) {
+    const callId = urlParams.get('call_id');
+    const dur = urlParams.get('duration') || '0';
+    focusCallNotesSection(callId, dur);
+  }
+
+  // Delegate clicks on any editable field container
+  document.querySelectorAll('.lead-field-item.is-editable').forEach(function(item) {
+    item.addEventListener('click', function(e) {
+      if (e.target.closest('.lead-inline-editor')) return;
+      const key = this.getAttribute('data-key');
+      if (key && !this.classList.contains('is-editing')) {
+        activateFieldEdit(key);
+      }
+    });
+  });
+
+  // Initialize auto-save on field changes, inputs, and blur
+  initLeadFieldAutoSave();
+});
+
+function focusCallNotesSection(callId, duration) {
+  const section = document.getElementById('callNotesSection');
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const notesInput = document.getElementById('page-call-notes');
+    if (notesInput) {
+      setTimeout(() => notesInput.focus(), 300);
+    }
+  }
+  if (callId) {
+    const cIdInput = document.getElementById('page-call-id');
+    if (cIdInput) cIdInput.value = callId;
+  }
+  if (duration) {
+    const dInput = document.getElementById('page-call-duration');
+    if (dInput) dInput.value = duration;
+    const dBadge = document.getElementById('callDurationBadge');
+    const dVal = document.getElementById('callDurationVal');
+    if (dBadge) dBadge.style.display = 'inline-block';
+    if (dVal) {
+      const s = parseInt(duration, 10) || 0;
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      dVal.textContent = (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+  }
+}
+
+function resetCallNotesForm() {
+  const form = document.getElementById('lead-page-call-form');
+  if (form) form.reset();
+}
+
+function toggleMoreActionsMenu() {
+  const menu = document.getElementById('moreActionsMenu');
+  if (menu) menu.classList.toggle('active');
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.more-actions-wrap');
+  const menu = document.getElementById('moreActionsMenu');
+  if (wrap && menu && !wrap.contains(e.target)) {
+    menu.classList.remove('active');
+  }
+});
+
+function dismissBanner() {
+  const b = document.getElementById('leadNotificationBanner');
+  if (b) b.style.display = 'none';
+}
+
+function requestNotificationPerm() {
+  if ('Notification' in window) {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        showToast('Notifications enabled for lead updates!', 'success');
+        dismissBanner();
+      }
+    });
+  }
+}
+
+// Simple Toast notification helper
+function showToast(msg, type) {
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;font-size:0.875rem;font-weight:600;z-index:9999;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);transition:opacity 0.3s ease;';
+  if (type === 'success') {
+    toast.style.background = '#10b981';
+    toast.style.color = '#ffffff';
+  } else if (type === 'error') {
+    toast.style.background = '#ef4444';
+    toast.style.color = '#ffffff';
+  } else {
+    toast.style.background = '#3b82f6';
+    toast.style.color = '#ffffff';
+  }
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 2800);
+}
+
+// Hook call completion form submit
+const pageCallForm = document.getElementById('lead-page-call-form');
+if (pageCallForm) {
+  pageCallForm.addEventListener('submit', function(e) {
+    const notes = (document.getElementById('page-call-notes').value || '').trim();
+    const errEl = document.getElementById('page-call-notes-error');
+    if (!notes) {
+      e.preventDefault();
+      if (errEl) errEl.style.display = 'block';
+      document.getElementById('page-call-notes').focus();
+      return false;
+    }
+    if (errEl) errEl.style.display = 'none';
+    const btn = document.getElementById('btnSaveLeadCallNotes');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving Call Notes...';
+    }
+  });
+}
+
+// ==========================================
+// AUTOMATIC LEAD FIELD SAVING & EDITING ENGINE
+// ==========================================
+let currentEditingKey = null;
+const fieldDebounceTimers = {};
+const fieldRequestControllers = {};
+const fieldRequestCounters = {};
+const fieldIsSaving = {};
+
+function setFieldStatus(key, state, errorMsg) {
+  const statusEl = document.getElementById(`status-${key}`);
+  const badgeEl = document.getElementById(`status-badge-${key}`);
+  const errEl = document.getElementById(`error-${key}`);
+
+  [statusEl, badgeEl].forEach(el => {
+    if (!el) return;
+    el.className = 'lead-field-status';
+    if (state === 'saving') {
+      el.classList.add('status-saving');
+      el.innerHTML = `<svg class="spin-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> <span>Saving...</span>`;
+      el.style.display = 'inline-flex';
+    } else if (state === 'saved') {
+      el.classList.add('status-saved');
+      el.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Saved</span>`;
+      el.style.display = 'inline-flex';
+      setTimeout(() => {
+        if (el.classList.contains('status-saved')) {
+          el.style.display = 'none';
+          el.classList.remove('status-saved');
+        }
+      }, 2500);
+    } else if (state === 'error') {
+      el.classList.add('status-error');
+      el.innerHTML = `<span>Failed</span>`;
+      el.style.display = 'inline-flex';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+
+  if (errEl) {
+    if (state === 'error' && errorMsg) {
+      errEl.textContent = errorMsg;
+      errEl.style.display = 'block';
+    } else if (state !== 'error') {
+      errEl.style.display = 'none';
+    }
+  }
+}
+
+function closeFieldEditorIfClean(key) {
+  const item = document.querySelector(`.lead-field-item[data-key="${key}"]`);
+  const displayEl = document.getElementById(`display-${key}`);
+  const editorEl = document.getElementById(`editor-${key}`);
+  const errEl = document.getElementById(`error-${key}`);
+
+  // If there is an unresolved error, keep editor visible so user can see and fix
+  if (errEl && errEl.style.display !== 'none') return;
+
+  if (editorEl) editorEl.style.display = 'none';
+  if (displayEl) displayEl.style.display = 'flex';
+  if (item) item.classList.remove('is-editing');
+  if (currentEditingKey === key) currentEditingKey = null;
+}
+
+function activateFieldEdit(key) {
+  const item = document.querySelector(`.lead-field-item[data-key="${key}"]`);
+  if (!item || item.getAttribute('data-editable') !== '1') return;
+
+  // If another field is currently being edited, close or auto-save it
+  if (currentEditingKey && currentEditingKey !== key) {
+    const prevKey = currentEditingKey;
+    const prevItem = document.querySelector(`.lead-field-item[data-key="${prevKey}"]`);
+    const prevInput = document.getElementById(`input-${prevKey}`);
+    if (prevItem && prevInput) {
+      const prevRaw = (prevItem.getAttribute('data-raw') || '').trim();
+      if (prevInput.value.trim() !== prevRaw) {
+        saveFieldAuto(prevKey, true);
+      } else {
+        closeFieldEditorIfClean(prevKey);
+      }
+    }
+  }
+
+  const displayEl = document.getElementById(`display-${key}`);
+  const editorEl = document.getElementById(`editor-${key}`);
+  const inputEl = document.getElementById(`input-${key}`);
+  const errEl = document.getElementById(`error-${key}`);
+
+  if (errEl) errEl.style.display = 'none';
+  if (displayEl) displayEl.style.display = 'none';
+  if (editorEl) editorEl.style.display = 'flex';
+  item.classList.add('is-editing');
+  currentEditingKey = key;
+
+  if (inputEl) {
+    inputEl.focus();
+    if (inputEl.select && inputEl.type !== 'select-one' && inputEl.type !== 'datetime-local' && inputEl.type !== 'date') {
+      inputEl.select();
+    }
+  }
+}
+
+function cancelFieldEdit(key) {
+  const item = document.querySelector(`.lead-field-item[data-key="${key}"]`);
+  const displayEl = document.getElementById(`display-${key}`);
+  const editorEl = document.getElementById(`editor-${key}`);
+  const inputEl = document.getElementById(`input-${key}`);
+  const errEl = document.getElementById(`error-${key}`);
+
+  clearTimeout(fieldDebounceTimers[key]);
+  if (fieldRequestControllers[key]) {
+    fieldRequestControllers[key].abort();
+  }
+
+  if (item && inputEl) {
+    inputEl.value = item.getAttribute('data-raw') || '';
+  }
+  setFieldStatus(key, 'none');
+  if (errEl) errEl.style.display = 'none';
+  if (editorEl) editorEl.style.display = 'none';
+  if (displayEl) displayEl.style.display = 'flex';
+  if (item) item.classList.remove('is-editing');
+  if (currentEditingKey === key) currentEditingKey = null;
+}
+
+function saveFieldAuto(key, closeOnSuccess = false) {
+  const item = document.querySelector(`.lead-field-item[data-key="${key}"]`);
+  const inputEl = document.getElementById(`input-${key}`);
+  const displayEl = document.getElementById(`display-${key}`);
+  const textEl = document.getElementById(`text-${key}`);
+
+  if (!item || !inputEl) return;
+  const newVal = inputEl.value.trim();
+  const currentRaw = (item.getAttribute('data-raw') || '').trim();
+
+  // If value is unchanged, skip network call
+  if (newVal === currentRaw) {
+    if (closeOnSuccess) {
+      closeFieldEditorIfClean(key);
+    }
+    return;
+  }
+
+  // Abort previous in-flight request for this field to avoid race conditions
+  if (fieldRequestControllers[key]) {
+    fieldRequestControllers[key].abort();
+  }
+  const controller = new AbortController();
+  fieldRequestControllers[key] = controller;
+
+  fieldRequestCounters[key] = (fieldRequestCounters[key] || 0) + 1;
+  const requestId = fieldRequestCounters[key];
+  fieldIsSaving[key] = true;
+
+  setFieldStatus(key, 'saving');
+
+  const leadId = '{{ lead.pk }}';
+  const csrf = '{{ csrf_token }}';
+
+  fetch(`/leads/api/${leadId}/update-field/`, {
+    method: 'POST',
+    signal: controller.signal,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      field: key,
+      value: newVal
+    })
+  })
+  .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data: data })))
+  .then(res => {
+    // Stale response check: discard if a newer request was dispatched
+    if (requestId !== fieldRequestCounters[key]) return;
+    fieldIsSaving[key] = false;
+
+    if (!res.ok || !res.data.success) {
+      const msg = (res.data && res.data.error) ? res.data.error : 'Failed to update field.';
+      setFieldStatus(key, 'error', msg);
+      showToast(msg, 'error');
+      // User entered value is preserved in inputEl for correction & retry
+      return;
+    }
+
+    const d = res.data;
+    item.setAttribute('data-raw', d.raw_value || '');
+
+    if (key === 'phone') {
+      if (textEl) textEl.innerHTML = `<span class="lead-phone-flag">🇮🇳</span><span>${d.value}</span>`;
+      const waBtn = document.querySelector('.lead-action-icon-btn.whatsapp-btn');
+      if (waBtn && d.whatsapp_url) waBtn.href = d.whatsapp_url;
+    } else {
+      if (textEl) textEl.innerHTML = `<span>${d.value}</span>`;
+    }
+
+    if (d.is_empty) {
+      item.classList.add('is-empty-field');
+      if (displayEl) displayEl.classList.add('text-empty');
+    } else {
+      item.classList.remove('is-empty-field');
+      if (displayEl) displayEl.classList.remove('text-empty');
+    }
+
+    // Sync header elements if needed
+    if (key === 'status' || key === 'pipeline_substatus') {
+      const pillLabel = document.getElementById('leadStatusLabel');
+      if (pillLabel) pillLabel.textContent = d.value;
+      const selectHidden = document.getElementById('leadStatusSelect');
+      if (selectHidden) selectHidden.value = d.value;
+    } else if (key === 'assignee_name' || key === 'assignee') {
+      const aName = document.querySelector('.lead-assignee-name');
+      const aAvatar = document.querySelector('.lead-assignee-avatar');
+      if (aName) aName.textContent = d.assignee_name;
+      if (aAvatar) aAvatar.textContent = d.assignee_initials;
+    } else if (key === 'name') {
+      const heading = document.getElementById('leadNameDisplay');
+      if (heading) heading.textContent = d.lead_name;
+    }
+
+    // Subtle green flash on field container
+    item.classList.add('field-just-saved');
+    setTimeout(() => item.classList.remove('field-just-saved'), 1200);
+
+    setFieldStatus(key, 'saved');
+
+    // Close editor if requested or if user already navigated away
+    if (closeOnSuccess || document.activeElement !== inputEl) {
+      closeFieldEditorIfClean(key);
+    }
+  })
+  .catch(err => {
+    if (err.name === 'AbortError') return; // Expected when debounce/newer edit supersedes
+    if (requestId !== fieldRequestCounters[key]) return;
+    fieldIsSaving[key] = false;
+    setFieldStatus(key, 'error', 'Network error while saving field.');
+    showToast('Network error while saving field. Please check your connection.', 'error');
+  });
+}
+
+// Backward compatibility alias
+function saveFieldEdit(key) {
+  saveFieldAuto(key, true);
+}
+
+function initLeadFieldAutoSave() {
+  document.querySelectorAll('.lead-field-item.is-editable').forEach(function(item) {
+    const key = item.getAttribute('data-key');
+    const controlType = item.getAttribute('data-control');
+    const input = document.getElementById(`input-${key}`);
+    if (!input || !key) return;
+
+    if (controlType === 'select') {
+      input.addEventListener('change', function() {
+        saveFieldAuto(key, true);
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          cancelFieldEdit(key);
+        }
+      });
+      input.addEventListener('blur', function() {
+        setTimeout(() => {
+          if (!fieldIsSaving[key]) closeFieldEditorIfClean(key);
+        }, 150);
+      });
+    } else if (controlType === 'date' || controlType === 'datetime') {
+      input.addEventListener('change', function() {
+        saveFieldAuto(key, true);
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          cancelFieldEdit(key);
+        }
+      });
+      input.addEventListener('blur', function() {
+        setTimeout(() => {
+          if (!fieldIsSaving[key]) closeFieldEditorIfClean(key);
+        }, 150);
+      });
+    } else {
+      // Text, phone, email, number inputs
+      input.addEventListener('input', function() {
+        clearTimeout(fieldDebounceTimers[key]);
+        const currentRaw = (item.getAttribute('data-raw') || '').trim();
+        const newVal = input.value.trim();
+        if (newVal !== currentRaw) {
+          fieldDebounceTimers[key] = setTimeout(() => {
+            saveFieldAuto(key, false);
+          }, 600);
+        }
+      });
+
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(fieldDebounceTimers[key]);
+          saveFieldAuto(key, true);
+          input.blur();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          clearTimeout(fieldDebounceTimers[key]);
+          cancelFieldEdit(key);
+        }
+      });
+
+      input.addEventListener('blur', function() {
+        clearTimeout(fieldDebounceTimers[key]);
+        const currentRaw = (item.getAttribute('data-raw') || '').trim();
+        const newVal = input.value.trim();
+        if (newVal !== currentRaw) {
+          saveFieldAuto(key, true);
+        } else {
+          closeFieldEditorIfClean(key);
+        }
+      });
+    }
+  });
+
+  // Header Lead Name auto-save initialization
+  const nameInput = document.getElementById('input-lead-name');
+  if (nameInput) {
+    nameInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveNameEdit();
+        nameInput.blur();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelNameEdit();
+      }
+    });
+    nameInput.addEventListener('blur', function() {
+      saveNameEdit();
+    });
+  }
+}
+
+// Header Name Inline Editing
+function activateNameEdit() {
+  const display = document.getElementById('leadNameDisplay');
+  const editBtn = document.getElementById('leadNameEditBtn');
+  const editor = document.getElementById('leadNameEditor');
+  const input = document.getElementById('input-lead-name');
+  if (display) display.style.display = 'none';
+  if (editBtn) editBtn.style.display = 'none';
+  if (editor) editor.style.display = 'inline-flex';
+  if (input) {
+    input.focus();
+    input.select();
+  }
+}
+
+function cancelNameEdit() {
+  const display = document.getElementById('leadNameDisplay');
+  const editBtn = document.getElementById('leadNameEditBtn');
+  const editor = document.getElementById('leadNameEditor');
+  const input = document.getElementById('input-lead-name');
+  const statusEl = document.getElementById('status-lead-name');
+  if (display) {
+    display.style.display = 'block';
+    if (input) input.value = display.textContent.trim();
+  }
+  if (statusEl) statusEl.style.display = 'none';
+  if (editBtn) editBtn.style.display = 'inline-flex';
+  if (editor) editor.style.display = 'none';
+}
+
+function saveNameEdit() {
+  const input = document.getElementById('input-lead-name');
+  const display = document.getElementById('leadNameDisplay');
+  const statusEl = document.getElementById('status-lead-name');
+  if (!input || !display) return;
+  const currentName = display.textContent.trim();
+  const val = input.value.trim();
+
+  if (!val) {
+    showToast('Lead name cannot be empty', 'error');
+    input.value = currentName;
+    cancelNameEdit();
+    return;
+  }
+
+  if (val === currentName) {
+    cancelNameEdit();
+    return;
+  }
+
+  if (statusEl) {
+    statusEl.className = 'lead-field-status status-saving';
+    statusEl.innerHTML = `<svg class="spin-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> <span>Saving...</span>`;
+    statusEl.style.display = 'inline-flex';
+  }
+
+  fetch(`/leads/api/{{ lead.pk }}/update-field/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({ field: 'name', value: val })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      display.textContent = d.lead_name;
+      if (statusEl) {
+        statusEl.className = 'lead-field-status status-saved';
+        statusEl.innerHTML = `✓ Saved`;
+        setTimeout(() => {
+          if (statusEl) statusEl.style.display = 'none';
+        }, 2000);
+      }
+      cancelNameEdit();
+    } else {
+      if (statusEl) {
+        statusEl.className = 'lead-field-status status-error';
+        statusEl.innerHTML = `Failed`;
+      }
+      showToast(d.error || 'Failed to update name', 'error');
+    }
+  })
+  .catch(() => {
+    if (statusEl) {
+      statusEl.className = 'lead-field-status status-error';
+      statusEl.innerHTML = `Failed`;
+    }
+    showToast('Error saving lead name', 'error');
+  });
+}
+
+// ==========================================
+// TELECALLER WHATSAPP MESSAGING (REQ 15)
+// ==========================================
+const waTemplates = {
+  welcome: "Hello {{ lead.name }}, welcome to TECHPANDA! Thank you for inquiring about our programs. How can we assist you with your career goals today?",
+  followup: "Hi {{ lead.name }}, following up on our previous conversation regarding your course inquiry at TECHPANDA. Are you available for a brief discussion today?",
+  course_details: "Hello {{ lead.name }}, here are the comprehensive details for our training & placement programs at TECHPANDA. We offer industry-standard curriculum and hands-on projects.",
+  brochure: "Hi {{ lead.name }}, please find our latest course catalog and syllabus overview. Feel free to reply here if you have any questions!",
+  custom: ""
+};
+
+function openWhatsAppModal() {
+  const modal = document.getElementById('telecallerWhatsAppModal');
+  if (modal) modal.style.display = 'flex';
+  selectWaTemplate('welcome');
+}
+
+function closeWhatsAppModal() {
+  const modal = document.getElementById('telecallerWhatsAppModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function selectWaTemplate(key) {
+  document.querySelectorAll('.wa-tpl-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-tpl-' + key);
+  if (btn) btn.classList.add('active');
+
+  const ta = document.getElementById('whatsappMessageBody');
+  if (ta) {
+    if (key === 'custom') {
+      ta.value = '';
+      ta.placeholder = 'Type your custom WhatsApp message here...';
+    } else {
+      ta.value = waTemplates[key] || '';
+    }
+    ta.dataset.templateKey = key;
+  }
+}
+
+function getNormalizedWhatsAppPhone() {
+  let rawPhone = '{{ lead.phone|default:""|escapejs }}';
+  if (!rawPhone) {
+    const rawAttr = document.querySelector('.lead-field-item[data-key="phone"]');
+    if (rawAttr) rawPhone = rawAttr.getAttribute('data-raw') || '';
+  }
+  let digits = rawPhone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10) {
+    digits = '91' + digits;
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    digits = '91' + digits.substring(1);
+  }
+  return digits;
+}
+
+function sendTelecallerWhatsApp() {
+  const ta = document.getElementById('whatsappMessageBody');
+  const sendBtn = document.getElementById('btnSendWa');
+  const text = ta ? ta.value.trim() : '';
+  const templateKey = ta ? (ta.dataset.templateKey || 'custom') : 'custom';
+
+  if (!text) {
+    showToast('Please enter or select a message to send.', 'error');
+    if (ta) ta.focus();
+    return;
+  }
+
+  const cleanPhone = getNormalizedWhatsAppPhone();
+  if (!cleanPhone || cleanPhone.length < 10) {
+    showToast('Cannot open WhatsApp: Lead phone number is missing or invalid.', 'error');
+    return;
+  }
+
+  // Prevent multiple clicks while redirecting
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = `<span>Opening WhatsApp...</span>`;
+  }
+
+  // Construct standard click-to-chat URL with properly encoded message
+  const waUrl = 'https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(text);
+
+  // Directly open WhatsApp in a new tab with prefilled recipient and message
+  const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
+  if (!waWindow) {
+    window.location.href = waUrl;
+  }
+
+  // Log communication asynchronously in CRM conversation history & activity log
+  fetch('/chat/api/leads/{{ lead.pk }}/send-whatsapp/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      template_key: templateKey,
+      message_text: text
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    // Communication logged in background
+  })
+  .catch(err => console.warn('Background WhatsApp logging:', err));
+
+  showToast('WhatsApp opened in a new tab. Please click Send inside WhatsApp.', 'success');
+  closeWhatsAppModal();
+
+  setTimeout(() => {
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
+        <span>Open WhatsApp &amp; Send</span>
+      `;
+    }
+  }, 1000);
+}
+
+// ==========================================
+// WHATSAPP VOICE CALLING CAPABILITY (REQ 3)
+// ==========================================
+function openWhatsAppVoiceModal() {
+  const modal = document.getElementById('whatsappVoiceModal');
+  if (modal) modal.style.display = 'flex';
+
+  fetch('/chat/api/leads/{{ lead.pk }}/voice-capability/')
+    .then(r => r.json())
+    .then(d => {
+      const statusEl = document.getElementById('waVoiceStatusText');
+      if (statusEl) {
+        if (d.is_configured) {
+          statusEl.innerHTML = '<span style="color: #16a34a; font-weight: 700;">● Active (Meta Cloud Calling / SIP Gateway)</span>';
+        } else {
+          statusEl.innerHTML = '<span style="color: #ea580c; font-weight: 700;">● VoIP Prerequisites Pending (SIP Trunk / WABA Voice Setup Required)</span>';
+        }
+      }
+    })
+    .catch(() => {});
+}
+
+function closeWhatsAppVoiceModal() {
+  const modal = document.getElementById('whatsappVoiceModal');
+  if (modal) modal.style.display = 'none';
+}
+</script>
+
+<!-- TELECALLER WHATSAPP COMPOSER MODAL (REQ 15) -->
+<div id="telecallerWhatsAppModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 560px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
+    <div style="padding: 16px 20px; background: #25D366; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Send WhatsApp Message</h3>
+      </div>
+      <button type="button" onclick="closeWhatsAppModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <div style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.85rem; color: #64748b;">
+        <div>Recipient: <strong style="color: #0f172a;">{{ lead.name }}</strong> ({{ lead.phone }})</div>
+        <span class="badge" style="background: #e2e8f0; color: #334155;">{{ lead.branch.name|default:"General" }}</span>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #475569; display: block; margin-bottom: 6px;">Select Template</label>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" id="btn-tpl-welcome" class="btn btn-secondary wa-tpl-btn active" style="font-size: 0.75rem; padding: 4px 8px;" onclick="selectWaTemplate('welcome')">Welcome</button>
+          <button type="button" id="btn-tpl-followup" class="btn btn-secondary wa-tpl-btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="selectWaTemplate('followup')">Follow-up</button>
+          <button type="button" id="btn-tpl-course_details" class="btn btn-secondary wa-tpl-btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="selectWaTemplate('course_details')">Course Details</button>
+          <button type="button" id="btn-tpl-brochure" class="btn btn-secondary wa-tpl-btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="selectWaTemplate('brochure')">Brochure</button>
+          <button type="button" id="btn-tpl-custom" class="btn btn-secondary wa-tpl-btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="selectWaTemplate('custom')">Custom Compose</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #475569; display: block; margin-bottom: 6px;">Message Content</label>
+        <textarea id="whatsappMessageBody" class="form-control" rows="5" style="width: 100%; font-size: 0.9rem; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">Cancel</button>
+        <button type="button" id="btnSendWa" class="btn btn-primary" style="background: #25D366; border-color: #25D366; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(37,211,102,0.25);" onclick="sendTelecallerWhatsApp()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
+          <span>Open WhatsApp &amp; Send</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHATSAPP VOICE CALLING CAPABILITY MODAL (REQ 3) -->
+<div id="whatsappVoiceModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 520px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
+    <div style="padding: 16px 20px; background: #0f172a; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">WhatsApp Voice Calling Capability</h3>
+      </div>
+      <button type="button" onclick="closeWhatsAppVoiceModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <div style="padding: 20px;">
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 4px;">Calling Capability Status</div>
+        <div id="waVoiceStatusText" style="font-size: 0.95rem;">Checking status...</div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.825rem; color: #475569;">
+        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">Meta WhatsApp Calling Architecture Prerequisites:</strong>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+          <li>Meta Business App "WhatsApp Business Calling" permission</li>
+          <li>Registered WABA phone number with 2-way Voice enabled</li>
+          <li>SIP Trunk / WebRTC Voice Gateway (e.g. Twilio or Asterisk)</li>
+          <li>Inbound &amp; Outbound Calling rules assigned in WhatsApp Manager</li>
+        </ul>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+        <a href="tel:{{ lead.phone }}" class="btn btn-primary" style="font-size: 0.85rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          Direct Phone Dial
+        </a>
+        {% if whatsapp_phone %}
+        <a href="https://wa.me/{{ whatsapp_phone }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.85rem; color: #16a34a;">
+          Open WhatsApp Web
+        </a>
+        {% endif %}
+        <button type="button" class="btn btn-secondary" onclick="closeWhatsAppVoiceModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

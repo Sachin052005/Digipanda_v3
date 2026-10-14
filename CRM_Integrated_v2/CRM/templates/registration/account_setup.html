@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Set Up Password & Activate Account - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;">
+  <div style="width: 100%; max-width: 480px; background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 16px; padding: 36px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);">
+    
+    <!-- BRAND / WELCOME HEADER -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 12px; background: rgba(2, 132, 199, 0.1); color: #0284c7; margin-bottom: 14px;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      </div>
+      <h2 style="font-size: 1.45rem; font-weight: 800; color: var(--text-main, #0f172a); margin: 0 0 6px 0; letter-spacing: -0.01em;">
+        Set Up Your Password
+      </h2>
+      <p style="color: var(--text-muted, #64748b); font-size: 0.88rem; margin: 0;">
+        Activate your CRM account and choose your secure password
+      </p>
+    </div>
+
+    <!-- MEMBER ONBOARDING DETAILS CARD -->
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 18px; margin-bottom: 24px;">
+      <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em; margin-bottom: 8px;">
+        Assigned Account Credentials
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 0.85rem; color: #64748b;">Member:</span>
+        <strong style="font-size: 0.9rem; color: #0f172a;">{{ target_user.get_full_name|default:target_user.username }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 0.85rem; color: #64748b;">Login ID:</span>
+        <code style="font-size: 0.95rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;">{{ target_user.username }}</code>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 0.85rem; color: #64748b;">Role:</span>
+        <span style="font-size: 0.85rem; font-weight: 600; color: #334155;">{{ target_user.display_role }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.85rem; color: #64748b;">Branch:</span>
+        <span style="font-size: 0.85rem; font-weight: 600; color: #334155;">{{ target_user.branch.name|default:"All Branches / Central" }}</span>
+      </div>
+    </div>
+
+    <!-- FORM -->
+    <form method="POST">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.85rem;">
+        {{ form.non_field_errors.0 }}
+      </div>
+      {% endif %}
+
+      <div class="form-group" style="margin-bottom: 18px;">
+        <label class="form-label" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-main, #0f172a);">
+          New Password <span class="required" style="color: #ef4444;">*</span>
+        </label>
+        {{ form.new_password1 }}
+        {% if form.new_password1.errors %}
+        <div style="color: #ef4444; font-size: 0.8rem; margin-top: 4px;">{{ form.new_password1.errors.0 }}</div>
+        {% endif %}
+        {% if form.new_password1.help_text %}
+        <div style="font-size: 0.75rem; color: var(--text-muted, #64748b); margin-top: 4px; line-height: 1.4;">
+          {{ form.new_password1.help_text|safe }}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-group" style="margin-bottom: 22px;">
+        <label class="form-label" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-main, #0f172a);">
+          Confirm New Password <span class="required" style="color: #ef4444;">*</span>
+        </label>
+        {{ form.new_password2 }}
+        {% if form.new_password2.errors %}
+        <div style="color: #ef4444; font-size: 0.8rem; margin-top: 4px;">{{ form.new_password2.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 700; font-size: 0.95rem; border-radius: 8px;">
+        Set Password & Activate Account
+      </button>
+
+      <div style="text-align: center; margin-top: 18px;">
+        <a href="{% url 'login' %}" style="font-size: 0.85rem; color: #64748b; text-decoration: none;">
+          Already have an active account? Sign in
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

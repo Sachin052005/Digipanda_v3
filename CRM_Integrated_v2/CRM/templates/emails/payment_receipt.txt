@@ -1,0 +1,46 @@
+Payment Receipt — {{ enrollment_number }} — {{ transaction_reference|default:receipt_number }}
+
+Dear {{ student_name }},
+
+We have received and verified your payment. Here is your official fee receipt:
+
+RECEIPT SUMMARY:
+- Receipt Number: {{ receipt_number }}
+- Payment Date: {{ payment_date|date:"d M Y, h:i A"|default:payment_date }}
+- Amount Received: ₹{{ amount_received|floatformat:2 }}
+- Payment Method: {{ payment_method }}
+- Transaction Reference: {{ transaction_reference|default:"N/A" }}
+
+STUDENT & ACADEMIC INFORMATION:
+- Student Name: {{ student_name }}
+- Student ID: {{ student_id }}
+- Enrollment Number: {{ enrollment_number }}
+- Course / Program: {{ course_name }}
+- Branch / Campus: {{ branch_name|default:"Main Campus" }}
+
+FINANCIAL LEDGER & BALANCES:
+- Total Course Fee: ₹{{ total_course_fee|floatformat:2 }}
+- Previously Paid Amount: ₹{{ previously_paid|floatformat:2 }}
+- Current Paid Amount: ₹{{ amount_received|floatformat:2 }}
+- Total Paid to Date: ₹{{ total_paid_to_date|floatformat:2 }}
+- Outstanding Balance: ₹{{ outstanding_balance|floatformat:2 }}
+{% if next_installment_due_date %}- Next Installment Due Date: {{ next_installment_due_date|date:"d M Y"|default:next_installment_due_date }}{% endif %}
+
+GST ACCOUNTING BREAKDOWN:
+- Treatment: {{ gst_treatment|default:"Exclusive of GST" }}
+- Taxable Course Fee: ₹{{ taxable_amount|floatformat:2 }}
+- GST Component: ₹{{ tax_amount|floatformat:2 }} ({{ tax_rate }}% GST)
+- Total Payable: ₹{{ total_course_fee|floatformat:2 }}
+
+ONLINE VERIFICATION & AUDIT:
+An official PDF copy of this receipt is attached to this email.
+{% if verification_url %}You can also verify and view this receipt online at:
+{{ verification_url }}{% endif %}
+
+This is an official system-generated electronic receipt issued by {{ company_name|default:"TECHPANDA" }}. No signature is required.
+
+Regards,
+{{ company_name|default:"TECHPANDA" }} Finance & Accounts Department
+Branch: {{ branch_name|default:"Main Campus" }}
+Support: support@techpanda.in | +91 98765 43210
+Website: https://www.techpanda.in

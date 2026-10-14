@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Add Receptionist - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px;">
+  <div class="page-title-group">
+    <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">ADD RECEPTIONIST</h1>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Create a front-desk receptionist account and assign them to a center branch.
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'admin_receptionists_list' %}" class="btn btn-secondary">Back to Receptionists</a>
+  </div>
+</div>
+
+<div style="max-width: 680px;">
+  <div class="table-card" style="padding: 24px;">
+    <form method="POST">
+      {% csrf_token %}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-group">
+          <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 6px;">First Name *</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Last Name *</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">{{ form.last_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 0;">Username / Login ID</label>
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.72rem; font-weight: 600;">Auto-generated</span>
+          </div>
+          {{ form.username }}
+          {% if form.username.errors %}<div style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">{{ form.username.errors.0 }}</div>{% endif %}
+          <div id="username-preview-hint" style="color: #64748b; font-size: 0.775rem; margin-top: 4px;">Generated automatically from First &amp; Last Name</div>
+        </div>
+        <div class="form-group">
+          <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Assigned Branch *</label>
+          {{ form.branch }}
+          {% if form.branch.errors %}<div style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">{{ form.branch.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-group">
+          <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Email Address *</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">{{ form.email.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+          <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Mobile Phone</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">{{ form.phone.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- SECURE ONBOARDING INFO -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+        <div style="color: #0284c7; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <div style="font-size: 0.825rem; color: #475569; line-height: 1.45;">
+          <strong>Automated Welcome Email:</strong> An onboarding email containing their login username and single-use link to create their password will be dispatched automatically upon creation.
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 24px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #334155;">
+          {{ form.is_active }} Active Account
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <a href="{% url 'admin_receptionists_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="font-weight: 600;">Create Receptionist &amp; Send Invitation</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  const firstNameInput = document.getElementById('id_first_name');
+  const lastNameInput = document.getElementById('id_last_name');
+  const emailInput = document.getElementById('id_email');
+  const usernameInput = document.getElementById('id_username');
+  const hintEl = document.getElementById('username-preview-hint');
+
+  let debounceTimer = null;
+
+  function fetchUsernamePreview() {
+    const fn = (firstNameInput ? firstNameInput.value : '').trim();
+    const ln = (lastNameInput ? lastNameInput.value : '').trim();
+    const em = (emailInput ? emailInput.value : '').trim();
+
+    if (!fn && !ln && !em) {
+      if (usernameInput) usernameInput.value = '';
+      if (hintEl) hintEl.textContent = 'Generated automatically from First & Last Name';
+      return;
+    }
+
+    const url = `/accounts/api/username-preview/?first_name=${encodeURIComponent(fn)}&last_name=${encodeURIComponent(ln)}&role=RECEPTIONIST&email=${encodeURIComponent(em)}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.username) {
+          if (usernameInput) usernameInput.value = data.username;
+          if (hintEl) {
+            if (data.is_collision) {
+              hintEl.textContent = `Unique username generated (collision resolved with suffix '${data.username}')`;
+              hintEl.style.color = '#d97706';
+            } else {
+              hintEl.textContent = `Available login ID: ${data.username}`;
+              hintEl.style.color = '#059669';
+            }
+          }
+        }
+      })
+      .catch(err => console.debug('Preview fetch error:', err));
+  }
+
+  function handleInputChange() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fetchUsernamePreview, 250);
+  }
+
+  if (firstNameInput) firstNameInput.addEventListener('input', handleInputChange);
+  if (lastNameInput) lastNameInput.addEventListener('input', handleInputChange);
+  if (emailInput) emailInput.addEventListener('input', handleInputChange);
+
+  if ((firstNameInput && firstNameInput.value) || (lastNameInput && lastNameInput.value)) {
+    fetchUsernamePreview();
+  }
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0 0 6px 0;">Organization Overview</h1>
+    <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 0;">Real-time analytics and management control center for TECHPANDA CRM</p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <button type="button" class="btn btn-warning btn-sm tp-btn-warning tp-btn-sm" id="btn-trigger-sla-escalation" style="font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+      <span>⚡ Enforce SLAs Now</span>
+    </button>
+    <a href="{% url 'admin_enrolled_students' %}" class="btn btn-primary btn-sm tp-btn-primary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 5px;">
+      <span>🎓 Enrolled Students</span>
+    </a>
+    <a href="{% url 'admin_lead_create' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">
+      + Add Lead
+    </a>
+  </div>
+</div>
+
+<!-- Admin Dashboard Filters (Section 15) -->
+<div class="filter-card tp-card" style="padding: 16px 20px; margin-bottom: 24px;">
+  <!-- Preset Period Buttons -->
+  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--tp-surface-border, #e5e7eb);">
+    <span style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-right: 4px;">Quick Period:</span>
+    <a href="?period=all" class="btn {% if period == 'all' or not period and not from_date and not to_date %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">All Time</a>
+    <a href="?period=today" class="btn {% if period == 'today' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">Today</a>
+    <a href="?period=week" class="btn {% if period == 'week' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Week</a>
+    <a href="?period=month" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Month</a>
+  </div>
+
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <div class="filter-col" style="flex: 1; min-width: 130px;">
+      <label class="tp-label">From Date</label>
+      <input type="date" name="from_date" class="form-control tp-input" value="{{ from_date }}">
+    </div>
+    <div class="filter-col" style="flex: 1; min-width: 130px;">
+      <label class="tp-label">To Date</label>
+      <input type="date" name="to_date" class="form-control tp-input" value="{{ to_date }}">
+    </div>
+    <div class="filter-col" style="flex: 1; min-width: 140px;">
+      <label class="tp-label">Sales Head</label>
+      <select name="manager" class="form-select tp-select">
+        <option value="">All Sales Heads</option>
+        {% for m in managers %}
+        <option value="{{ m.id }}" {% if manager_filter == m.id|stringformat:"i" %}selected{% endif %}>{{ m.get_full_name|default:m.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1; min-width: 140px;">
+      <label class="tp-label">Telecaller</label>
+      <select name="telecaller" class="form-select tp-select">
+        <option value="">All Telecallers</option>
+        {% for t in telecallers %}
+        <option value="{{ t.id }}" {% if telecaller_filter == t.id|stringformat:"i" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1; min-width: 130px;">
+      <label class="tp-label">Branch</label>
+      <select name="branch" class="form-select tp-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1; min-width: 130px;">
+      <label class="tp-label">Channel</label>
+      <select name="channel" class="form-select tp-select">
+        <option value="">All Channels</option>
+        {% for c in channels %}
+        <option value="{{ c.id }}" {% if channel_filter == c.id|stringformat:"i" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1; min-width: 130px;">
+      <label class="tp-label">Status</label>
+      <select name="status" class="form-select tp-select">
+        <option value="">All Statuses</option>
+        {% for code, label in statuses %}
+        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary tp-btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- SECTION 1: High-Velocity Operational Metrics -->
+<div style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+      Operational Velocity & Workload
+    </h3>
+    <span style="font-size: 0.8rem; color: var(--tp-text-muted);">Real-time pipeline pulse</span>
+  </div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+    <a href="{% url 'admin_leads_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all leads">
+      <div class="kpi-info">
+        <h4>Total Inbound Leads</h4>
+        <div class="kpi-value" style="color: var(--tp-primary-600);">{{ total_leads }}</div>
+      </div>
+      <div class="kpi-icon-wrap blue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_leads_list' %}?status=New" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view new leads">
+      <div class="kpi-info">
+        <h4>New Unhandled Leads</h4>
+        <div class="kpi-value" style="color: #2563eb;">{{ new_leads }}</div>
+      </div>
+      <div class="kpi-icon-wrap blue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_leads_list' %}?status=active" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view active leads">
+      <div class="kpi-info">
+        <h4>Active Pipeline Leads</h4>
+        <div class="kpi-value" style="color: #10b981;">{{ active_leads }}</div>
+      </div>
+      <div class="kpi-icon-wrap green">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_followups_list' %}?status=overdue" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; border-left: 4px solid #ef4444;" title="Click to view overdue follow-ups">
+      <div class="kpi-info">
+        <h4>Overdue Follow-ups</h4>
+        <div class="kpi-value" style="color: #ef4444; font-weight: 800;">{{ overdue_followups }}</div>
+      </div>
+      <div class="kpi-icon-wrap rose">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_calls_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all calls">
+      <div class="kpi-info">
+        <h4>Total Calls Made</h4>
+        <div class="kpi-value" style="color: #0284c7;">{{ total_calls }}</div>
+      </div>
+      <div class="kpi-icon-wrap blue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_followups_list' %}?status=pending" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view pending follow-ups">
+      <div class="kpi-info">
+        <h4>Pending Follow-ups</h4>
+        <div class="kpi-value" style="color: #f59e0b;">{{ pending_followups }}</div>
+      </div>
+      <div class="kpi-icon-wrap amber">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_calls_list' %}?status=Completed" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view completed calls">
+      <div class="kpi-info">
+        <h4>Completed Calls</h4>
+        <div class="kpi-value" style="color: #10b981;">{{ completed_calls }}</div>
+      </div>
+      <div class="kpi-icon-wrap green">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- SECTION: Admissions, Revenue & Fee Collections -->
+<div style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+      Admissions, Revenue &amp; Fee Collections
+    </h3>
+    <a href="{% url 'admin_enrolled_students' %}" style="font-size: 0.85rem; font-weight: 600; color: #0284c7; text-decoration: none;">View All Students &rarr;</a>
+  </div>
+  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
+    <a href="{% url 'admin_enrolled_students' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view enrolled students">
+      <div class="kpi-info">
+        <h4>Enrolled Students</h4>
+        <div class="kpi-value" style="color: #0f172a;">{{ total_enrolled }}</div>
+      </div>
+      <div class="kpi-icon-wrap blue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_enrolled_students' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view total contracted revenue">
+      <div class="kpi-info">
+        <h4>Total Revenue</h4>
+        <div class="kpi-value" style="color: #0f172a;">₹{{ total_revenue|floatformat:2 }}</div>
+      </div>
+      <div class="kpi-icon-wrap blue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_enrolled_students' %}?payment_status=Fully+Paid" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view verified collections">
+      <div class="kpi-info">
+        <h4>Total Collections</h4>
+        <div class="kpi-value" style="color: #059669;">₹{{ total_collections|floatformat:2 }}</div>
+      </div>
+      <div class="kpi-icon-wrap green">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_enrolled_students' %}?payment_status=Partially+Paid" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view outstanding balance">
+      <div class="kpi-info">
+        <h4>Outstanding Balance</h4>
+        <div class="kpi-value" style="color: #d97706;">₹{{ total_outstanding|floatformat:2 }}</div>
+      </div>
+      <div class="kpi-icon-wrap amber">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </div>
+    </a>
+
+    <a href="{% url 'admin_enrolled_students' %}?payment_status=Overdue" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; border-left: 4px solid #ef4444;" title="Click to view overdue installments">
+      <div class="kpi-info">
+        <h4>Overdue Installments</h4>
+        <div class="kpi-value" style="color: #dc2626;">{{ total_overdue_installments }}</div>
+      </div>
+      <div class="kpi-icon-wrap rose">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon></svg>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- SECTION 2: Visual Pipeline & Telecaller Performance Charts -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-bottom: 24px;">
+  <!-- Pipeline Status Distribution Chart -->
+  <div class="tp-card" style="padding: 20px; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-lg);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">Lead Pipeline Distribution</h4>
+        <p style="font-size: 0.8rem; color: var(--tp-text-muted); margin: 0;">Breakdown by operational lead stages</p>
+      </div>
+      <a href="{% url 'leads_kanban' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm" style="font-size: 0.8rem;">View Kanban</a>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="adminStatusChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Telecaller Activity & RNR Chart -->
+  <div class="tp-card" style="padding: 20px; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-lg);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">Telecaller Call Outcomes</h4>
+        <p style="font-size: 0.8rem; color: var(--tp-text-muted); margin: 0;">Connected vs. Ringing No Response (RNR)</p>
+      </div>
+      <a href="{% url 'telecaller_rnr_report' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm" style="font-size: 0.8rem;">Full Report</a>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="adminTelecallerChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 3: Organization & Team Headcount Strip -->
+<div class="tp-card" style="padding: 16px 20px; margin-bottom: 24px; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-lg);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--tp-surface-border);">
+    <div style="font-size: 0.85rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Team & Branch Headcounts</div>
+    <span style="font-size: 0.8rem; color: var(--tp-text-muted);">Capacity snapshot</span>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; text-align: center;">
+    <a href="{% url 'admin_branches_list' %}" style="text-decoration: none; padding: 10px; border-radius: 8px; background: var(--tp-surface-bg); border: 1px solid var(--tp-surface-border); display: block;" title="Branches">
+      <div style="font-size: 1.4rem; font-weight: 800; color: #059669;">{{ total_branches }}</div>
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; margin-top: 2px;">Branches</div>
+    </a>
+    <a href="{% url 'admin_managers_list' %}" style="text-decoration: none; padding: 10px; border-radius: 8px; background: var(--tp-surface-bg); border: 1px solid var(--tp-surface-border); display: block;" title="Sales Heads">
+      <div style="font-size: 1.4rem; font-weight: 800; color: #8b5cf6;">{{ total_managers }}</div>
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; margin-top: 2px;">Sales Heads</div>
+    </a>
+    <a href="{% url 'admin_branch_heads_list' %}" style="text-decoration: none; padding: 10px; border-radius: 8px; background: var(--tp-surface-bg); border: 1px solid var(--tp-surface-border); display: block;" title="Branch Heads">
+      <div style="font-size: 1.4rem; font-weight: 800; color: #d97706;">{{ total_branch_heads }}</div>
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; margin-top: 2px;">Branch Heads</div>
+    </a>
+    <a href="{% url 'admin_counselors_list' %}" style="text-decoration: none; padding: 10px; border-radius: 8px; background: var(--tp-surface-bg); border: 1px solid var(--tp-surface-border); display: block;" title="Counselors">
+      <div style="font-size: 1.4rem; font-weight: 800; color: #ec4899;">{{ total_counselors }}</div>
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; margin-top: 2px;">Counselors</div>
+    </a>
+    <a href="{% url 'admin_telecallers_list' %}" style="text-decoration: none; padding: 10px; border-radius: 8px; background: var(--tp-surface-bg); border: 1px solid var(--tp-surface-border); display: block;" title="Telecallers">
+      <div style="font-size: 1.4rem; font-weight: 800; color: #10b981;">{{ total_telecallers }}</div>
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; margin-top: 2px;">Telecallers</div>
+    </a>
+    <a href="{% url 'admin_channels_list' %}" style="text-decoration: none; padding: 10px; border-radius: 8px; background: var(--tp-surface-bg); border: 1px solid var(--tp-surface-border); display: block;" title="Channels">
+      <div style="font-size: 1.4rem; font-weight: 800; color: #0284c7;">{{ total_channels }}</div>
+      <div style="font-size: 0.75rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; margin-top: 2px;">Channels</div>
+    </a>
+  </div>
+</div>
+
+<!-- Performance Tables (Section 15) -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; margin-bottom: 24px;">
+  <!-- Sales Head Performance -->
+  <div class="crm-card tp-card">
+    <div class="crm-card-header tp-card-header">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary);">Sales Head Performance</h3>
+      <a href="{% url 'admin_managers_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">All Sales Heads</a>
+    </div>
+    <div class="table-responsive">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th>Sales Head</th>
+            <th>Leads</th>
+            <th>Calls</th>
+            <th>Follow-ups</th>
+            <th>Converted</th>
+            <th>Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in manager_performance %}
+          <tr>
+            <td><strong><a href="{% url 'admin_manager_detail' m.pk %}">{{ m.get_full_name|default:m.username }}</a></strong></td>
+            <td><span class="badge badge-telecaller">{{ m.lead_count }}</span></td>
+            <td>{{ m.call_count }}</td>
+            <td>{{ m.followup_count }}</td>
+            <td><span class="badge badge-completed">{{ m.converted_count }}</span></td>
+            <td>{% if m.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+            <td style="text-align: right;"><a href="{% url 'admin_manager_detail' m.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 16px;">No manager records available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Telecaller Performance -->
+  <div class="crm-card">
+    <div class="crm-card-header">
+      <h3>Telecaller Performance</h3>
+      <a href="{% url 'admin_telecallers_list' %}" class="btn btn-secondary btn-sm">All Telecallers</a>
+    </div>
+    <div class="table-responsive">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th>Telecaller</th>
+            <th>Sales Head</th>
+            <th>Leads</th>
+            <th>Calls</th>
+            <th>Follow-ups</th>
+            <th>Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in telecaller_performance %}
+          <tr>
+            <td><strong><a href="{% url 'admin_telecaller_detail' t.pk %}">{{ t.get_full_name|default:t.username }}</a></strong></td>
+            <td>{% if t.manager %}{{ t.manager.get_full_name|default:t.manager.username }}{% else %}-{% endif %}</td>
+            <td><span class="badge badge-telecaller">{{ t.lead_count }}</span></td>
+            <td>{{ t.call_count }}</td>
+            <td>{{ t.followup_count }}</td>
+            <td>{% if t.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}</td>
+            <td style="text-align: right;"><a href="{% url 'admin_telecaller_detail' t.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 16px;">No telecaller records available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Leads & Recent Calls -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Recent Leads -->
+  <div class="crm-card">
+    <div class="crm-card-header">
+      <h3>Recent Inquiries & Leads</h3>
+      <a href="{% url 'admin_leads_list' %}" class="btn btn-secondary btn-sm">All Leads</a>
+    </div>
+    <div class="table-responsive">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th>Lead</th>
+            <th>Channel</th>
+            <th>Sales Head</th>
+            <th>Telecaller</th>
+            <th>Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ld in recent_leads %}
+          <tr>
+            <td><strong><a href="{% url 'admin_lead_detail' ld.pk %}">{{ ld.name }}</a></strong></td>
+            <td>{{ ld.channel.name|default:"-" }}</td>
+            <td>{% if ld.assigned_manager %}{{ ld.assigned_manager.get_full_name|default:ld.assigned_manager.username }}{% else %}-{% endif %}</td>
+            <td>{% if ld.assigned_telecaller %}{{ ld.assigned_telecaller.get_full_name|default:ld.assigned_telecaller.username }}{% else %}-{% endif %}</td>
+            <td><span class="badge badge-{{ ld.status|lower|slugify }}">{{ ld.status }}</span></td>
+            <td style="text-align: right;"><a href="{% url 'admin_lead_detail' ld.pk %}" class="btn btn-secondary btn-sm">View</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 16px;">No leads created yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Calls -->
+  <div class="crm-card">
+    <div class="crm-card-header">
+      <h3>Recent Calls</h3>
+      <a href="{% url 'admin_calls_list' %}" class="btn btn-secondary btn-sm">All Calls</a>
+    </div>
+    <div class="table-responsive">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th>Lead</th>
+            <th>Caller</th>
+            <th>Duration</th>
+            <th>Outcome</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in recent_calls %}
+          <tr>
+            <td><strong>{% if c.lead %}{{ c.lead.name }}{% else %}Unknown Lead{% endif %}</strong></td>
+            <td>{% if c.caller %}{{ c.caller.get_full_name|default:c.caller.username }}{% else %}Unknown{% endif %}</td>
+            <td>{{ c.formatted_duration }}</td>
+            <td><span class="badge badge-telecaller">{{ c.call_outcome }}</span></td>
+            <td>{{ c.call_started_at|date:"M d, H:i" }}</td>
+          </tr>
+
+          {% empty %}
+          <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 16px;">No calls logged yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activities Audit -->
+<div class="crm-card">
+  <div class="crm-card-header">
+    <h3>Recent CRM Activities</h3>
+    <a href="{% url 'admin_activities_list' %}" class="btn btn-secondary btn-sm">Full Audit</a>
+  </div>
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Action</th>
+          <th>Description</th>
+          <th>Date/Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in recent_activities %}
+        <tr>
+          <td><strong>{{ a.user.get_full_name|default:a.user.username }}</strong></td>
+          <td><span class="badge {% if a.user.role == 'ADMIN' %}badge-admin{% elif a.user.role == 'SALES_HEAD' %}badge-manager{% else %}badge-telecaller{% endif %}">{{ a.user.role }}</span></td>
+          <td><strong>{{ a.action }}</strong></td>
+          <td>{{ a.description }}</td>
+          <td>{{ a.timestamp|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 16px;">No activities recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 1. SLA Escalation Button Trigger
+  const btn = document.getElementById('btn-trigger-sla-escalation');
+  if (btn) {
+    btn.addEventListener('click', function() {
+      if (!confirm('Run Automated Lead SLA Escalation now?\n\nThis will scan for uncontacted leads (>24h) and untouched leads (>7d) and reassign them via Round-Robin.')) {
+        return;
+      }
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Enforcing SLAs...</span>';
+
+      fetch('{% url "admin_trigger_sla_escalation" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(r => r.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Enforce SLAs Now</span>';
+        if (data.success) {
+          alert('✅ ' + data.message);
+          window.location.reload();
+        } else {
+          alert('❌ ' + (data.error || 'Failed to enforce SLAs.'));
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Enforce SLAs Now</span>';
+        alert('Network error while running SLA escalation.');
+      });
+    });
+  }
+
+  // 2. Fetch and render Management Charts
+  fetch('{% url "management_charts_api" %}')
+    .then(r => r.json())
+    .then(data => {
+      // Palette
+      const palette = [
+        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+        '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'
+      ];
+
+      // Chart 1: Lead Status Distribution (Doughnut)
+      const statusCtx = document.getElementById('adminStatusChart');
+      if (statusCtx && data.status_chart) {
+        new Chart(statusCtx, {
+          type: 'doughnut',
+          data: {
+            labels: data.status_chart.labels.length ? data.status_chart.labels : ['No leads yet'],
+            datasets: [{
+              data: data.status_chart.data.length ? data.status_chart.data : [1],
+              backgroundColor: data.status_chart.data.length ? palette.slice(0, data.status_chart.labels.length) : ['#e2e8f0'],
+              borderWidth: 2,
+              borderColor: '#ffffff',
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 11, family: 'Inter, system-ui, sans-serif' },
+                  color: '#475569'
+                }
+              }
+            },
+            cutout: '68%'
+          }
+        });
+      }
+
+      // Chart 2: Telecaller Connected vs RNR (Bar)
+      const tcCtx = document.getElementById('adminTelecallerChart');
+      if (tcCtx && data.telecaller_chart) {
+        new Chart(tcCtx, {
+          type: 'bar',
+          data: {
+            labels: data.telecaller_chart.labels.length ? data.telecaller_chart.labels : ['No calls recorded'],
+            datasets: [
+              {
+                label: 'Connected Calls',
+                data: data.telecaller_chart.connected.length ? data.telecaller_chart.connected : [0],
+                backgroundColor: '#10b981',
+                borderRadius: 4
+              },
+              {
+                label: 'RNR / Unanswered',
+                data: data.telecaller_chart.rnr.length ? data.telecaller_chart.rnr : [0],
+                backgroundColor: '#ef4444',
+                borderRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 11, family: 'Inter, system-ui, sans-serif' },
+                  color: '#475569'
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 11 } }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: '#f1f5f9' },
+                ticks: { precision: 0 }
+              }
+            }
+          }
+        });
+      }
+    })
+    .catch(err => console.warn('Could not load management charts:', err));
+});
+</script>
+{% endblock %}
+{% endblock %}

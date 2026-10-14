@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Duplicate Leads - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0; letter-spacing: -0.02em;">DUPLICATE LEADS</h1>
+      <span id="groupCountBadge" class="badge" style="background: #fef3c7; color: #b45309; font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 9999px; border: 1px solid #fde68a;">
+        {{ total_duplicate_count|default:total_groups_count|default:0 }} duplicate record{{ total_duplicate_count|default:total_groups_count|pluralize }} found
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; margin-bottom: 0;">
+      Cross-branch 10-day duplicate detection and single lead consolidation engine
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; align-items: center;">
+    <a href="{% url 'admin_offline_leads' %}" class="btn btn-secondary" style="font-weight: 600;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back to Offline Leads
+    </a>
+    <a href="{% url 'admin_leads_list' %}" class="btn btn-outline-secondary" style="font-weight: 600;">
+      All Leads
+    </a>
+  </div>
+</div>
+
+<!-- UNIFIED DUPLICATE LEADS TABLE -->
+{% if duplicate_records %}
+<div class="crm-card" style="margin-bottom: 32px; overflow: hidden; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);">
+  <div class="crm-card-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-card); display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+      Duplicate Lead Submissions
+    </h3>
+    <span style="font-size: 0.85rem; color: var(--text-muted);">
+      Enforcing 10-day cross-branch deduplication rule
+    </span>
+  </div>
+
+  <div class="table-responsive" style="overflow-x: auto;">
+    <table class="crm-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+      <thead>
+        <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          <th style="padding: 12px 16px; font-weight: 700;">Student</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Phone</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Email</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Original Branch</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Duplicate Branch</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Original Submission</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Duplicate Submission</th>
+          <th style="padding: 12px 16px; font-weight: 700; text-align: center;">Days Difference</th>
+          <th style="padding: 12px 16px; font-weight: 700; text-align: center;">Status</th>
+          <th style="padding: 12px 16px; font-weight: 700; text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in duplicate_records %}
+        <tr id="rowRec-{{ rec.id }}" style="border-bottom: 1px solid var(--border-color); transition: background-color 0.15s ease;">
+          <td style="padding: 14px 16px; font-weight: 600; color: var(--text-main);">
+            {{ rec.name }}
+            {% if rec.is_cross_branch_10day %}
+            <span title="Cross-branch submission within 10 days" style="cursor: help; color: #f59e0b; margin-left: 4px;">⚠</span>
+            {% endif %}
+          </td>
+          <td style="padding: 14px 16px; font-family: monospace; color: var(--text-main);">
+            {{ rec.phone }}
+          </td>
+          <td style="padding: 14px 16px; color: var(--text-muted);">
+            {{ rec.email|default:'—' }}
+          </td>
+          <td style="padding: 14px 16px;">
+            <span style="font-weight: 600; color: #1e293b; background: #f1f5f9; padding: 3px 8px; border-radius: var(--radius-sm); font-size: 0.8rem;">
+              {{ rec.original_branch }}
+            </span>
+          </td>
+          <td style="padding: 14px 16px;">
+            <span style="font-weight: 600; color: #b91c1c; background: #fee2e2; padding: 3px 8px; border-radius: var(--radius-sm); font-size: 0.8rem;">
+              {{ rec.duplicate_branch }}
+            </span>
+          </td>
+          <td style="padding: 14px 16px; color: var(--text-muted); font-size: 0.825rem; white-space: nowrap;">
+            {{ rec.original_date }}
+          </td>
+          <td style="padding: 14px 16px; color: var(--text-muted); font-size: 0.825rem; white-space: nowrap;">
+            {{ rec.duplicate_date }}
+          </td>
+          <td style="padding: 14px 16px; text-align: center;">
+            {% if rec.days_difference <= 10.0 %}
+            <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 600; font-size: 0.775rem; padding: 3px 8px; border-radius: 9999px;">
+              {{ rec.days_difference_display }} (&le;10d)
+            </span>
+            {% else %}
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; font-size: 0.775rem; padding: 3px 8px; border-radius: 9999px;">
+              {{ rec.days_difference_display }} (&gt;10d)
+            </span>
+            {% endif %}
+          </td>
+          <td style="padding: 14px 16px; text-align: center;">
+            {% if rec.days_difference <= 10.0 %}
+            <span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 0.775rem; padding: 4px 10px; border-radius: 9999px;">
+              DUPLICATE
+            </span>
+            {% else %}
+            <span class="badge" style="background: #ecfdf5; color: #059669; font-weight: 700; font-size: 0.775rem; padding: 4px 10px; border-radius: 9999px;">
+              RENEWAL
+            </span>
+            {% endif %}
+          </td>
+          <td style="padding: 14px 16px; text-align: right; white-space: nowrap;">
+            <div style="display: inline-flex; align-items: center; gap: 8px;">
+              <a 
+                href="{{ rec.original_lead_url }}" 
+                class="btn btn-sm btn-outline-primary" 
+                id="btnViewOriginal-{{ rec.id }}" 
+                style="padding: 5px 10px; font-size: 0.8rem; font-weight: 600;"
+              >
+                View Original
+              </a>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-primary" 
+                id="btnKeep-{{ rec.id }}" 
+                onclick="keepSingleLead('{{ rec.lead_ids_str }}', '{{ rec.id }}', '{{ rec.name|escapejs }}')" 
+                style="padding: 5px 10px; font-size: 0.8rem; font-weight: 600;"
+              >
+                Keep Single Lead
+              </button>
+            </div>
+            <div id="msgSuccess-{{ rec.id }}" style="display: none; color: #15803d; font-size: 0.775rem; font-weight: 600; margin-top: 4px; text-align: right;">
+              ✓ Consolidated
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<!-- CLEAN EMPTY STATE -->
+<div class="crm-card" style="text-align: center; padding: 56px 24px; background: var(--bg-card); border-radius: var(--radius-md); border: 1px dashed var(--border-color); max-width: 860px; margin: 0 auto;">
+  <div style="width: 56px; height: 56px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+  </div>
+  <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">No Duplicate Lead Records Found</h3>
+  <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 480px; margin: 0 auto 20px;">
+    All lead records across all branches and acquisition sources are currently unique. Real-time duplicate protection is actively running on all connected spreadsheets.
+  </p>
+  <a href="{% url 'admin_offline_leads' %}" class="btn btn-secondary" style="font-weight: 600;">Go to Offline Leads</a>
+</div>
+{% endif %}
+
+<!-- FLOATING TOAST -->
+<div id="statusToast" style="display: none; position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 14px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 2000; font-size: 0.875rem; align-items: center; gap: 12px; border-left: 4px solid #10b981; min-width: 280px; max-width: 420px; animation: slideIn 0.3s ease;">
+  <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex-shrink: 0;"></span>
+    <span id="toastMsg" style="flex: 1; line-height: 1.4;">Notification</span>
+    <button type="button" onclick="document.getElementById('statusToast').style.display='none'" style="background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; line-height: 1;">&times;</button>
+  </div>
+</div>
+
+<style>
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+</style>
+
+<script>
+let toastTimer = null;
+function showToast(message, isError = false) {
+  const toast = document.getElementById('statusToast');
+  const txt = document.getElementById('toastMsg');
+  if (toast && txt) {
+    txt.textContent = message;
+    toast.style.borderLeftColor = isError ? '#ef4444' : '#10b981';
+    toast.style.display = 'flex';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4500);
+  }
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function keepSingleLead(leadIds, elementId, leadName) {
+  const btn = document.getElementById(`btnKeep-${elementId}`);
+  const msgSuccess = document.getElementById(`msgSuccess-${elementId}`);
+  const row = document.getElementById(`rowRec-${elementId}`);
+
+  if (btn) btn.disabled = true;
+
+  fetch("{% url 'admin_duplicate_leads_keep_single' %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: new URLSearchParams({ lead_ids: leadIds })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (btn) btn.disabled = false;
+    if (data.success) {
+      if (btn) {
+        btn.textContent = '✓ Kept Single Lead';
+        btn.className = 'btn btn-sm btn-secondary';
+        btn.disabled = true;
+      }
+      if (msgSuccess) {
+        msgSuccess.style.display = 'block';
+      }
+      if (row) {
+        row.style.backgroundColor = '#f0fdf4';
+      }
+      showToast(data.message || `Consolidated duplicate records! Kept single unique lead for ${leadName}.`);
+    } else {
+      showToast(data.error || 'Failed to consolidate leads.', true);
+    }
+  })
+  .catch(err => {
+    if (btn) btn.disabled = false;
+    showToast('Error: ' + err, true);
+  });
+}
+</script>
+{% endblock %}

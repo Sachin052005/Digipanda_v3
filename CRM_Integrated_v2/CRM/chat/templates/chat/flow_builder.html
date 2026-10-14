@@ -1,0 +1,942 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WhatsApp Flow Builder - No-Code Automation</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'chat/css/flow_builder.css' %}">
+    <script>
+        /* CRM: add the CSRF token to every same-origin save / delete request (needed for logged-in users). */
+        (function () {
+            const token = '{{ csrf_token }}';
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = function (input, init) {
+                init = init || {};
+                const method = (init.method || (input && input.method) || 'GET').toUpperCase();
+                const url = typeof input === 'string' ? input : (input && input.url) || '';
+                const sameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+                if (sameOrigin && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                    const headers = new Headers(init.headers || {});
+                    if (!headers.has('X-CSRFToken')) headers.set('X-CSRFToken', token);
+                    init.headers = headers;
+                }
+                return originalFetch(input, init);
+            };
+        })();
+    </script>
+</head>
+<body>
+    <div class="builder-app">
+        <!-- Top Navigation Header -->
+        <header class="builder-header">
+            <div class="header-left">
+                <a href="{% url 'automation-list' %}" class="btn-back" title="Back to Automations Dashboard">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Automations</span>
+                </a>
+                <div class="header-divider"></div>
+                <div class="builder-brand">
+                    <div class="brand-icon">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                    </div>
+                    <div class="brand-meta">
+                        <div class="brand-title-wrap">
+                            <h1 class="flow-name" id="flowNameDisplay" contenteditable="true" spellcheck="false" title="Click to rename flow">Admissions & Training Flow</h1>
+                            <span class="version-tag" id="flowVersionTag">v1</span>
+                            <span class="status-badge status-draft" id="flowStatusBadge">Draft</span>
+                        </div>
+                        <div class="save-status-wrap" id="saveStatusWrap">
+                            <span class="save-status-dot" id="saveStatusDot"></span>
+                            <span class="save-status-text" id="saveStatusText">Saved just now</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="account-selector-wrap">
+                    <label for="flowBusinessAccountSelect">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/>
+                        </svg>
+                        Business Line:
+                    </label>
+                    <select id="flowBusinessAccountSelect" class="account-select">
+                        <option value="">Loading accounts...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <div class="history-btn-group">
+                    <button class="header-icon-btn" id="btnUndo" title="Undo (Ctrl+Z)" disabled>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7v6h6"></path>
+                            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                        </svg>
+                    </button>
+                    <button class="header-icon-btn" id="btnRedo" title="Redo (Ctrl+Y)" disabled>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 7v6h-6"></path>
+                            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="header-divider"></div>
+
+                <button class="header-btn btn-ai-prompt" id="btnOpenAIAssistant" title="Describe your flow in plain English">
+                    <span style="font-size: 14px;">✨</span>
+                    <span>AI Assistant</span>
+                </button>
+
+                <button class="header-btn btn-secondary" id="btnOpenSimulator" title="Simulate WhatsApp Chatbot">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                        <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                    </svg>
+                    <span>Test Flow</span>
+                </button>
+
+                <button class="header-btn btn-secondary" id="btnCreateDraft" title="Create a new draft version from this published flow" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"></path>
+                    </svg>
+                    <span>New Draft</span>
+                </button>
+
+                <button class="header-btn btn-secondary" id="btnSaveDraft" title="Save Flow as Draft (Ctrl+S)">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span>Save Draft</span>
+                </button>
+
+                <button class="header-btn btn-publish" id="btnPublishFlow" title="Publish Flow Live">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Publish</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="builder-workspace">
+            <!-- Left Sidebar: Node Library ~220px -->
+            <aside class="builder-sidebar-left">
+                <!-- Search Box -->
+                <div class="palette-search-wrap">
+                    <div class="palette-search-box">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="paletteSearchInput" placeholder="Search nodes..." autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="palette-scroll-container" id="paletteNodesList">
+                    <!-- TRIGGERS -->
+                    <div class="palette-category-group" data-category="triggers">
+                        <div class="palette-category-header">TRIGGERS</div>
+                        <div class="palette-nodes-list">
+                            <div class="palette-node-item" data-type="trigger" data-trigger-type="first_incoming_message" draggable="true" title="Triggers on customer's first incoming message">
+                                <div class="palette-icon icon-trigger">⚡</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">First Incoming</span>
+                                    <span class="palette-desc">First message trigger</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="trigger" data-trigger-type="keyword" draggable="true" title="Triggers when customer types matching keywords">
+                                <div class="palette-icon icon-trigger">🔑</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Keyword Trigger</span>
+                                    <span class="palette-desc">Match keywords</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MESSAGES -->
+                    <div class="palette-category-group" data-category="messages">
+                        <div class="palette-category-header">MESSAGES</div>
+                        <div class="palette-nodes-list">
+                            <div class="palette-node-item" data-type="message" draggable="true" title="Send a WhatsApp text message">
+                                <div class="palette-icon icon-msg">💬</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Message</span>
+                                    <span class="palette-desc">Send text message</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="buttons" draggable="true" title="Quick-reply choices (up to 3 buttons)">
+                                <div class="palette-icon icon-btn">🔘</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Buttons</span>
+                                    <span class="palette-desc">Up to 3 tap choices</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="list" draggable="true" title="Interactive list menu (courses or custom)">
+                                <div class="palette-icon icon-list">📋</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Course / Item List</span>
+                                    <span class="palette-desc">Interactive menu</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="media" draggable="true" title="Send course brochure or PDF file">
+                                <div class="palette-icon icon-media">📄</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Media / Brochure</span>
+                                    <span class="palette-desc">Document or image</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="location" draggable="true" title="Send Google Maps GPS location pin">
+                                <div class="palette-icon icon-loc">📍</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Location Pin</span>
+                                    <span class="palette-desc">Branch GPS pin</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INPUT -->
+                    <div class="palette-category-group" data-category="input">
+                        <div class="palette-category-header">INPUT</div>
+                        <div class="palette-nodes-list">
+                            <div class="palette-node-item" data-type="question" draggable="true" title="Ask question and store user response">
+                                <div class="palette-icon icon-q">❓</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Question</span>
+                                    <span class="palette-desc">Collect student reply</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LOGIC -->
+                    <div class="palette-category-group" data-category="logic">
+                        <div class="palette-category-header">LOGIC</div>
+                        <div class="palette-nodes-list">
+                            <div class="palette-node-item" data-type="condition" draggable="true" title="Branch execution with YES and NO ports">
+                                <div class="palette-icon icon-cond">🔀</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Condition</span>
+                                    <span class="palette-desc">Branch YES / NO</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATA -->
+                    <div class="palette-category-group" data-category="data">
+                        <div class="palette-category-header">DATA</div>
+                        <div class="palette-nodes-list">
+                            <div class="palette-node-item" data-type="save_data" draggable="true" title="Save variable value to session">
+                                <div class="palette-icon icon-save">💾</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Save Data</span>
+                                    <span class="palette-desc">Store session variable</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CRM -->
+                    <div class="palette-category-group" data-category="crm">
+                        <div class="palette-category-header">CRM</div>
+                        <div class="palette-nodes-list">
+                            <div class="palette-node-item" data-type="lead_status" draggable="true" title="Change the lead's CRM status">
+                                <div class="palette-icon icon-crm">🏷️</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Lead Status</span>
+                                    <span class="palette-desc">Set Interested, Follow-up…</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="assign_telecaller" draggable="true" title="Assign the lead to a telecaller">
+                                <div class="palette-icon icon-crm">🎧</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Assign Telecaller</span>
+                                    <span class="palette-desc">Branch rules or a specific person</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONTROL -->
+                    <div class="palette-category-group" data-category="control">
+                        <div class="palette-category-header">CONTROL</div>
+                        <div class="palette-nodes-list">
+                            <div class="palette-node-item" data-type="delay" draggable="true" title="Non-blocking background pause">
+                                <div class="palette-icon icon-delay">⏱</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Delay</span>
+                                    <span class="palette-desc">Pause execution</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="human_handover" draggable="true" title="Handover chat to human counselor">
+                                <div class="palette-icon icon-handover">👤</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">Human Handover</span>
+                                    <span class="palette-desc">Transfer to CRM</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                            <div class="palette-node-item" data-type="end" draggable="true" title="End automation gracefully">
+                                <div class="palette-icon icon-end">🔚</div>
+                                <div class="palette-info">
+                                    <span class="palette-label">End</span>
+                                    <span class="palette-desc">Complete automation</span>
+                                </div>
+                                <button class="btn-add-node" title="Add to Canvas">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template Reset Action at bottom of sidebar -->
+                <div class="palette-footer-actions">
+                    <button class="btn-template-reset" id="btnResetTemplate">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                        <span>Reset Admissions Template</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Center Visual Graph Canvas -->
+            <section class="builder-canvas-area" id="canvasArea">
+                <!-- Canvas Floating Controls (Top Center) -->
+                <div class="canvas-floating-toolbar">
+                    <button class="canvas-tool-btn" id="btnAutoLayout" title="Auto-Arrange Graph">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Auto Layout</span>
+                    </button>
+                    <div class="toolbar-sep"></div>
+                    <button class="canvas-tool-btn" id="btnResetView" title="Center View">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        <span>Center</span>
+                    </button>
+                </div>
+
+                <!-- Bottom-Left Canvas Controls (Undo / Redo) -->
+                <div class="canvas-bottom-left-controls">
+                    <button class="canvas-pill-btn" id="btnBottomUndo" title="Undo (Ctrl+Z)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7v6h6"></path>
+                            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                        </svg>
+                        <span>Undo</span>
+                    </button>
+                    <button class="canvas-pill-btn" id="btnBottomRedo" title="Redo (Ctrl+Y)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 7v6h-6"></path>
+                            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+                        </svg>
+                        <span>Redo</span>
+                    </button>
+                </div>
+
+                <!-- Bottom-Right Canvas Controls (Zoom Controls & Fit) -->
+                <div class="canvas-bottom-right-controls">
+                    <div class="zoom-controls-group">
+                        <button class="zoom-btn" id="btnZoomOut" title="Zoom Out (−)">−</button>
+                        <span class="zoom-indicator" id="zoomLevelText">100%</span>
+                        <button class="zoom-btn" id="btnZoomIn" title="Zoom In (+)">+</button>
+                        <button class="zoom-fit-btn" id="btnZoomFit" title="Fit to Screen">Fit</button>
+                    </div>
+                </div>
+
+                <!-- Minimap Container -->
+                <div class="canvas-minimap-container" id="canvasMinimap" title="Flow Overview">
+                    <canvas class="minimap-canvas" id="minimapCanvas" width="160" height="100"></canvas>
+                    <div class="minimap-viewport-indicator" id="minimapViewport"></div>
+                </div>
+
+                <!-- Pan & Zoom Canvas Viewport -->
+                <div class="canvas-viewport" id="canvasViewport">
+                    <div class="canvas-plane" id="canvasPlane">
+                        <!-- SVG Layer for Bezier Connectors -->
+                        <svg class="canvas-svg-layer" id="canvasSvgLayer">
+                            <defs>
+                                <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 1 L 10 5 L 0 9 z" fill="#0ea5e9" />
+                                </marker>
+                                <marker id="arrowhead-highlight" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+                                </marker>
+                                <marker id="arrowhead-yes" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+                                </marker>
+                                <marker id="arrowhead-no" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 1 L 10 5 L 0 9 z" fill="#ef4444" />
+                                </marker>
+                            </defs>
+                        </svg>
+
+                        <!-- Node Cards Render Layer -->
+                        <div class="canvas-nodes-layer" id="canvasNodesLayer">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Sidebar: Properties ~300px -->
+            <aside class="builder-sidebar-right" id="inspectorSidebar">
+                <!-- Properties Header -->
+                <div class="inspector-header">
+                    <div class="inspector-title-wrap">
+                        <span class="inspector-badge" id="inspectorNodeBadge">PROPERTIES</span>
+                        <h2 class="inspector-title" id="inspectorTitle">Configuration</h2>
+                    </div>
+                    <button class="icon-close-btn" id="btnCloseInspector" title="Deselect">&times;</button>
+                </div>
+
+                <div class="inspector-content" id="inspectorContent">
+                    <!-- Flow Overview (Shown when no node is selected) -->
+                    <div class="flow-overview-panel" id="flowOverviewPanel">
+                        <div class="overview-header">
+                            <div class="overview-icon">⚙️</div>
+                            <div>
+                                <h3 class="overview-title">FLOW OVERVIEW</h3>
+                                <span class="overview-desc">Select any node on the canvas to edit its properties.</span>
+                            </div>
+                        </div>
+
+                        <div class="overview-section">
+                            <label class="overview-label">Name</label>
+                            <div class="overview-value" id="overviewFlowName">Admissions & Training Flow</div>
+                        </div>
+
+                        <div class="overview-section">
+                            <label class="overview-label">Version & Status</label>
+                            <div class="overview-row">
+                                <span class="badge-version" id="overviewFlowVersion">v1</span>
+                                <span class="badge-status" id="overviewFlowStatus">Draft</span>
+                            </div>
+                        </div>
+
+                        <div class="overview-section">
+                            <label class="overview-label">Primary Trigger</label>
+                            <select id="triggerTypeSelect" class="form-control" style="margin-top: 4px; font-size: 12px; background: var(--bg-hover); border: 1px solid var(--border-subtle);">
+                                <option value="first_incoming_message">⚡ First Incoming Message</option>
+                                <option value="keyword">🔑 Keyword Match</option>
+                                <option value="button_reply">🔘 Button Reply</option>
+                                <option value="list_reply">📋 List Reply</option>
+                            </select>
+                            <div class="overview-value" id="overviewFlowTrigger" style="display: none;">⚡ First Incoming Message</div>
+                        </div>
+
+                        <div class="overview-section" id="triggerKeywordsBox" style="display: none;">
+                            <label class="overview-label">Trigger Keywords (comma-separated)</label>
+                            <input type="text" id="triggerKeywordsInput" class="form-control" placeholder="hi, hello, menu, start, admission" style="margin-top: 4px; font-size: 12px;">
+                        </div>
+
+                        <div class="overview-stats-grid">
+                            <div class="overview-stat-box">
+                                <span class="overview-stat-val" id="overviewNodeCount">0</span>
+                                <span class="overview-stat-lbl">Steps</span>
+                            </div>
+                            <div class="overview-stat-box">
+                                <span class="overview-stat-val" id="overviewConnectionCount">0</span>
+                                <span class="overview-stat-lbl">Connections</span>
+                            </div>
+                        </div>
+
+                        <div class="overview-hint-box">
+                            <strong>💡 Pro-tip:</strong>
+                            <span>Press <kbd>Delete</kbd> to remove a selected node. Use <kbd>Ctrl+Z</kbd> to undo and <kbd>Ctrl+S</kbd> to save anytime.</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Property Form (Shown when node is selected) -->
+                    <form class="inspector-form" id="inspectorForm" style="display: none;">
+                        <input type="hidden" id="editNodeId">
+
+                        <div class="form-group">
+                            <label for="editNodeTitle" class="form-label">Step Title</label>
+                            <input type="text" id="editNodeTitle" class="form-control" placeholder="e.g. Greeting Message" required>
+                        </div>
+
+                        <!-- Variable chip helper bar -->
+                        <div class="variable-picker-trigger-wrap" id="variablePickerTriggerWrap">
+                            <button type="button" class="btn-insert-var" id="btnOpenVariablePicker">
+                                <span>+ Insert Variable</span>
+                            </button>
+                            <span class="var-hint">e.g. &#123;&#123;name&#125;&#125;, &#123;&#123;course&#125;&#125;</span>
+                        </div>
+
+                        <!-- Message / Prompt Body -->
+                        <div class="form-group" id="groupMessageBody">
+                            <label for="editNodeBody" class="form-label">Message Body</label>
+                            <textarea id="editNodeBody" class="form-control" rows="4" placeholder="Enter WhatsApp message text... (Markdown supported)"></textarea>
+
+                            <!-- Live Message Preview Box -->
+                            <div class="live-preview-box">
+                                <span class="live-preview-label">Live Preview:</span>
+                                <div class="live-preview-content" id="messageLivePreview">Welcome to Tech Academy!</div>
+                            </div>
+                        </div>
+
+                        <!-- Header & Footer for Interactive Messages -->
+                        <div class="form-group form-row" id="groupInteractiveHeaders" style="display: none;">
+                            <div class="form-col">
+                                <label for="editNodeHeader" class="form-label">Header (Optional)</label>
+                                <input type="text" id="editNodeHeader" class="form-control" placeholder="e.g. Career Track">
+                            </div>
+                            <div class="form-col">
+                                <label for="editNodeFooter" class="form-label">Footer (Optional)</label>
+                                <input type="text" id="editNodeFooter" class="form-control" placeholder="e.g. Select option below">
+                            </div>
+                        </div>
+
+                        <!-- Variable Name & Answer Validation (Question Node) -->
+                        <div class="form-group" id="groupVariableName" style="display: none;">
+                            <label for="editVariableName" class="form-label">Save Answer to Variable</label>
+                            <input type="text" id="editVariableName" class="form-control" placeholder="e.g. visit_slot, student_email">
+                            <span class="form-hint">Stored in session and accessible as &#123;&#123;variable&#125;&#125;</span>
+
+                            <div style="margin-top: 10px;">
+                                <label for="editQuestionExpectedType" class="form-label">Expected Answer Format</label>
+                                <select id="editQuestionExpectedType" class="form-control">
+                                    <option value="text">Any Text / Freeform</option>
+                                    <option value="email">Email Address (e.g. name@example.com)</option>
+                                    <option value="number">Numeric Digits (e.g. phone, age)</option>
+                                    <option value="choice">Predefined Choice / Keyword</option>
+                                </select>
+                            </div>
+
+                            <div class="form-row" style="margin-top: 10px; display: flex; gap: 8px;">
+                                <div class="form-col" style="flex: 1;">
+                                    <label for="editQuestionRetryLimit" class="form-label">Max Retries</label>
+                                    <input type="number" id="editQuestionRetryLimit" class="form-control" value="3" min="1" max="5">
+                                </div>
+                                <div class="form-col" style="flex: 2;">
+                                    <label for="editQuestionInvalidMessage" class="form-label">Invalid Answer Prompt</label>
+                                    <input type="text" id="editQuestionInvalidMessage" class="form-control" placeholder="e.g. Please enter a valid email:">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Options for Interactive Buttons -->
+                        <div class="form-group" id="groupButtonsOptions" style="display: none;">
+                            <div class="group-header-row">
+                                <label class="form-label">Buttons (Max 3)</label>
+                                <button type="button" class="btn-sm-action" id="btnAddOptionBtn">+ Add Button</button>
+                            </div>
+                            <div class="options-list" id="buttonsOptionsList">
+                                <!-- Dynamic button options rows -->
+                            </div>
+                        </div>
+
+                        <!-- Sections & Rows for Interactive List -->
+                        <div class="form-group" id="groupListRows" style="display: none;">
+                            <label for="editListSource" class="form-label">Course List Source</label>
+                            <select id="editListSource" class="form-control" style="margin-bottom: 10px;">
+                                <option value="database">Dynamic from Courses (Database)</option>
+                                <option value="custom">Manual Options</option>
+                            </select>
+
+                            <div class="source-info-pill" id="dbCourseInfoPill">
+                                <span>✓ Automatically syncs active courses (up to 10)</span>
+                            </div>
+
+                            <div id="customListRowsContainer" style="display: none;">
+                                <div class="group-header-row">
+                                    <label class="form-label">Course Options</label>
+                                    <button type="button" class="btn-sm-action" id="btnAddListRowBtn">+ Add Course</button>
+                                </div>
+                                <div class="list-rows-container" id="listRowsContainer"></div>
+                            </div>
+                        </div>
+
+                        <!-- Condition Node Details -->
+                        <div class="form-group" id="groupConditionDetails" style="display: none;">
+                            <label for="editConditionVariable" class="form-label">Variable to Compare</label>
+                            <input type="text" id="editConditionVariable" class="form-control" placeholder="e.g. requirement, branch_visit">
+
+                            <label for="editConditionOperator" class="form-label" style="margin-top: 10px;">Operator</label>
+                            <select id="editConditionOperator" class="form-control">
+                                <option value="equals">equals (exact match)</option>
+                                <option value="contains">contains (substring)</option>
+                                <option value="not_equals">not_equals</option>
+                                <option value="not_contains">not_contains</option>
+                                <option value="exists">exists (is set)</option>
+                            </select>
+
+                            <label for="editConditionValue" class="form-label" style="margin-top: 10px;">Target Value</label>
+                            <input type="text" id="editConditionValue" class="form-control" placeholder="e.g. training_placement">
+
+                            <div class="condition-branch-preview">
+                                <div class="branch-pill yes">
+                                    <span class="branch-dot yes"></span>
+                                    <span>YES Output: if match</span>
+                                </div>
+                                <div class="branch-pill no">
+                                    <span class="branch-dot no"></span>
+                                    <span>NO Output: fallback</span>
+                                </div>
+                            </div>
+
+                            <div class="form-row" style="margin-top: 10px; display: flex; gap: 8px;">
+                                <div class="form-col" style="flex: 1;">
+                                    <label for="editConditionYesTarget" class="form-label" style="color: #10b981; font-weight: 600;">YES Target</label>
+                                    <select id="editConditionYesTarget" class="form-control">
+                                        <option value="">-- Stop / End --</option>
+                                    </select>
+                                </div>
+                                <div class="form-col" style="flex: 1;">
+                                    <label for="editConditionNoTarget" class="form-label" style="color: #ef4444; font-weight: 600;">NO Target</label>
+                                    <select id="editConditionNoTarget" class="form-control">
+                                        <option value="">-- Stop / End --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Save Data Node Details -->
+                        <div class="form-group" id="groupSaveDataDetails" style="display: none;">
+                            <label for="editSaveDataKey" class="form-label">Variable Name</label>
+                            <input type="text" id="editSaveDataKey" class="form-control" placeholder="e.g. lead_source, requirement">
+
+                            <label for="editSaveDataValue" class="form-label" style="margin-top: 10px;">Value to Store</label>
+                            <input type="text" id="editSaveDataValue" class="form-control" placeholder="e.g. direct_whatsapp, {{user_input}}">
+                        </div>
+
+                        <!-- Delay Node Details -->
+                        <div class="form-group" id="groupDelayDetails" style="display: none;">
+                            <label for="editDelaySeconds" class="form-label">Delay Duration (Seconds)</label>
+                            <input type="number" id="editDelaySeconds" class="form-control" placeholder="e.g. 5" min="1" max="3600">
+                            <span class="form-hint">Non-blocking background pause before next message.</span>
+                        </div>
+
+                        <!-- Media / Brochure Details -->
+                        <div class="form-group" id="groupMediaDetails" style="display: none;">
+                            <label for="editMediaSource" class="form-label">Brochure Source</label>
+                            <select id="editMediaSource" class="form-control" style="margin-bottom: 10px;">
+                                <option value="selected_course_brochure">Selected Course Brochure (from Course DB)</option>
+                                <option value="custom_url">Static Document / PDF File</option>
+                            </select>
+
+                            <div class="source-info-pill" id="mediaCoursePill">
+                                <span>✓ Automatically sends brochure matching &#123;&#123;course_id&#125;&#125;</span>
+                            </div>
+
+                            <div id="customMediaFields" style="display: none;">
+                                <label for="editMediaUrl" class="form-label">Document URL</label>
+                                <input type="url" id="editMediaUrl" class="form-control" placeholder="https://example.com/brochure.pdf">
+
+                                <label for="editMediaFilename" class="form-label" style="margin-top: 10px;">Filename</label>
+                                <input type="text" id="editMediaFilename" class="form-control" placeholder="e.g. Course_Curriculum.pdf">
+                            </div>
+
+                            <label for="editMediaCaption" class="form-label" style="margin-top: 10px;">Caption</label>
+                            <input type="text" id="editMediaCaption" class="form-control" placeholder="Here is your brochure!">
+                        </div>
+
+                        <!-- CRM: Lead Status Details -->
+                        <div class="form-group" id="groupLeadStatusDetails" style="display: none;">
+                            <label for="editLeadStatus" class="form-label">Set Lead Status To</label>
+                            <select id="editLeadStatus" class="form-control"></select>
+                            <div id="groupFollowUpHours" style="display: none; margin-top: 10px;">
+                                <label for="editFollowUpHours" class="form-label">Follow Up After (Hours)</label>
+                                <input type="number" id="editFollowUpHours" class="form-control" placeholder="e.g. 24" min="1" max="720">
+                            </div>
+                            <span class="form-hint">Updates the lead in the CRM (status history is kept). Nothing is sent to the student.</span>
+                        </div>
+
+                        <!-- CRM: Assign Telecaller Details -->
+                        <div class="form-group" id="groupAssignDetails" style="display: none;">
+                            <label for="editAssignMode" class="form-label">Assign To</label>
+                            <select id="editAssignMode" class="form-control">
+                                <option value="auto">Branch telecaller (Lead Setup percentages)</option>
+                                <option value="specific">A specific telecaller</option>
+                            </select>
+                            <div id="groupAssignTelecaller" style="display: none; margin-top: 10px;">
+                                <label for="editAssignTelecaller" class="form-label">Telecaller</label>
+                                <select id="editAssignTelecaller" class="form-control"></select>
+                            </div>
+                            <label class="form-label crm-check" style="margin-top: 12px;">
+                                <input type="checkbox" id="editAssignOnlyUnassigned">
+                                Only if the lead has no telecaller yet
+                            </label>
+                            <span class="form-hint">Branch rules need the lead's branch: set it on the WhatsApp number, or ask "branch" in the flow.</span>
+                        </div>
+
+                        <!-- Location Pin Details -->
+                        <div class="form-group" id="groupLocationDetails" style="display: none;">
+                            <label for="editLocationSource" class="form-label">Branch Source</label>
+                            <select id="editLocationSource" class="form-control" style="margin-bottom: 10px;">
+                                <option value="dynamic_branch">Dynamic Branch from Database</option>
+                                <option value="custom_pin">Fixed Custom Coordinates</option>
+                            </select>
+
+                            <div class="source-info-pill" id="locationBranchPill">
+                                <span>✓ Sends GPS location pin and physical address</span>
+                            </div>
+
+                            <div id="customLocationFields" style="display: none;">
+                                <label for="editLocationName" class="form-label">Branch Name</label>
+                                <input type="text" id="editLocationName" class="form-control" placeholder="e.g. Tech Academy Central">
+
+                                <label for="editLocationAddress" class="form-label" style="margin-top: 10px;">Address</label>
+                                <input type="text" id="editLocationAddress" class="form-control" placeholder="Anna Salai, Chennai">
+
+                                <div class="form-row" style="margin-top: 10px;">
+                                    <div class="form-col">
+                                        <label for="editLocationLat" class="form-label">Latitude</label>
+                                        <input type="number" step="any" id="editLocationLat" class="form-control" placeholder="13.0827">
+                                    </div>
+                                    <div class="form-col">
+                                        <label for="editLocationLng" class="form-label">Longitude</label>
+                                        <input type="number" step="any" id="editLocationLng" class="form-control" placeholder="80.2707">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Default Next Step Target -->
+                        <div class="form-group" id="groupNextNode">
+                            <label for="editNextNodeId" class="form-label">Next Step (Default Output)</label>
+                            <select id="editNextNodeId" class="form-control">
+                                <option value="">-- Complete / Stop --</option>
+                            </select>
+                            <span class="form-hint">Connects output of this step to the next step.</span>
+                        </div>
+
+                        <!-- Node Actions -->
+                        <div class="inspector-actions">
+                            <button type="submit" class="btn-save-node">Apply Changes</button>
+                            <button type="button" class="btn-delete-node" id="btnDeleteNode">Delete Step</button>
+                        </div>
+                    </form>
+
+                    <!-- Empty state fallback -->
+                    <div id="emptyInspectorState" style="display: none;"></div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Variable Picker Popover / Modal -->
+        <div class="var-picker-backdrop" id="varPickerBackdrop" style="display: none;">
+            <div class="var-picker-modal">
+                <div class="var-picker-header">
+                    <h4>Insert Dynamic Variable</h4>
+                    <button type="button" class="icon-close-btn" id="btnCloseVarPicker">&times;</button>
+                </div>
+                <div class="var-picker-body">
+                    <div class="var-group-title">CUSTOMER</div>
+                    <div class="var-chips-grid">
+                        <button type="button" class="var-tag-btn" data-tag="name">&#123;&#123;name&#125;&#125;</button>
+                        <button type="button" class="var-tag-btn" data-tag="phone">&#123;&#123;phone&#125;&#125;</button>
+                    </div>
+
+                    <div class="var-group-title" style="margin-top: 14px;">AUTOMATION</div>
+                    <div class="var-chips-grid">
+                        <button type="button" class="var-tag-btn" data-tag="requirement">&#123;&#123;requirement&#125;&#125;</button>
+                        <button type="button" class="var-tag-btn" data-tag="course_id">&#123;&#123;course_id&#125;&#125;</button>
+                        <button type="button" class="var-tag-btn" data-tag="course_name">&#123;&#123;course_name&#125;&#125;</button>
+                        <button type="button" class="var-tag-btn" data-tag="branch_id">&#123;&#123;branch_id&#125;&#125;</button>
+                        <button type="button" class="var-tag-btn" data-tag="branch_name">&#123;&#123;branch_name&#125;&#125;</button>
+                        <button type="button" class="var-tag-btn" data-tag="visit_slot">&#123;&#123;visit_slot&#125;&#125;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation Errors Modal / Panel -->
+        <div class="validation-modal-backdrop" id="validationModalBackdrop" style="display: none;">
+            <div class="validation-modal">
+                <div class="validation-modal-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">⚠️</span>
+                        <h3 style="margin: 0; font-size: 15px; color: #ef4444;" id="validationModalTitle">Flow Validation Issues</h3>
+                    </div>
+                    <button type="button" class="icon-close-btn" id="btnCloseValidationModal">&times;</button>
+                </div>
+                <div class="validation-modal-body">
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">Fix the following issues before publishing this flow live:</p>
+                    <ul class="validation-error-list" id="validationErrorList"></ul>
+                </div>
+                <div class="validation-modal-footer">
+                    <button type="button" class="header-btn btn-primary" id="btnAcknowledgeValidation" style="width: 100%;">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Confirmation Dialog Modal -->
+        <div class="modal-backdrop" id="confirmDialogModal" style="display: none;">
+            <div class="modal-box" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3 id="confirmDialogTitle">Confirm Action</h3>
+                    <button class="modal-close-btn" id="btnCancelDialogX">&times;</button>
+                </div>
+                <div style="padding: 20px;">
+                    <p id="confirmDialogMsg" style="font-size: 13px; color: var(--text-secondary); margin: 0 0 20px; line-height: 1.5;"></p>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                        <button class="header-btn btn-secondary" id="btnDialogCancel">Cancel</button>
+                        <button class="header-btn btn-primary" id="btnDialogConfirm">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Flow Assistant Modal -->
+        <div class="modal-backdrop" id="aiAssistantModal" style="display: none;">
+            <div class="modal-box" style="max-width: 520px;">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 18px;">✨</span>
+                        <h3 style="margin: 0; font-size: 15px; color: var(--text-primary);" id="aiAssistantModalTitle">AI Workflow Generator</h3>
+                    </div>
+                    <button class="modal-close-btn" id="btnCloseAIAssistant">&times;</button>
+                </div>
+                <div style="padding: 20px;">
+                    <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 16px; line-height: 1.5;">
+                        Describe your automated WhatsApp chatbot in normal English. The assistant will automatically configure steps, branches, and connections into a visual workflow.
+                    </p>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="aiFlowNameInput" class="form-label">Workflow Name</label>
+                        <input type="text" id="aiFlowNameInput" class="form-control" placeholder="e.g. Lead Qualification & Counseling Flow">
+                    </div>
+                    <div class="form-group">
+                        <label for="aiPromptInput" class="form-label">Prompt / Description</label>
+                        <textarea id="aiPromptInput" class="form-control" rows="4" placeholder="Example: Greet the lead, ask for full name and email address, offer course options, and if they want a campus visit, share the branch location and handover to our counseling team."></textarea>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+                        <button class="header-btn btn-secondary" id="btnCancelAIAssistant">Cancel</button>
+                        <button class="header-btn btn-publish" id="btnGenerateFromPrompt">
+                            <span>✨ Generate Workflow</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide-out WhatsApp Test Simulator Drawer -->
+        <div class="simulator-backdrop" id="simulatorBackdrop"></div>
+        <div class="simulator-drawer" id="simulatorDrawer">
+            <div class="sim-header">
+                <div class="sim-brand">
+                    <div class="sim-phone-notch"></div>
+                    <div class="sim-header-info">
+                        <div class="sim-avatar">🤖</div>
+                        <div class="sim-titles">
+                            <h3>Test Automation</h3>
+                            <span class="sim-status">● Live WhatsApp Simulator</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sim-header-actions">
+                    <button class="sim-btn-restart" id="btnRestartSimulation" title="Restart Simulator">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                        <span>Restart</span>
+                    </button>
+                    <button class="sim-btn-close" id="btnCloseSimulator" title="Close Simulator">&times;</button>
+                </div>
+            </div>
+
+            <!-- Simulator Chat Screen -->
+            <div class="sim-screen">
+                <div class="sim-messages" id="simMessages">
+                    <!-- Populated dynamically during test -->
+                </div>
+
+                <!-- Simulation Interactive List Bottom Sheet -->
+                <div class="sim-list-sheet" id="simListSheet">
+                    <div class="sim-sheet-header">
+                        <h4 id="simSheetTitle">Select Option</h4>
+                        <button type="button" id="btnCloseSimSheet">&times;</button>
+                    </div>
+                    <div class="sim-sheet-items" id="simSheetItems"></div>
+                </div>
+            </div>
+
+            <!-- Simulator Input Footer -->
+            <form class="sim-footer" id="simChatForm">
+                <input type="text" id="simChatInput" placeholder="Type a test message..." autocomplete="off">
+                <button type="submit" id="btnSimSend">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </form>
+
+            <!-- Live Session Debug Section -->
+            <div class="sim-debug-drawer" id="simDebugDrawer">
+                <div class="sim-debug-header" id="simDebugHeader" title="Click to toggle debug details">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="sim-debug-dot"></span>
+                        <span style="font-weight: 700; font-size: 11px;">DEBUG TELEMETRY</span>
+                    </div>
+                    <span id="simDebugToggleIcon" style="font-size: 10px;">▲</span>
+                </div>
+                <div class="sim-debug-content" id="simDebugContent">
+                    <div class="sim-debug-grid">
+                        <div class="sim-debug-col">
+                            <div class="sim-debug-label">SESSION</div>
+                            <div class="sim-debug-row">Status: <span id="debugSessionStatus" class="sim-debug-val">ACTIVE</span></div>
+                            <div class="sim-debug-row">Node: <span id="debugCurrentNode" class="sim-debug-val">trigger_1</span></div>
+                            <div class="sim-debug-row">Version: <span id="debugFlowVersion" class="sim-debug-val">v1</span></div>
+                        </div>
+                        <div class="sim-debug-col">
+                            <div class="sim-debug-label">COLLECTED DATA</div>
+                            <div class="sim-debug-data" id="debugCollectedData">{}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="builder-toast" id="builderToast">
+            <span class="toast-icon" id="builderToastIcon">✓</span>
+            <span class="toast-msg" id="builderToastMsg">Flow updated successfully!</span>
+        </div>
+    </div>
+
+    <!-- JavaScript Application -->
+    <script src="{% static 'chat/js/flow_builder.js' %}"></script>
+</body>
+</html>

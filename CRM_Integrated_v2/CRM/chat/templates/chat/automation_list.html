@@ -1,0 +1,937 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automations - WhatsApp CRM</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'chat/css/flow_builder.css' %}">
+    <style>
+        /* Modern SaaS Dashboard Layout */
+        .dash-page {
+            min-height: 100vh;
+            background: var(--bg-app);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            font-family: var(--font-family);
+        }
+
+        .dash-navbar {
+            height: 60px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .dash-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .dash-brand-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--color-accent) 0%, #0284c7 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+        }
+
+        .dash-brand-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .dash-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dash-nav-item {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dash-nav-item:hover {
+            color: var(--text-main);
+            background: var(--bg-surface-hover);
+        }
+
+        .dash-nav-item.active {
+            color: var(--color-accent);
+            background: rgba(14, 165, 233, 0.08);
+        }
+
+        .dash-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+            flex: 1;
+        }
+
+        .dash-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .dash-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .dash-title {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dash-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .dash-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-create-flow {
+            background: var(--color-accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+            transition: all 0.15s ease;
+        }
+
+        .btn-create-flow:hover {
+            background: var(--color-accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+        }
+
+        /* Filter & Search Bar */
+        .dash-filter-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 8px 16px;
+        }
+
+        .dash-search-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .dash-search-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 13px;
+            color: var(--text-main);
+            font-family: inherit;
+        }
+
+        .dash-search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Flow Cards Grid */
+        .flows-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 20px;
+        }
+
+        .flow-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .flow-card:hover {
+            border-color: rgba(14, 165, 233, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .flow-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .flow-card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .flow-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .flow-card-trigger {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .flow-card-badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-version {
+            font-size: 11px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            padding: 2px 7px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface-secondary);
+            color: var(--text-muted);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .badge-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .badge-published {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+        }
+        .badge-published::before {
+            background: #10b981;
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+        }
+
+        .badge-draft {
+            background: rgba(245, 158, 11, 0.12);
+            color: #f59e0b;
+        }
+        .badge-draft::before {
+            background: #f59e0b;
+        }
+
+        .flow-card-stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 12px 14px;
+            background: var(--bg-surface-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-val {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .flow-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .flow-card-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .flow-card-btns {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-card-edit {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--color-accent);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-card-edit:hover {
+            background: var(--color-accent);
+            color: #fff;
+        }
+
+        .btn-card-more {
+            width: 30px;
+            height: 30px;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-card-more:hover {
+            background: var(--bg-surface-secondary);
+            color: var(--text-main);
+            border-color: var(--border-subtle);
+        }
+
+        /* Card Dropdown Menu */
+        .card-menu-dropdown {
+            position: absolute;
+            right: 22px;
+            bottom: 54px;
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            min-width: 160px;
+            display: none;
+            flex-direction: column;
+            padding: 6px 0;
+            z-index: 20;
+        }
+
+        .card-menu-dropdown.active {
+            display: flex;
+        }
+
+        .card-menu-item {
+            padding: 8px 14px;
+            font-size: 12px;
+            color: var(--text-main);
+            background: transparent;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.15s ease;
+        }
+
+        .card-menu-item:hover {
+            background: var(--bg-surface-hover);
+            color: var(--color-accent);
+        }
+
+        .card-menu-item.danger:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        /* Empty State */
+        .empty-flows-box {
+            text-align: center;
+            padding: 64px 32px;
+            background: var(--bg-surface);
+            border: 1px dashed var(--border-subtle);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .empty-flows-icon {
+            font-size: 44px;
+            width: 72px;
+            height: 72px;
+            background: rgba(14, 165, 233, 0.1);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-flows-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .empty-flows-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            max-width: 440px;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .empty-flows-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        /* Skeleton loading */
+        .skeleton-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .skeleton-line {
+            height: 16px;
+            background: linear-gradient(90deg, var(--bg-surface-secondary) 25%, var(--bg-surface-hover) 50%, var(--bg-surface-secondary) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-pulse 1.5s infinite;
+            border-radius: var(--radius-sm);
+        }
+
+        @keyframes skeleton-pulse {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+    <script>
+        /* CRM: add the CSRF token to every same-origin save / delete request (needed for logged-in users). */
+        (function () {
+            const token = '{{ csrf_token }}';
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = function (input, init) {
+                init = init || {};
+                const method = (init.method || (input && input.method) || 'GET').toUpperCase();
+                const url = typeof input === 'string' ? input : (input && input.url) || '';
+                const sameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+                if (sameOrigin && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                    const headers = new Headers(init.headers || {});
+                    if (!headers.has('X-CSRFToken')) headers.set('X-CSRFToken', token);
+                    init.headers = headers;
+                }
+                return originalFetch(input, init);
+            };
+        })();
+    </script>
+</head>
+<body class="dash-page">
+    <!-- Navbar -->
+    <header class="dash-navbar">
+        <a href="{% url 'inbox' %}" class="dash-brand">
+            <div class="dash-brand-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2.1 21.9l5.02-1.24C8.55 21.49 10.22 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+                </svg>
+            </div>
+            <span class="dash-brand-title">WhatsApp CRM</span>
+        </a>
+
+        <nav class="dash-nav-links">
+            <a href="{% url 'login_redirect' %}" class="dash-nav-item">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>
+                </svg>
+                <span>CRM</span>
+            </a>
+            <a href="{% url 'inbox' %}" class="dash-nav-item">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Inbox</span>
+            </a>
+            <a href="{% url 'automation-list' %}" class="dash-nav-item active">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+                <span>Automations</span>
+            </a>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dash-container">
+        <!-- Page Header -->
+        <div class="dash-header">
+            <div class="dash-title-group">
+                <h1 class="dash-title">
+                    <span>AUTOMATIONS</span>
+                </h1>
+                <p class="dash-subtitle">Build and manage your WhatsApp customer journeys.</p>
+            </div>
+            <div class="dash-actions">
+                <button class="btn-create-flow" id="btnCreateNewAutomation">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Create Automation</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="dash-filter-bar">
+            <div class="dash-search-wrap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="automationSearchInput" class="dash-search-input" placeholder="Search automations by name or trigger...">
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted);" id="flowsCountLabel">
+                Loading automations...
+            </div>
+        </div>
+
+        <!-- Flow Cards Grid -->
+        <div class="flows-grid" id="flowsGridContainer">
+            <!-- Skeleton Cards -->
+            <div class="skeleton-card">
+                <div class="skeleton-line" style="width: 60%; height: 20px;"></div>
+                <div class="skeleton-line" style="width: 40%;"></div>
+                <div class="skeleton-line" style="height: 50px;"></div>
+                <div class="skeleton-line" style="width: 30%;"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line" style="width: 50%; height: 20px;"></div>
+                <div class="skeleton-line" style="width: 35%;"></div>
+                <div class="skeleton-line" style="height: 50px;"></div>
+                <div class="skeleton-line" style="width: 30%;"></div>
+            </div>
+        </div>
+
+        <!-- Empty State Container -->
+        <div class="empty-flows-box" id="emptyFlowsBox" style="display: none;">
+            <div class="empty-flows-icon">⚡</div>
+            <h2 class="empty-flows-title">Create your first automation</h2>
+            <p class="empty-flows-desc">Build a WhatsApp customer journey using visual automation nodes. Handle course enquiries, admissions, brochure downloads, and branch appointments automatically.</p>
+            <div class="empty-flows-actions">
+                <button class="btn-create-flow" id="btnBlankFlow">
+                    <span>Start with Blank Flow</span>
+                </button>
+                <button class="btn-card-edit" id="btnAdmissionsTemplate" style="padding: 10px 18px; font-size: 13px;">
+                    <span>Use Admissions Template</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for New Automation -->
+    <div class="modal-backdrop" id="newAutomationModal" style="display: none;">
+        <div class="modal-box" style="max-width: 460px;">
+            <div class="modal-header">
+                <h3>Create New WhatsApp Automation</h3>
+                <button class="modal-close-btn" id="btnCloseNewModal">&times;</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px; padding: 20px;">
+                <div class="form-group">
+                    <label class="form-label">Automation Name</label>
+                    <input type="text" id="newFlowNameInput" class="form-input" placeholder="e.g. Course Enquiry Journey" value="New Customer Journey">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Trigger Type</label>
+                    <select id="newFlowTriggerSelect" class="form-select">
+                        <option value="first_incoming_message">⚡ First Incoming Message</option>
+                        <option value="keyword">🔑 Keyword Trigger</option>
+                        <option value="button_reply">🔘 Button Reply</option>
+                        <option value="list_reply">📋 List Selection</option>
+                    </select>
+                </div>
+                <div class="form-group" id="newFlowKeywordsWrap" style="display: none;">
+                    <label class="form-label">Trigger Keywords (comma separated)</label>
+                    <input type="text" id="newFlowKeywordsInput" class="form-input" placeholder="hi, hello, admission, fees">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;">
+                    <button class="header-btn btn-secondary" id="btnCancelCreateModal">Cancel</button>
+                    <button class="header-btn btn-primary" id="btnConfirmCreateFlow">Create Flow</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-backdrop" id="confirmActionModal" style="display: none;">
+        <div class="modal-box" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 id="confirmModalTitle">Confirm Action</h3>
+                <button class="modal-close-btn" id="btnCancelConfirmModal">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <p id="confirmModalMessage" style="font-size: 14px; color: var(--text-secondary); margin: 0 0 20px; line-height: 1.5;"></p>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button class="header-btn btn-secondary" id="btnConfirmCancel">Cancel</button>
+                    <button class="header-btn btn-primary" id="btnConfirmOk">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" id="toastNotification" role="alert">
+        <span class="toast-message" id="toastMessage"></span>
+    </div>
+
+    <script>
+        let allFlows = [];
+
+        function showToast(msg, duration = 3000) {
+            const toast = document.getElementById('toastNotification');
+            const msgEl = document.getElementById('toastMessage');
+            if (!toast || !msgEl) return;
+            msgEl.textContent = msg;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), duration);
+        }
+
+        async function fetchAutomations() {
+            try {
+                const res = await fetch('/api/flows/');
+                if (!res.ok) throw new Error('Failed to load flows');
+                allFlows = await res.json();
+                renderFlows(allFlows);
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to load automations.');
+            }
+        }
+
+        function renderFlows(flows) {
+            const grid = document.getElementById('flowsGridContainer');
+            const empty = document.getElementById('emptyFlowsBox');
+            const countLabel = document.getElementById('flowsCountLabel');
+
+            if (!flows || flows.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'flex';
+                countLabel.textContent = '0 automations';
+                return;
+            }
+
+            grid.style.display = 'grid';
+            empty.style.display = 'none';
+            countLabel.textContent = `${flows.length} automation${flows.length === 1 ? '' : 's'}`;
+
+            grid.innerHTML = flows.map(f => {
+                const isPublished = f.status === 'published';
+                const triggerDisplay = f.trigger_type === 'first_incoming_message'
+                    ? '⚡ First Incoming Message'
+                    : `🔑 Keyword (${f.trigger_keywords || 'default'})`;
+
+                return `
+                    <div class="flow-card" data-id="${f.id}" data-name="${(f.name || '').toLowerCase()}">
+                        <div class="flow-card-header">
+                            <div class="flow-card-info">
+                                <h3 class="flow-card-title">${escapeHtml(f.name)}</h3>
+                                <span class="flow-card-trigger">${triggerDisplay}</span>
+                            </div>
+                            <div class="flow-card-badges">
+                                <span class="badge-version">v${f.version}</span>
+                                <span class="badge-status ${isPublished ? 'badge-published' : 'badge-draft'}">
+                                    ${isPublished ? 'Published' : 'Draft'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flow-card-stats">
+                            <div class="stat-item">
+                                <span class="stat-val">${(f.active_sessions_count !== undefined) ? f.active_sessions_count : 0}</span>
+                                <span class="stat-label">Active</span>
+                            </div>
+                            <div class="stat-item" style="border-left: 1px solid var(--border-subtle); padding-left: 20px;">
+                                <span class="stat-val">${(f.completed_sessions_count !== undefined) ? f.completed_sessions_count : 0}</span>
+                                <span class="stat-label">Completed</span>
+                            </div>
+                        </div>
+
+                        <div class="flow-card-footer">
+                            <span class="flow-card-meta">${isPublished && f.published_at ? 'Published ' + formatDate(f.published_at) : 'Draft'}</span>
+                            <div class="flow-card-btns">
+                                <a href="/automation/?id=${f.id}" class="btn-card-edit">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 20h9"></path>
+                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                    </svg>
+                                    <span>Edit</span>
+                                </a>
+                                <button class="btn-card-more" onclick="toggleCardMenu(${f.id}, event)" title="More options">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                        <circle cx="12" cy="5" r="2"></circle>
+                                        <circle cx="12" cy="12" r="2"></circle>
+                                        <circle cx="12" cy="19" r="2"></circle>
+                                    </svg>
+                                </button>
+                                <div class="card-menu-dropdown" id="cardMenu_${f.id}">
+                                    <button class="card-menu-item" onclick="createDraftFromCard(${f.id})">
+                                        <span>Create Draft</span>
+                                    </button>
+                                    <button class="card-menu-item danger" onclick="confirmDeleteFlow(${f.id}, '${escapeHtml(f.name)}')">
+                                        <span>Delete Flow</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCardMenu(id, evt) {
+            evt.stopPropagation();
+            document.querySelectorAll('.card-menu-dropdown').forEach(m => {
+                if (m.id !== `cardMenu_${id}`) m.classList.remove('active');
+            });
+            const menu = document.getElementById(`cardMenu_${id}`);
+            if (menu) menu.classList.toggle('active');
+        }
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.card-menu-dropdown').forEach(m => m.classList.remove('active'));
+        });
+
+        async function createDraftFromCard(id) {
+            try {
+                const res = await fetch(`/api/flows/${id}/create-draft/`, { method: 'POST' });
+                if (!res.ok) throw new Error('Could not create draft');
+                const data = await res.json();
+                showToast('Draft created!');
+                const draftId = data.flow ? data.flow.id : data.id;
+                window.location.href = `/automation/?id=${draftId}`;
+            } catch (err) {
+                showToast('Failed to create draft');
+            }
+        }
+
+        function confirmDeleteFlow(id, name) {
+            const modal = document.getElementById('confirmActionModal');
+            document.getElementById('confirmModalTitle').textContent = 'Delete Automation';
+            document.getElementById('confirmModalMessage').textContent = `Are you sure you want to delete "${name}"? This action cannot be undone.`;
+            modal.style.display = 'flex';
+
+            document.getElementById('btnConfirmOk').onclick = async () => {
+                modal.style.display = 'none';
+                try {
+                    const res = await fetch(`/api/flows/${id}/`, { method: 'DELETE' });
+                    if (res.ok) {
+                        showToast('Automation deleted.');
+                        fetchAutomations();
+                    } else {
+                        showToast('Error deleting automation');
+                    }
+                } catch (e) {
+                    showToast('Failed to delete automation');
+                }
+            };
+        }
+
+        document.getElementById('btnConfirmCancel').onclick = () => {
+            document.getElementById('confirmActionModal').style.display = 'none';
+        };
+        document.getElementById('btnCancelConfirmModal').onclick = () => {
+            document.getElementById('confirmActionModal').style.display = 'none';
+        };
+
+        // Search filtering
+        document.getElementById('automationSearchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const filtered = allFlows.filter(f => (f.name || '').toLowerCase().includes(query) || (f.trigger_keywords || '').toLowerCase().includes(query));
+            renderFlows(filtered);
+        });
+
+        // Create Modal Handlers
+        const createModal = document.getElementById('newAutomationModal');
+        const triggerSelect = document.getElementById('newFlowTriggerSelect');
+        const keywordsWrap = document.getElementById('newFlowKeywordsWrap');
+
+        triggerSelect.addEventListener('change', () => {
+            keywordsWrap.style.display = triggerSelect.value === 'keyword' ? 'block' : 'none';
+        });
+
+        document.getElementById('btnCreateNewAutomation').onclick = () => {
+            createModal.style.display = 'flex';
+        };
+        document.getElementById('btnBlankFlow').onclick = () => {
+            createModal.style.display = 'flex';
+        };
+        document.getElementById('btnAdmissionsTemplate').onclick = async () => {
+            window.location.href = '/automation/';
+        };
+        document.getElementById('btnCloseNewModal').onclick = () => {
+            createModal.style.display = 'none';
+        };
+        document.getElementById('btnCancelCreateModal').onclick = () => {
+            createModal.style.display = 'none';
+        };
+
+        document.getElementById('btnConfirmCreateFlow').onclick = async () => {
+            const name = document.getElementById('newFlowNameInput').value.trim() || 'New Automation';
+            const trigger = triggerSelect.value;
+            const keywords = document.getElementById('newFlowKeywordsInput').value.trim();
+
+            const blankFlowData = {
+                nodes: [
+                    { id: "trigger_1", type: "trigger", title: "Trigger", x: 200, y: 150, trigger_type: trigger, data: { trigger_type: trigger } },
+                    { id: "msg_1", type: "message", title: "Welcome Message", x: 200, y: 320, data: { text: "Hello! Welcome to our WhatsApp service." } },
+                    { id: "end_1", type: "end", title: "End", x: 200, y: 490, data: { text: "Thank you for reaching out!" } }
+                ],
+                connections: [
+                    { source: "trigger_1", source_output: "default", target: "msg_1", target_input: "input" },
+                    { source: "msg_1", source_output: "default", target: "end_1", target_input: "input" }
+                ]
+            };
+
+            try {
+                const res = await fetch('/api/flows/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name,
+                        slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                        version: 1,
+                        trigger_type: trigger,
+                        trigger_keywords: keywords,
+                        flow_data: blankFlowData
+                    })
+                });
+                if (!res.ok) throw new Error('Failed to create automation');
+                const created = await res.json();
+                createModal.style.display = 'none';
+                showToast('Automation created successfully!');
+                const targetId = created.flow ? created.flow.id : created.id;
+                window.location.href = `/automation/?id=${targetId}`;
+            } catch (err) {
+                showToast('Could not create automation');
+            }
+        };
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag));
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Init
+        fetchAutomations();
+    </script>
+</body>
+</html>

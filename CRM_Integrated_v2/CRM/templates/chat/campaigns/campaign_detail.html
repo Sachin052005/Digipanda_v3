@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ campaign.name }} - Campaign Monitor - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+      <a href="{% url 'whatsapp_campaigns_list' %}" style="color: var(--tp-primary-600); text-decoration: none; font-size: 0.85rem; font-weight: 700;">&larr; WhatsApp Campaigns</a>
+      <span style="color: var(--tp-text-muted);">/</span>
+      <span style="font-size: 0.85rem; color: var(--tp-text-muted); font-weight: 600;">Monitor</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0;">{{ campaign.name }}</h1>
+      <span id="campStatusBadge" class="badge tp-badge" style="font-size: 0.85rem; font-weight: 800; padding: 4px 12px;
+        {% if campaign.status == 'running' %}background: #dbeafe; color: #1e40af;
+        {% elif campaign.status == 'completed' %}background: #d1fae5; color: #065f46;
+        {% elif campaign.status == 'paused' %}background: #fef3c7; color: #92400e;
+        {% elif campaign.status == 'cancelled' %}background: #fee2e2; color: #991b1b;
+        {% else %}background: #f1f5f9; color: #475569;{% endif %}">
+        {{ campaign.get_status_display }}
+      </span>
+    </div>
+    <p style="font-size: 0.88rem; color: var(--tp-text-muted); margin: 4px 0 0 0;">
+      Created by <strong>{{ campaign.created_by.get_full_name|default:campaign.created_by.username }}</strong> on {{ campaign.created_at|date:"M d, Y H:i" }}
+      {% if campaign.selected_sender %} | Sender: <strong>{{ campaign.selected_sender.name }} ({{ campaign.selected_sender.display_phone_number }})</strong>{% endif %}
+    </p>
+  </div>
+
+  <div class="page-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    {% if campaign.status == 'running' %}
+    <button type="button" class="btn btn-secondary tp-btn-secondary tp-btn-sm" onclick="sendControlAction('pause')">⏸ Pause</button>
+    <button type="button" class="btn btn-secondary tp-btn-secondary tp-btn-sm" onclick="sendControlAction('cancel')" style="color: #dc2626;">⏹ Cancel</button>
+    {% elif campaign.status == 'paused' or campaign.status == 'draft' %}
+    <button type="button" class="btn btn-primary tp-btn-primary tp-btn-sm" onclick="sendControlAction('start')">▶ Resume / Start</button>
+    {% endif %}
+
+    {% if campaign.failed_count > 0 %}
+    <button type="button" class="btn btn-secondary tp-btn-secondary tp-btn-sm" onclick="sendControlAction('retry_failed')">🔄 Retry Failed ({{ campaign.failed_count }})</button>
+    {% endif %}
+
+    <a href="{% url 'whatsapp_campaign_export_csv' campaign.pk %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- Progress Meter -->
+<div class="tp-card" style="padding: 20px; margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <span style="font-size: 0.9rem; font-weight: 700; color: var(--tp-text-primary);">Campaign Delivery Progress</span>
+    <span id="progressText" style="font-size: 1rem; font-weight: 800; color: var(--tp-primary-600);">{{ campaign.progress_percentage }}%</span>
+  </div>
+  <div style="height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden;">
+    <div id="progressBar" style="width: {{ campaign.progress_percentage }}%; height: 100%; background: var(--tp-primary-600); transition: width 0.4s ease;"></div>
+  </div>
+</div>
+
+<!-- Live Telemetry Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px;">
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Total</div>
+    <div id="telTotal" style="font-size: 1.35rem; font-weight: 800; color: var(--tp-text-primary);">{{ campaign.total_recipients }}</div>
+  </div>
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Eligible</div>
+    <div id="telEligible" style="font-size: 1.35rem; font-weight: 800; color: #2563eb;">{{ campaign.eligible_count }}</div>
+  </div>
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Submitted</div>
+    <div id="telSubmitted" style="font-size: 1.35rem; font-weight: 800; color: #0284c7;">{{ campaign.submitted_count }}</div>
+  </div>
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Sent</div>
+    <div id="telSent" style="font-size: 1.35rem; font-weight: 800; color: #0891b2;">{{ campaign.sent_count }}</div>
+  </div>
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Delivered</div>
+    <div id="telDelivered" style="font-size: 1.35rem; font-weight: 800; color: #059669;">{{ campaign.delivered_count }}</div>
+  </div>
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Read</div>
+    <div id="telRead" style="font-size: 1.35rem; font-weight: 800; color: #7c3aed;">{{ campaign.read_count }}</div>
+  </div>
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Failed</div>
+    <div id="telFailed" style="font-size: 1.35rem; font-weight: 800; color: #dc2626;">{{ campaign.failed_count }}</div>
+  </div>
+  <div class="tp-card" style="padding: 14px 16px; text-align: center;">
+    <div style="font-size: 0.72rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Skipped</div>
+    <div id="telSkipped" style="font-size: 1.35rem; font-weight: 800; color: #d97706;">{{ campaign.skipped_count }}</div>
+  </div>
+</div>
+
+<!-- Recipient Outcomes Table Filter -->
+<div class="filter-card tp-card" style="padding: 14px 18px; margin-bottom: 20px;">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <div class="filter-col" style="flex: 2; min-width: 200px;">
+      <label class="tp-label">Search Recipient</label>
+      <input type="text" name="search" class="form-control tp-input" placeholder="Search name, phone, or WAMID..." value="{{ search_q }}">
+    </div>
+    <div class="filter-col" style="min-width: 160px;">
+      <label class="tp-label">Delivery Status</label>
+      <select name="status" class="form-select tp-select">
+        <option value="">All Statuses</option>
+        {% for code, label in status_choices %}
+        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'whatsapp_campaign_detail' campaign.pk %}" class="btn btn-secondary tp-btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Recipient Outcomes Table -->
+<div class="crm-card tp-card">
+  <div class="table-responsive">
+    <table class="crm-table tp-table">
+      <thead>
+        <tr>
+          <th>Lead Name</th>
+          <th>Destination Phone</th>
+          <th>Sender Channel</th>
+          <th>Delivery Status</th>
+          <th>Provider Message ID</th>
+          <th>Attempts</th>
+          <th>Event Timestamps</th>
+          <th>Details / Skip Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in page_obj %}
+        <tr>
+          <td>
+            {% if r.lead %}
+            <strong><a href="{% url 'admin_lead_detail' r.lead.pk %}" style="color: var(--tp-text-primary); text-decoration: none;">{{ r.lead_name }}</a></strong>
+            {% else %}
+            <strong>{{ r.lead_name }}</strong>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-family: monospace; font-weight: 600;">+{{ r.phone_number }}</span>
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; color: var(--tp-text-muted);">{{ r.sender_phone_number|default:"Default WABA" }}</span>
+          </td>
+          <td>
+            {% if r.status == 'read' %}
+            <span class="badge tp-badge" style="background: #f3e8ff; color: #7c3aed; font-weight: 700;">Read</span>
+            {% elif r.status == 'delivered' %}
+            <span class="badge tp-badge" style="background: #d1fae5; color: #065f46; font-weight: 700;">Delivered</span>
+            {% elif r.status == 'sent' %}
+            <span class="badge tp-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700;">Sent</span>
+            {% elif r.status == 'submitted' %}
+            <span class="badge tp-badge" style="background: #f1f5f9; color: #334155; font-weight: 700;">Submitted</span>
+            {% elif r.status == 'queued' %}
+            <span class="badge tp-badge" style="background: #fffbeb; color: #b45309; font-weight: 700;">Queued</span>
+            {% elif r.status == 'skipped' %}
+            <span class="badge tp-badge" style="background: #fef3c7; color: #92400e; font-weight: 700;">Skipped</span>
+            {% elif r.status == 'failed' %}
+            <span class="badge tp-badge" style="background: #fee2e2; color: #991b1b; font-weight: 700;">Failed</span>
+            {% else %}
+            <span class="badge tp-badge" style="background: #f1f5f9; color: #475569; font-weight: 700;">Eligible</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.provider_message_id %}
+            <span style="font-family: monospace; font-size: 0.75rem; color: var(--tp-text-muted);" title="{{ r.provider_message_id }}">{{ r.provider_message_id|truncatechars:18 }}</span>
+            {% else %}
+            <span style="color: var(--tp-text-muted);">-</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">{{ r.attempt_count }}</td>
+          <td style="font-size: 0.75rem; color: var(--tp-text-muted);">
+            {% if r.read_at %}Read: {{ r.read_at|date:"H:i:s" }}
+            {% elif r.delivered_at %}Delivered: {{ r.delivered_at|date:"H:i:s" }}
+            {% elif r.sent_at %}Sent: {{ r.sent_at|date:"H:i:s" }}
+            {% elif r.submitted_at %}Submitted: {{ r.submitted_at|date:"H:i:s" }}
+            {% else %}-{% endif %}
+          </td>
+          <td style="font-size: 0.8rem;">
+            {% if r.skip_reason %}
+            <span style="color: #b45309; font-weight: 600;">{{ r.skip_reason }}</span>
+            {% elif r.error_message %}
+            <span style="color: #dc2626; font-weight: 600;">{{ r.error_message }}</span>
+            {% else %}
+            <span style="color: #10b981;">✓ Message Personalized</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div style="text-align: center; padding: 32px; color: var(--tp-text-muted);">
+              No recipients match the specified filter criteria.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-top: 1px solid var(--tp-surface-border); font-size: 0.85rem;">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div style="display: flex; gap: 6px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&search={{ search_q }}&status={{ status_filter }}" class="btn btn-secondary tp-btn-secondary tp-btn-sm">&laquo; Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&search={{ search_q }}&status={{ status_filter }}" class="btn btn-secondary tp-btn-secondary tp-btn-sm">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function getCookie(name) {
+  var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+
+function sendControlAction(action) {
+  if (!confirm('Are you sure you want to ' + action + ' this campaign?')) return;
+  fetch('/campaigns/api/{{ campaign.pk }}/control/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({ action: action })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      window.location.reload();
+    } else {
+      alert(data.error || 'Control action failed');
+    }
+  })
+  .catch(err => alert('Communication error: ' + err));
+}
+
+// Live Polling of Telemetry if Campaign is Running
+{% if campaign.status == 'running' or campaign.status == 'scheduled' %}
+setInterval(function() {
+  fetch('/campaigns/api/{{ campaign.pk }}/progress/')
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) return;
+      document.getElementById('telTotal').textContent = data.total_recipients;
+      document.getElementById('telEligible').textContent = data.eligible_count;
+      document.getElementById('telSubmitted').textContent = data.submitted_count;
+      document.getElementById('telSent').textContent = data.sent_count;
+      document.getElementById('telDelivered').textContent = data.delivered_count;
+      document.getElementById('telRead').textContent = data.read_count;
+      document.getElementById('telFailed').textContent = data.failed_count;
+      document.getElementById('telSkipped').textContent = data.skipped_count;
+
+      document.getElementById('progressText').textContent = data.progress_percentage + '%';
+      document.getElementById('progressBar').style.width = data.progress_percentage + '%';
+
+      if (!data.is_active) {
+        window.location.reload();
+      }
+    })
+    .catch(function(e) {});
+}, 3000);
+{% endif %}
+</script>
+{% endblock %}

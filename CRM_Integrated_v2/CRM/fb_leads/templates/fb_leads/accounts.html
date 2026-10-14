@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Facebook Accounts & Pages - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="{% url 'fb_leads:facebook_leads' %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">← Back to Leads</a>
+      <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Facebook Accounts & Pages</h1>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">
+      Connect and manage multiple Facebook business accounts and assign branch-specific lead routing per Facebook Page.
+    </p>
+  </div>
+  <div style="display: flex; gap: 12px;">
+    <button type="button" class="btn btn-primary" onclick="openConnectModal()">+ Connect Facebook Account</button>
+  </div>
+</div>
+
+{% if not env_configured and not accounts %}
+<div class="alert alert-warning" style="margin-bottom: 20px; padding: 14px 18px; border-radius: 8px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">
+  <strong>Notice:</strong> No Facebook accounts or default environment variables connected. Connect an account below or configure <code>FB_PAGE_TOKEN</code> in your environment.
+</div>
+{% endif %}
+
+<!-- Accounts and Pages Grid -->
+{% if accounts %}
+<div style="display: flex; flex-direction: column; gap: 24px;">
+  {% for account in accounts %}
+  <div class="crm-card" style="background: var(--card-bg, #ffffff); border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid var(--border-color, #e2e8f0);">
+    <div style="background: var(--navy-dark, #0f172a); color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: #1877f2; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+          f
+        </div>
+        <div>
+          <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">{{ account.account_name }}</h3>
+          <span style="font-size: 0.75rem; color: #94a3b8;">Connected on {{ account.created_at|date:"d M Y" }} · {{ account.pages.count }} Page(s)</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="badge" style="background: #10b981; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">{{ account.status }}</span>
+        <form method="post" action="{% url 'fb_leads:fb_account_disconnect' account.id %}" onsubmit="return confirm('Disconnect this Facebook account and all its {{ account.pages.count }} connected pages?');" style="margin: 0;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-danger" style="color: #f87171; border: 1px solid #f87171; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Disconnect</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="crm-card-body" style="padding: 20px 24px;">
+      {% if account.last_error %}
+      <div style="margin-bottom: 14px; padding: 10px 14px; background: #fee2e2; color: #991b1b; border-radius: 6px; font-size: 0.85rem;">
+        <strong>Error:</strong> {{ account.last_error }}
+      </div>
+      {% endif %}
+
+      <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 14px;">Connected Facebook Pages</h4>
+
+      {% if account.pages.all %}
+      <div class="table-responsive">
+        <table class="crm-table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border-color, #e2e8f0); text-align: left; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
+              <th style="padding: 10px 12px;">Page Name & ID</th>
+              <th style="padding: 10px 12px;">Assigned Branch</th>
+              <th style="padding: 10px 12px;">Webhook Sync</th>
+              <th style="padding: 10px 12px;">Last Sync Status</th>
+              <th style="padding: 10px 12px; text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for page in account.pages.all %}
+            <tr style="border-bottom: 1px solid var(--border-color, #f1f5f9); font-size: 0.875rem;">
+              <td style="padding: 12px;">
+                <div style="font-weight: 600; color: var(--text-main);">{{ page.page_name }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Page ID: <code>{{ page.page_id }}</code></div>
+              </td>
+              <td style="padding: 12px;">
+                <form method="post" action="{% url 'fb_leads:fb_page_update_branch' page.id %}" style="display: flex; gap: 6px; align-items: center; margin: 0;">
+                  {% csrf_token %}
+                  <select name="branch_id" class="form-control" style="font-size: 0.8rem; padding: 4px 8px; width: 170px;" onchange="this.form.submit()">
+                    <option value="">-- No Branch (Default) --</option>
+                    {% for b in branches %}
+                    <option value="{{ b.id }}" {% if page.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </td>
+              <td style="padding: 12px;">
+                {% if page.webhook_subscribed %}
+                <span class="badge" style="background: #10b981; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">Subscribed</span>
+                {% else %}
+                <span class="badge" style="background: #f59e0b; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">Not Subscribed</span>
+                {% endif %}
+              </td>
+              <td style="padding: 12px; font-size: 0.8rem; color: var(--text-muted);">
+                {% if page.last_sync_at %}
+                <div>{{ page.last_sync_at|date:"d M, H:i" }}</div>
+                <div style="font-size: 0.75rem; color: #059669;">{{ page.last_sync_status }}</div>
+                {% else %}
+                <span>Never synced</span>
+                {% endif %}
+              </td>
+              <td style="padding: 12px; text-align: right;">
+                <div style="display: inline-flex; gap: 8px;">
+                  <form method="post" action="{% url 'fb_leads:fb_page_sync' page.id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">⟳ Sync Leads</button>
+                  </form>
+                  <form method="post" action="{% url 'fb_leads:fb_page_toggle_webhook' page.id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" style="padding: 4px 10px; font-size: 0.78rem;">
+                      {% if page.webhook_subscribed %}Unsubscribe{% else %}Subscribe{% endif %}
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="padding: 16px; background: #f8fafc; border-radius: 8px; text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+        No Facebook Pages detected for this account. Ensure the token has <code>pages_show_list</code> and <code>leads_retrieval</code> permissions.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="crm-card" style="padding: 48px; text-align: center; background: #fff; border-radius: 12px;">
+  <div style="font-size: 2.5rem; margin-bottom: 12px;">📱</div>
+  <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 8px;">No Facebook Accounts Connected</h3>
+  <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px auto; font-size: 0.9rem;">
+    Connect your Facebook Business or User account token to synchronize pages, route leads to branches, and capture ad submissions automatically.
+  </p>
+  <button type="button" class="btn btn-primary" onclick="openConnectModal()">Connect Facebook Account</button>
+</div>
+{% endif %}
+
+<!-- Connect Modal -->
+<div id="connectAccountModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 520px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; margin: 16px;">
+    <div style="padding: 18px 24px; background: var(--navy-dark, #0f172a); color: #fff; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.15rem; color: #fff;">Connect Facebook Account</h3>
+      <button type="button" onclick="closeConnectModal()" style="background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="post" action="{% url 'fb_leads:fb_account_connect' %}" style="padding: 24px;">
+      {% csrf_token %}
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-main);">Account Label / Business Name *</label>
+        <input type="text" name="account_name" required class="form-control" placeholder="e.g. TECHPANDA Digital Marketing / Agency Account" style="width: 100%;">
+      </div>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-main);">User / System User Access Token *</label>
+        <textarea name="access_token" rows="4" required class="form-control" placeholder="Paste Meta Graph API User or System User Token (EAA...)" style="width: 100%; font-family: monospace; font-size: 0.8rem;"></textarea>
+        <span style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+          Token must include <code>pages_show_list</code>, <code>pages_read_engagement</code>, and <code>leads_retrieval</code>.
+        </span>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeConnectModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Connect & Import Pages</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openConnectModal() {
+  document.getElementById('connectAccountModal').style.display = 'flex';
+}
+function closeConnectModal() {
+  document.getElementById('connectAccountModal').style.display = 'none';
+}
+</script>
+{% endblock %}

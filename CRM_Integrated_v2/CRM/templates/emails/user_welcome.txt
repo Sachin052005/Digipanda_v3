@@ -1,0 +1,29 @@
+Welcome to {{ company_name }} CRM!
+
+Hello {{ user_name }},
+
+Your CRM account has been successfully created by your administrator. You can now set up your password and access the CRM using your assigned login ID.
+
+Your account details
+
+- Name: {{ user_name }}
+- Login ID: {{ username }}
+- Role: {{ user_role }}
+- Branch: {{ branch_name }}
+
+Set up your password
+
+Use the secure link below to create your password and activate your account:
+{{ setup_url }}
+
+This link is valid for a limited time and can only be used according to the account activation rules.
+
+Once your password is set, open the CRM login page and sign in using your login ID:
+{{ login_url }}
+
+If you did not expect this account, please contact your administrator.
+
+Regards,
+CRM Administration Team
+
+This is an automated email. Please do not reply directly.

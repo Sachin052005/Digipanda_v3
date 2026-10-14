@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Call Recordings - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>Call Recordings</h1>
+    <p>Recordings uploaded automatically from telecaller phones by the CRM Call Sync app</p>
+  </div>
+  {% if can_see_unmatched and unmatched %}
+  <form method="post" action="{% url 'recordings_retry_match' %}" style="margin: 0;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-secondary" title="Link unmatched recordings to leads added since">⟳ Re-check unmatched</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-info"><h4>Recordings</h4><div class="kpi-value">{{ total }}</div></div>
+    <div class="kpi-icon-wrap blue"><circle cx="12" cy="12" r="10"></circle></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info"><h4>Today</h4><div class="kpi-value">{{ today }}</div></div>
+    <div class="kpi-icon-wrap green"><polyline points="20 6 9 17 4 12"></polyline></div>
+  </div>
+  {% if can_see_unmatched %}
+  <div class="kpi-card">
+    <div class="kpi-info"><h4>Not matched to a lead</h4><div class="kpi-value" {% if unmatched %}style="color: var(--warning, #b45309);"{% endif %}>{{ unmatched }}</div></div>
+    <div class="kpi-icon-wrap amber"><polyline points="12 6 12 12 16 14"></polyline></div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="filter-card">
+  <form method="get" class="filter-form">
+    <div class="filter-col">
+      <label>Search</label>
+      <input type="text" name="q" value="{{ f.q }}" class="form-control" placeholder="Lead name, phone or file name">
+    </div>
+    <div class="filter-col">
+      <label>Telecaller</label>
+      <select name="telecaller" class="form-select">
+        <option value="">All</option>
+        {% for t in telecallers %}<option value="{{ t.pk }}" {% if f.telecaller == t.pk|stringformat:"d" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="filter-col">
+      <label>Direction</label>
+      <select name="direction" class="form-select">
+        <option value="">All</option>
+        <option value="outgoing" {% if f.direction == 'outgoing' %}selected{% endif %}>Outgoing</option>
+        <option value="incoming" {% if f.direction == 'incoming' %}selected{% endif %}>Incoming</option>
+        <option value="unknown" {% if f.direction == 'unknown' %}selected{% endif %}>Unknown</option>
+      </select>
+    </div>
+    {% if can_see_unmatched %}
+    <div class="filter-col">
+      <label>Lead</label>
+      <select name="match" class="form-select">
+        <option value="">All</option>
+        <option value="MATCHED" {% if f.match == 'MATCHED' %}selected{% endif %}>Matched</option>
+        <option value="UNMATCHED" {% if f.match == 'UNMATCHED' %}selected{% endif %}>Not matched</option>
+      </select>
+    </div>
+    {% endif %}
+    <div class="filter-col">
+      <label>From</label>
+      <input type="date" name="date_from" value="{{ f.date_from }}" class="form-control">
+    </div>
+    <div class="filter-col">
+      <label>To</label>
+      <input type="date" name="date_to" value="{{ f.date_to }}" class="form-control">
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'call_recordings_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="crm-card">
+  <div class="crm-card-body" style="padding: 12px 24px;">
+    {% if page_obj.object_list %}
+    <div class="table-responsive">
+      <table class="crm-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th>Call time</th>
+            <th>Lead</th>
+            <th>Phone</th>
+            <th>Direction</th>
+            <th>Duration</th>
+            <th>Telecaller</th>
+            <th>Listen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in page_obj.object_list %}
+          <tr>
+            <td>{{ rec.recording_date|date:"d M Y, h:i A"|default:"—" }}</td>
+            <td>
+              {% if rec.lead %}
+                <a href="{% url lead_url_name rec.lead.pk %}" style="font-weight: 600;">{{ rec.lead.name }}</a>
+                {% if rec.lead.branch %}<br><span style="color: var(--text-muted); font-size: 0.8rem;">{{ rec.lead.branch.name }}</span>{% endif %}
+              {% else %}
+                <span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 600;">Not matched</span>
+                <br><span style="color: var(--text-muted); font-size: 0.78rem;">{{ rec.unmatched_reason }}</span>
+              {% endif %}
+            </td>
+            <td style="font-family: monospace;">{{ rec.normalized_mobile_number|default:rec.mobile_number|default:"—" }}</td>
+            <td>{{ rec.get_direction_display }}</td>
+            <td>{{ rec.duration|default:"—" }}</td>
+            <td>{% if rec.telecaller %}{{ rec.telecaller.get_full_name|default:rec.telecaller.username }}{% else %}—{% endif %}</td>
+            <td>
+              {% if rec.has_audio %}
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <div class="tp-waveform-player" data-src="{% url 'drive_stream_recording' rec.pk %}">
+                  <audio preload="none" src="{% url 'drive_stream_recording' rec.pk %}" style="display: none;"></audio>
+                  <button type="button" class="tp-player-btn-play" title="Play" aria-label="Play">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  </button>
+                  <canvas class="tp-player-canvas" width="120" height="24" title="Click to seek"></canvas>
+                  <span class="tp-player-time">00:00</span>
+                  <button type="button" class="tp-player-btn-speed" title="Playback speed">1x</button>
+                </div>
+                <a href="{% url 'drive_stream_recording' rec.pk %}" download="{{ rec.file_name }}" class="tp-btn-icon" title="Download recording ({{ rec.file_name }})" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border-color, #e2e8f0); background: var(--bg-card, #ffffff); color: var(--text-muted, #64748b); text-decoration: none; flex-shrink: 0;" onmouseover="this.style.color='var(--color-primary, #2563eb)'; this.style.borderColor='var(--color-primary, #2563eb)';" onmouseout="this.style.color='var(--text-muted, #64748b)'; this.style.borderColor='var(--border-color, #e2e8f0)';">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </a>
+              </div>
+              {% else %}
+              <span style="color: var(--text-muted); font-size: 0.85rem;">No audio</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div style="display: flex; gap: 8px; justify-content: center; padding: 12px 0;">
+      {% if page_obj.has_previous %}<a class="btn btn-sm btn-secondary" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}">← Previous</a>{% endif %}
+      <span style="align-self: center;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a class="btn btn-sm btn-secondary" href="?{{ query_string }}&page={{ page_obj.next_page_number }}">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div style="text-align: center; color: var(--text-muted); padding: 32px 16px;">
+      <p style="margin: 0;">No call recordings yet.</p>
+      <p style="margin: 4px 0 0; font-size: 0.8rem;">Install the CRM Call Sync app on telecaller phones: every recorded call uploads within about 30 seconds.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/waveform-player.js' %}?v=20261012_audio"></script>
+{% endblock %}
+

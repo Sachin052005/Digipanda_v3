@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Create Branch Head - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>Create Branch Head</h1>
+    <p>Onboard a new Branch Head to administer a branch</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'admin_branch_heads_list' %}" class="btn btn-secondary">Back to Branch Heads</a>
+  </div>
+</div>
+
+<div style="max-width: 650px;">
+  <div class="crm-card">
+    <div class="crm-card-body">
+      <form method="POST">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">First Name <span class="required">*</span></label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name <span class="required">*</span></label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" style="margin-bottom: 0;">Username / Login ID</label>
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.72rem; font-weight: 600;">Auto-generated</span>
+          </div>
+          {{ form.username }}
+          {% if form.username.errors %}<div class="form-error">{{ form.username.errors.0 }}</div>{% endif %}
+          <div class="form-text" id="username-preview-hint" style="color: #64748b; font-size: 0.775rem;">Generated automatically from First &amp; Last Name</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address <span class="required">*</span></label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="form-error">{{ form.email.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Branch <span class="required">*</span></label>
+            {{ form.branch }}
+            {% if form.branch.errors %}<div class="form-error">{{ form.branch.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <!-- SECURE ONBOARDING INFO -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-top: 16px; display: flex; align-items: center; gap: 10px;">
+          <div style="color: #0284c7; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div style="font-size: 0.8rem; color: #475569;">
+            <strong>Automated Account Activation:</strong> A welcome email with secure password setup link will be dispatched immediately to the registered email address.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            {{ form.is_active }} Active Account
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+          <a href="{% url 'admin_branch_heads_list' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create Branch Head &amp; Send Invitation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const firstNameInput = document.getElementById('id_first_name');
+  const lastNameInput = document.getElementById('id_last_name');
+  const emailInput = document.getElementById('id_email');
+  const usernameInput = document.getElementById('id_username');
+  const hintEl = document.getElementById('username-preview-hint');
+
+  let debounceTimer = null;
+
+  function fetchUsernamePreview() {
+    const fn = (firstNameInput ? firstNameInput.value : '').trim();
+    const ln = (lastNameInput ? lastNameInput.value : '').trim();
+    const em = (emailInput ? emailInput.value : '').trim();
+
+    if (!fn && !ln && !em) {
+      if (usernameInput) usernameInput.value = '';
+      if (hintEl) hintEl.textContent = 'Generated automatically from First & Last Name';
+      return;
+    }
+
+    const url = `/accounts/api/username-preview/?first_name=${encodeURIComponent(fn)}&last_name=${encodeURIComponent(ln)}&role=BRANCH_HEAD&email=${encodeURIComponent(em)}`;
+    
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.username) {
+          if (usernameInput) usernameInput.value = data.username;
+          if (hintEl) {
+            if (data.is_collision) {
+              hintEl.textContent = `Unique username generated (collision resolved with suffix '${data.username}')`;
+              hintEl.style.color = '#d97706';
+            } else {
+              hintEl.textContent = `Available login ID: ${data.username}`;
+              hintEl.style.color = '#059669';
+            }
+          }
+        }
+      })
+      .catch(err => console.debug('Preview fetch error:', err));
+  }
+
+  function handleInputChange() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fetchUsernamePreview, 250);
+  }
+
+  if (firstNameInput) firstNameInput.addEventListener('input', handleInputChange);
+  if (lastNameInput) lastNameInput.addEventListener('input', handleInputChange);
+  if (emailInput) emailInput.addEventListener('input', handleInputChange);
+
+  if ((firstNameInput && firstNameInput.value) || (lastNameInput && lastNameInput.value)) {
+    fetchUsernamePreview();
+  }
+})();
+</script>
+
+{% endblock %}

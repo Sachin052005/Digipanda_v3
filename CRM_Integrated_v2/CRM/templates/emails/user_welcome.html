@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to {{ company_name }} CRM — Your Account Details</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #334155;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #f1f5f9;
+      padding: 40px 16px;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      padding: 32px 36px;
+      text-align: left;
+      border-bottom: 3px solid #0284c7;
+    }
+    .brand-title {
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0;
+      display: inline-block;
+    }
+    .brand-badge {
+      display: inline-block;
+      background: rgba(2, 132, 199, 0.25);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      letter-spacing: 0.05em;
+    }
+    .content {
+      padding: 36px;
+    }
+    .greeting-badge {
+      display: inline-block;
+      background-color: #f0fdf4;
+      color: #166534;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      letter-spacing: 0.03em;
+    }
+    h1 {
+      color: #0f172a;
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+      line-height: 1.3;
+    }
+    p {
+      color: #475569;
+      font-size: 15px;
+      line-height: 1.6;
+      margin: 0 0 16px 0;
+    }
+    .details-card {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .details-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      margin: 0 0 14px 0;
+      letter-spacing: 0.05em;
+    }
+    .detail-row {
+      display: flex;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .detail-label {
+      width: 110px;
+      color: #64748b;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .detail-val {
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .detail-val.highlight {
+      color: #0284c7;
+      font-family: monospace, Consolas, Monaco;
+      font-size: 15px;
+    }
+    .btn-container {
+      text-align: center;
+      margin: 32px 0 24px 0;
+    }
+    .btn-setup {
+      display: inline-block;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff !important;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 14px 36px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+    .notice {
+      background-color: #f0f9ff;
+      border-left: 4px solid #0284c7;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #0369a1;
+      border-radius: 0 6px 6px 0;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+    .url-fallback {
+      font-size: 12px;
+      color: #94a3b8;
+      word-break: break-all;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+    .footer {
+      background-color: #f8fafc;
+      padding: 24px 36px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    .footer-muted {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="email-container">
+      <!-- HEADER -->
+      <div class="header">
+        <span class="brand-title">{{ company_name }} CRM</span>
+        <span class="brand-badge">Welcome</span>
+      </div>
+
+      <!-- CONTENT BODY -->
+      <div class="content">
+        <div class="greeting-badge">Welcome aboard!</div>
+        <h1>Hello {{ user_name }},</h1>
+        <p>
+          Your CRM account has been successfully created by your administrator. You can now set up your password and access the CRM using your assigned login ID.
+        </p>
+
+        <!-- ACCOUNT DETAILS -->
+        <div class="details-card">
+          <div class="details-title">Your Account Details</div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 6px 0; width: 110px; color: #64748b; font-weight: 600; font-size: 14px;">Name:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 600; font-size: 14px;">{{ user_name }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; width: 110px; color: #64748b; font-weight: 600; font-size: 14px;">Login ID:</td>
+              <td style="padding: 6px 0; color: #0284c7; font-weight: 700; font-size: 15px; font-family: monospace, Consolas, Monaco;">{{ username }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; width: 110px; color: #64748b; font-weight: 600; font-size: 14px;">Role:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 600; font-size: 14px;">{{ user_role }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; width: 110px; color: #64748b; font-weight: 600; font-size: 14px;">Branch:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 600; font-size: 14px;">{{ branch_name }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="font-weight: 600; color: #0f172a; margin-bottom: 6px;">Set up your password</p>
+        <p>Use the secure button below to create your password and activate your account.</p>
+
+        <!-- CTA BUTTON -->
+        <div class="btn-container">
+          <a href="{{ setup_url }}" class="btn-setup">Set Up My Password</a>
+        </div>
+
+        <div class="notice">
+          This link is valid for a limited time and can only be used according to the account activation rules.
+        </div>
+
+        <p>
+          Once your password is set, open the CRM login page and sign in using your login ID.
+        </p>
+        <p style="font-size: 13px; color: #94a3b8;">
+          If you did not expect this account, please contact your administrator.
+        </p>
+
+        <!-- URL FALLBACK FOR RESTRICTED CLIENTS -->
+        <div class="url-fallback">
+          If the button above does not work, copy and paste this URL into your browser:<br>
+          <a href="{{ setup_url }}" style="color: #0284c7;">{{ setup_url }}</a>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="footer">
+        <div>Regards,<br><strong>CRM Administration Team</strong></div>
+        <div class="footer-muted">
+          This is an automated email. Please do not reply directly.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

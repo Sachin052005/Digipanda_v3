@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% block title %}New Leads - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">NEW LEADS INTAKE</h1>
+      <span class="badge" style="background: #e0f2fe; color: #0284c7; font-size: 0.775rem; font-weight: 600; padding: 4px 8px;">
+        {{ new_leads_count }} Fresh Lead{{ new_leads_count|pluralize }}
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      All newly captured prospects requiring initial outreach, verification, and first contact.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <a href="{% url 'admin_leads_list' %}" class="btn btn-secondary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      All Leads
+    </a>
+    <a href="{% url 'admin_lead_create' %}" class="btn btn-primary">
+      + Add Lead
+    </a>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-card" style="margin-bottom: 20px;">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    {% if sort_by %}<input type="hidden" name="sort" value="{{ sort_by }}">{% endif %}
+    <div class="filter-col" style="flex: 2 1 200px;">
+      <label>Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Search name, phone, notes..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col" style="flex: 1 1 130px;">
+      <label>Branch</label>
+      <select name="branch" class="form-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1 1 140px;">
+      <label>Telecaller</label>
+      <select name="telecaller" class="form-select">
+        <option value="">All Telecallers</option>
+        {% for t in telecallers %}
+        <option value="{{ t.id }}" data-branch="{{ t.branch_id|default:'' }}" {% if telecaller_filter == t.id|stringformat:"i" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1 1 140px;">
+      <label>Counselor</label>
+      <select name="counselor" class="form-select">
+        <option value="">All Counselors</option>
+        {% for c in counselors %}
+        <option value="{{ c.id }}" data-branch="{{ c.branch_id|default:'' }}" {% if counselor_filter == c.id|stringformat:"i" %}selected{% endif %}>{{ c.get_full_name|default:c.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1 1 130px;">
+      <label>Category</label>
+      <select name="category" class="form-select">
+        <option value="">All Categories</option>
+        {% for cat_code, cat_label in categories %}
+        <option value="{{ cat_code }}" {% if category_filter == cat_code %}selected{% endif %}>{{ cat_label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1 1 130px;">
+      <label>Source</label>
+      <input type="text" name="source" class="form-control" placeholder="e.g. Meta, WhatsApp..." value="{{ source_filter }}">
+    </div>
+    <div class="filter-col" style="min-width: 130px;">
+      <label>Created From</label>
+      <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+    </div>
+    <div class="filter-col" style="min-width: 130px;">
+      <label>Created To</label>
+      <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+    </div>
+    <div style="display: flex; gap: 8px; margin-bottom: 2px;">
+      <a href="{% url 'admin_new_leads' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- NEW LEADS TABLE -->
+<div class="crm-card">
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th>Lead Name & Contact</th>
+          <th>Created Time</th>
+          <th>Source</th>
+          <th>Status</th>
+          <th>Assigned Telecaller</th>
+          <th>Assigned Counselor</th>
+          <th>Branch</th>
+          <th>Last Contact</th>
+          <th>Next Follow-up</th>
+          <th>Category</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ld in page_obj %}
+        <tr>
+          <td>
+            <strong><a href="{% url 'admin_lead_detail' ld.pk %}">{{ ld.name }}</a></strong>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
+              <a href="tel:{{ ld.phone }}" style="font-family: monospace; font-size: 0.825rem; font-weight: 600; color: #1e293b; text-decoration: none;" title="Call {{ ld.phone }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                {{ ld.phone }}
+              </a>
+              {% if ld.email %}
+              <span style="font-size: 0.75rem; color: var(--text-muted);">| {{ ld.email }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 500; font-size: 0.85rem; color: #334155;">{{ ld.created_at|date:"M d, Y" }}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">{{ ld.created_at|date:"h:i A" }}</div>
+          </td>
+          <td>
+            <span class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-size: 0.75rem;">
+              {% if ld.source %}{{ ld.source }}{% elif ld.channel %}{{ ld.channel.name }}{% else %}Manual{% endif %}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-new" style="background: #dbeafe; color: #1e40af; font-weight: 600; font-size: 0.75rem;">
+              {{ ld.status }}
+            </span>
+          </td>
+          <td>
+            {% if ld.assigned_telecaller %}
+            <a href="{% url 'admin_telecaller_detail' ld.assigned_telecaller.pk %}" style="font-weight: 600; text-decoration: none;">
+              {{ ld.assigned_telecaller.get_full_name|default:ld.assigned_telecaller.username }}
+            </a>
+            {% else %}
+            <span style="color: #94a3b8; font-style: italic;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ld.assigned_counselor %}
+            <span style="font-weight: 600;">
+              {{ ld.assigned_counselor.get_full_name|default:ld.assigned_counselor.username }}
+            </span>
+            {% else %}
+            <span style="color: #94a3b8; font-style: italic;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ld.branch %}
+            <span class="badge" style="background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; font-size: 0.75rem;">
+              {{ ld.branch.name }}
+            </span>
+            {% else %}
+            <span style="color: #94a3b8;">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ld.latest_call %}
+            <div style="font-size: 0.8rem; font-weight: 600; color: #334155;">{{ ld.latest_call.call_started_at|date:"M d, H:i" }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">{{ ld.latest_call.call_outcome|default:ld.latest_call.call_status }}</div>
+            {% else %}
+            <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 0.7rem;">Never Contacted</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ld.next_followup %}
+            <div style="font-size: 0.8rem; font-weight: 600; color: #0284c7;">{{ ld.next_followup.follow_up_date|date:"M d, Y" }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">{{ ld.next_followup.follow_up_time|default:"Anytime" }}</div>
+            {% else %}
+            <span style="color: #94a3b8; font-size: 0.75rem;">None</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge" style="{% if ld.category == 'Placement' %}background:#fef3c7;color:#92400e;border:1px solid #fde68a;{% else %}background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;{% endif %}font-size:0.75rem;font-weight:600;">
+              {{ ld.category|default:'Training' }}
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 4px;">
+              <a href="{% url 'admin_lead_detail' ld.pk %}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 3px 8px;">
+                View
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="11" style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" style="margin-bottom: 8px;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+            <p style="margin: 0; font-weight: 600; color: #64748b;">No new leads found matching the filter criteria.</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination-wrapper" style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+    <div style="font-size: 0.85rem; color: var(--text-muted);">
+      Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} new leads
+    </div>
+    <div style="display: flex; gap: 4px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&branch={{ branch_filter }}&telecaller={{ telecaller_filter }}&counselor={{ counselor_filter }}&category={{ category_filter }}&source={{ source_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-secondary">Prev</a>
+      {% endif %}
+      <span class="btn btn-sm btn-primary" style="pointer-events: none;">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&branch={{ branch_filter }}&telecaller={{ telecaller_filter }}&counselor={{ counselor_filter }}&category={{ category_filter }}&source={{ source_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-secondary">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,989 @@
+<!-- ADVANCED BULK EDIT MODAL COMPONENT (TECHPANDA CRM) -->
+<div id="tpBulkEditModal" class="tp-bulk-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="bulkModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 1065; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+  <div class="tp-bulk-modal-dialog" style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 780px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid var(--tp-surface-border, #e2e8f0);">
+    {% csrf_token %}
+    <!-- MODAL HEADER -->
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--tp-surface-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center; background: #0f172a; color: #ffffff;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="background: #0284c7; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          </div>
+          <h3 id="bulkModalTitle" style="margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; color: #ffffff;">
+            Advanced Bulk Edit Leads
+          </h3>
+        </div>
+        <p id="bulkModalSubtitle" style="margin: 4px 0 0 42px; font-size: 0.82rem; color: #94a3b8;">
+          Apply atomic updates across <span id="modalTargetLeadCount" style="color: #38bdf8; font-weight: 700;">0</span> selected leads
+        </p>
+      </div>
+      <button type="button" onclick="closeBulkEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; line-height: 1; padding: 4px;">&times;</button>
+    </div>
+
+    <!-- STEP 1: CONFIGURATION FORM -->
+    <div id="bulkEditStep1" style="padding: 24px; overflow-y: auto; flex: 1; display: block;">
+
+      <!-- SECTION A: UPDATE STATUS -->
+      <div class="bulk-form-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+          <input type="checkbox" id="chkUpdateStatus" onchange="toggleSection('secStatus', this.checked)" style="width: 17px; height: 17px;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">A. Update Lead Status</span>
+        </label>
+        <div id="secStatus" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 6px;">New Status</label>
+              <select id="bulkNewStatus" class="form-control" style="width: 100%;">
+                <option value="">-- Choose Target Status --</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size: 0.78rem; color: #64748b; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 4px;">
+                <strong style="color: #0369a1;">Note:</strong> Moving to 'Enrolled' requires Counselor or Manager permissions. Status history will be recorded for all modified leads.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION B: UPDATE RATING -->
+      <div class="bulk-form-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+          <input type="checkbox" id="chkUpdateRating" onchange="toggleSection('secRating', this.checked)" style="width: 17px; height: 17px;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">B. Update Priority Rating (1 - 5 Stars)</span>
+        </label>
+        <div id="secRating" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <div style="display: flex; align-items: center; gap: 18px;">
+            <div id="bulkStarContainer" style="display: flex; gap: 6px; cursor: pointer; font-size: 1.8rem; color: #cbd5e1;">
+              <span class="bulk-star" data-rating="1" onclick="selectBulkRating(1)">★</span>
+              <span class="bulk-star" data-rating="2" onclick="selectBulkRating(2)">★</span>
+              <span class="bulk-star" data-rating="3" onclick="selectBulkRating(3)">★</span>
+              <span class="bulk-star" data-rating="4" onclick="selectBulkRating(4)">★</span>
+              <span class="bulk-star" data-rating="5" onclick="selectBulkRating(5)">★</span>
+            </div>
+            <input type="hidden" id="bulkRatingValue" value="3">
+            <span id="bulkRatingLabel" style="font-size: 0.88rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 10px; border-radius: 6px;">
+              3 Stars (Medium Priority)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION C: REASSIGN LEADS & ALLOCATION -->
+      <div class="bulk-form-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+          <input type="checkbox" id="chkReassign" onchange="toggleSection('secReassign', this.checked)" style="width: 17px; height: 17px;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">C. Reassign Leads (Single or Percentage Allocation)</span>
+        </label>
+        <div id="secReassign" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+
+          <!-- Role & Strategy Selectors -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">Assignee Role</label>
+              <select id="bulkReassignRole" class="form-control" onchange="onReassignRoleChange()" style="width: 100%;">
+                <option value="TELECALLER">Telecaller</option>
+                <option value="COUNSELOR">Counselor</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">Distribution Strategy</label>
+              <select id="bulkReassignStrategy" class="form-control" onchange="onReassignStrategyChange()" style="width: 100%;">
+                <option value="single">Single Assignee (100% of leads)</option>
+                <option value="percentage">Multiple Assignees (% Distribution)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- SINGLE ASSIGNEE MODE -->
+          <div id="reassignSingleContainer" style="margin-bottom: 14px;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">Select Target Assignee</label>
+            <select id="bulkSingleAssignee" class="form-control" style="width: 100%;">
+              <option value="">-- Choose Assignee --</option>
+            </select>
+          </div>
+
+          <!-- PERCENTAGE DISTRIBUTION MODE -->
+          <div id="reassignPercentContainer" style="display: none; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 14px; margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: #0f172a;">Assignee Percentage Distribution</span>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="presetSplit('equal')">Equal Split</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="presetSplit('50-50')">50 / 50</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="presetSplit('50-30-20')">50 / 30 / 20</button>
+              </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;" id="allocationTable">
+              <thead>
+                <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b;">
+                  <th style="padding: 6px 8px;">Assignee</th>
+                  <th style="width: 120px; padding: 6px 8px;">Percentage (%)</th>
+                  <th style="width: 120px; padding: 6px 8px;">Est. Leads</th>
+                  <th style="width: 40px; text-align: center;"></th>
+                </tr>
+              </thead>
+              <tbody id="allocationRows">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid #f1f5f9;">
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="addAllocationRow()">+ Add Assignee</button>
+              <div id="percentageTotalBadge" style="font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: #fee2e2; color: #dc2626;">
+                Total: 0% (Must be 100%)
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION D: PENDING TASK HANDLING -->
+          <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+              D. Pending Follow-up Task Handling Policy
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="radio" name="pending_task_handling" value="reassign" checked>
+                <span><strong>Reassign pending follow-ups to new assignee</strong> (Recommended)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="radio" name="pending_task_handling" value="preserve">
+                <span><strong>Preserve existing follow-up owner</strong> (Keep tasks with original staff)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="radio" name="pending_task_handling" value="cancel">
+                <span><strong>Cancel pending follow-ups</strong> (Clear scheduled calls for redistributed leads)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- SECTION E: REASSIGNMENT NOTE -->
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">
+              E. Reassignment Note / Activity Log Reason
+            </label>
+            <textarea id="bulkReassignNote" rows="2" class="form-control" placeholder="Optional explanation for redistribution audit trail..." style="width: 100%; font-size: 0.85rem;"></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION F: TAGS / GROUPS -->
+      <div class="bulk-form-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+          <input type="checkbox" id="chkUpdateTags" onchange="toggleSection('secTags', this.checked)" style="width: 17px; height: 17px;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">F. Add / Remove Tags</span>
+        </label>
+        <div id="secTags" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #059669; margin-bottom: 4px;">+ Add Tag(s)</label>
+              <input type="text" id="bulkAddTagsInput" class="form-control" placeholder="e.g. Hot Lead, Batch Nov (comma separated)" style="width: 100%; font-size: 0.85rem;">
+              <div id="existingTagChipsAdd" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;"></div>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #dc2626; margin-bottom: 4px;">- Remove Tag(s)</label>
+              <input type="text" id="bulkRemoveTagsInput" class="form-control" placeholder="Tag name(s) to remove (comma separated)" style="width: 100%; font-size: 0.85rem;">
+              <div id="existingTagChipsRemove" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION G: CUSTOM & STANDARD FIELDS -->
+      <div class="bulk-form-section" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+          <input type="checkbox" id="chkUpdateFields" onchange="toggleSection('secFields', this.checked)" style="width: 17px; height: 17px;">
+          <span style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">G. Bulk Standard & Custom Field Updates</span>
+        </label>
+        <div id="secFields" style="display: none; margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">Category</label>
+              <select id="bulkFieldCategory" class="form-control" style="width: 100%;">
+                <option value="">(No change)</option>
+                <option value="Training">Training</option>
+                <option value="Placement">Placement</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">Product / Course</label>
+              <select id="bulkFieldProduct" class="form-control" style="width: 100%;">
+                <option value="">(No change)</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">Branch</label>
+              <select id="bulkFieldBranch" class="form-control" style="width: 100%;">
+                <option value="">(No change)</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 4px;">Channel</label>
+              <select id="bulkFieldChannel" class="form-control" style="width: 100%;">
+                <option value="">(No change)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Notes Action -->
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 6px;">Notes Update</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 6px;">
+              <select id="bulkNotesAction" class="form-control" style="width: 160px;">
+                <option value="append">Append Note</option>
+                <option value="prepend">Prepend Note</option>
+                <option value="replace">Replace Notes</option>
+              </select>
+              <input type="text" id="bulkNotesText" class="form-control" placeholder="Leave empty for no note update" style="flex: 1;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- STEP 2: PREVIEW & VERIFICATION SCREEN -->
+    <div id="bulkEditStep2" style="padding: 24px; overflow-y: auto; flex: 1; display: none;">
+      <!-- Loading State -->
+      <div id="previewLoadingState" style="text-align: center; padding: 48px 20px; color: #64748b;">
+        <div style="width: 38px; height: 38px; border: 3px solid #e2e8f0; border-top-color: #0284c7; border-radius: 50%; animation: tpSpin 0.8s linear infinite; margin: 0 auto 16px auto;"></div>
+        <div style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Generating server verification preview...</div>
+        <div style="font-size: 0.85rem; color: #64748b;">Validating permissions, staff allocations, and branch scopes...</div>
+      </div>
+
+      <!-- Error State with Actionable Retry -->
+      <div id="previewErrorState" style="display: none; text-align: center; padding: 36px 20px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <div style="font-size: 1.05rem; font-weight: 700; color: #991b1b; margin-bottom: 6px;">Preview Verification Failed</div>
+        <div id="previewErrorMessage" style="font-size: 0.85rem; color: #475569; max-width: 480px; margin: 0 auto 18px auto; line-height: 1.5;"></div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button type="button" class="btn btn-primary" onclick="requestBulkPreview()" style="font-weight: 600; padding: 7px 20px; border-radius: 8px;">
+            Retry Verification
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="goToStep1()" style="font-weight: 600; padding: 7px 20px; border-radius: 8px;">
+            &larr; Back to Edit
+          </button>
+        </div>
+      </div>
+
+      <div id="previewContentState" style="display: none;">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;">
+          <div style="font-size: 0.95rem; font-weight: 800; color: #1e40af; margin-bottom: 4px;">
+            Operation Verification Summary
+          </div>
+          <div style="font-size: 0.85rem; color: #3b82f6;">
+            Targeting <strong id="prevTotalCount" style="color: #1e3a8a;">0</strong> authorized leads. Confirm planned updates below before execution.
+          </div>
+        </div>
+
+        <div id="previewWarningsContainer" style="display: none; margin-bottom: 16px;"></div>
+
+        <div id="previewCardsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+          <!-- Dynamically populated summary cards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL FOOTER -->
+    <div style="padding: 16px 24px; border-top: 1px solid var(--tp-surface-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+      <div>
+        <span id="bulkValidationAlert" style="font-size: 0.82rem; font-weight: 600; color: #dc2626; display: none;"></span>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeBulkEditModal()">Cancel</button>
+        <button type="button" class="btn btn-secondary" id="btnBulkBack" onclick="goToStep1()" style="display: none;">&larr; Back to Edit</button>
+        <button type="button" class="btn btn-primary" id="btnBulkPreview" onclick="requestBulkPreview()" style="font-weight: 700; padding: 8px 20px;">
+          Preview Changes &rarr;
+        </button>
+        <button type="button" class="btn btn-success" id="btnBulkConfirm" onclick="submitBulkExecution()" style="display: none; font-weight: 800; background: #059669; border: none; padding: 8px 22px;">
+          Confirm & Apply Updates
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+@keyframes tpSpin {
+  to { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+// Advanced Bulk Edit State Management & Helpers
+window.tpBulkEditCatalog = null;
+window.tpBulkAllocations = [];
+window.tpBulkCurrentPreview = null;
+window.tpBulkIdempotencyKey = null;
+
+let tpBulkPreviewAbortController = null;
+let tpBulkRequestSeq = 0;
+
+function cancelPendingPreview() {
+  if (tpBulkPreviewAbortController) {
+    try { tpBulkPreviewAbortController.abort(); } catch (e) {}
+    tpBulkPreviewAbortController = null;
+  }
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+window.getCookie = window.getCookie || getCookie;
+
+function getCsrfToken() {
+  const tokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+  if (tokenInput && tokenInput.value) return tokenInput.value;
+  return getCookie('csrftoken') || '';
+}
+
+function toggleSection(elementId, isChecked) {
+  const el = document.getElementById(elementId);
+  if (el) el.style.display = isChecked ? 'block' : 'none';
+}
+
+function selectBulkRating(rating) {
+  document.getElementById('bulkRatingValue').value = rating;
+  const stars = document.querySelectorAll('#bulkStarContainer .bulk-star');
+  stars.forEach((s, idx) => {
+    s.style.color = (idx < rating) ? '#f59e0b' : '#cbd5e1';
+  });
+  const labels = {
+    1: '1 Star (Low Priority)',
+    2: '2 Stars',
+    3: '3 Stars (Medium Priority)',
+    4: '4 Stars (High Priority)',
+    5: '5 Stars (Urgent / VIP)'
+  };
+  document.getElementById('bulkRatingLabel').textContent = labels[rating] || (rating + ' Stars');
+}
+
+function openBulkEditModal() {
+  const modal = document.getElementById('tpBulkEditModal');
+  const targetCountSpan = document.getElementById('modalTargetLeadCount');
+  const ids = (typeof getSelectedLeadIds === 'function') ? getSelectedLeadIds() : [];
+  const isAllMatching = window.selectAllMatchingFilters || false;
+
+  if (ids.length === 0 && !isAllMatching) {
+    alert('Please select at least one lead from the table to bulk edit.');
+    return;
+  }
+
+  targetCountSpan.textContent = isAllMatching ? 'All matching filtered' : ids.length;
+  modal.style.display = 'flex';
+  selectBulkRating(3);
+  goToStep1();
+
+  // Load catalog options if not already cached
+  if (!window.tpBulkEditCatalog) {
+    fetch('/leads/api/bulk-edit/options/')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          window.tpBulkEditCatalog = data;
+          populateBulkOptions(data);
+        }
+      })
+      .catch(err => console.error("Error loading bulk options:", err));
+  } else {
+    populateBulkOptions(window.tpBulkEditCatalog);
+  }
+}
+
+function closeBulkEditModal() {
+  cancelPendingPreview();
+  const modal = document.getElementById('tpBulkEditModal');
+  if (modal) modal.style.display = 'none';
+  goToStep1();
+}
+
+function populateBulkOptions(catalog) {
+  // 1. Statuses
+  const statusSel = document.getElementById('bulkNewStatus');
+  if (statusSel && statusSel.options.length <= 1) {
+    catalog.statuses.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.value;
+      opt.textContent = s.label;
+      statusSel.appendChild(opt);
+    });
+  }
+
+  // 2. Assignees
+  onReassignRoleChange();
+
+  // 3. Products
+  const prodSel = document.getElementById('bulkFieldProduct');
+  if (prodSel && prodSel.options.length <= 1) {
+    catalog.products.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name;
+      prodSel.appendChild(opt);
+    });
+  }
+
+  // 4. Branches
+  const brSel = document.getElementById('bulkFieldBranch');
+  if (brSel && brSel.options.length <= 1) {
+    catalog.branches.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.id;
+      opt.textContent = b.name;
+      brSel.appendChild(opt);
+    });
+  }
+
+  // 5. Channels
+  const chSel = document.getElementById('bulkFieldChannel');
+  if (chSel && chSel.options.length <= 1) {
+    catalog.channels.forEach(ch => {
+      const opt = document.createElement('option');
+      opt.value = ch.id;
+      opt.textContent = ch.name;
+      chSel.appendChild(opt);
+    });
+  }
+
+  // 6. Existing Tag Chips
+  const tagAddContainer = document.getElementById('existingTagChipsAdd');
+  if (tagAddContainer) {
+    tagAddContainer.innerHTML = '';
+    (catalog.tags || []).forEach(t => {
+      const chip = document.createElement('span');
+      chip.style.cssText = 'background: #e2e8f0; color: #334155; font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; cursor: pointer;';
+      chip.textContent = '+ ' + t.name;
+      chip.onclick = () => {
+        const inp = document.getElementById('bulkAddTagsInput');
+        inp.value = inp.value ? (inp.value + ', ' + t.name) : t.name;
+      };
+      tagAddContainer.appendChild(chip);
+    });
+  }
+}
+
+function onReassignRoleChange() {
+  if (!window.tpBulkEditCatalog) return;
+  const role = document.getElementById('bulkReassignRole').value;
+  const staffList = (role === 'COUNSELOR') ? window.tpBulkEditCatalog.counselors : window.tpBulkEditCatalog.telecallers;
+
+  // Single select
+  const singleSel = document.getElementById('bulkSingleAssignee');
+  if (singleSel) {
+    singleSel.innerHTML = '<option value="">-- Choose Assignee --</option>';
+    staffList.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.name + (s.branch_name ? ` (${s.branch_name})` : '');
+      singleSel.appendChild(opt);
+    });
+  }
+
+  // Reset percentage allocation rows with top 2 staff
+  window.tpBulkAllocations = [];
+  if (staffList.length >= 2) {
+    window.tpBulkAllocations.push({ user_id: staffList[0].id, percentage: 50 });
+    window.tpBulkAllocations.push({ user_id: staffList[1].id, percentage: 50 });
+  } else if (staffList.length === 1) {
+    window.tpBulkAllocations.push({ user_id: staffList[0].id, percentage: 100 });
+  }
+  renderAllocationRows();
+}
+
+function onReassignStrategyChange() {
+  const strategy = document.getElementById('bulkReassignStrategy').value;
+  document.getElementById('reassignSingleContainer').style.display = (strategy === 'single') ? 'block' : 'none';
+  document.getElementById('reassignPercentContainer').style.display = (strategy === 'percentage') ? 'block' : 'none';
+}
+
+function renderAllocationRows() {
+  const tbody = document.getElementById('allocationRows');
+  if (!tbody || !window.tpBulkEditCatalog) return;
+  tbody.innerHTML = '';
+
+  const role = document.getElementById('bulkReassignRole').value;
+  const staffList = (role === 'COUNSELOR') ? window.tpBulkEditCatalog.counselors : window.tpBulkEditCatalog.telecallers;
+  const targetLeadCount = parseInt(document.getElementById('modalTargetLeadCount').textContent, 10) || 100;
+
+  window.tpBulkAllocations.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #f1f5f9';
+
+    // Staff Select
+    let optionsHtml = '';
+    staffList.forEach(s => {
+      const sel = (s.id == item.user_id) ? 'selected' : '';
+      optionsHtml += `<option value="${s.id}" ${sel}>${s.name} ${s.branch_name ? '(' + s.branch_name + ')' : ''}</option>`;
+    });
+
+    const estCount = Math.round((targetLeadCount * (item.percentage || 0)) / 100);
+
+    tr.innerHTML = `
+      <td style="padding: 6px 8px;">
+        <select class="form-control form-control-sm" onchange="updateAllocationStaff(${idx}, this.value)" style="width: 100%;">
+          ${optionsHtml}
+        </select>
+      </td>
+      <td style="padding: 6px 8px;">
+        <input type="number" min="0" max="100" class="form-control form-control-sm" value="${item.percentage}" oninput="updateAllocationPct(${idx}, this.value)" style="width: 100%; font-weight: 700;">
+      </td>
+      <td style="padding: 6px 8px; font-weight: 700; color: #0284c7;">
+        ~${estCount} leads
+      </td>
+      <td style="text-align: center;">
+        <button type="button" style="background: none; border: none; color: #ef4444; font-size: 1.1rem; cursor: pointer;" onclick="removeAllocationRow(${idx})">&times;</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  recalcTotalPercentage();
+}
+
+function addAllocationRow() {
+  if (!window.tpBulkEditCatalog) return;
+  const role = document.getElementById('bulkReassignRole').value;
+  const staffList = (role === 'COUNSELOR') ? window.tpBulkEditCatalog.counselors : window.tpBulkEditCatalog.telecallers;
+  if (!staffList.length) return;
+
+  window.tpBulkAllocations.push({ user_id: staffList[0].id, percentage: 0 });
+  renderAllocationRows();
+}
+
+function removeAllocationRow(index) {
+  window.tpBulkAllocations.splice(index, 1);
+  renderAllocationRows();
+}
+
+function updateAllocationStaff(index, userId) {
+  if (window.tpBulkAllocations[index]) {
+    window.tpBulkAllocations[index].user_id = parseInt(userId, 10);
+  }
+}
+
+function updateAllocationPct(index, val) {
+  if (window.tpBulkAllocations[index]) {
+    window.tpBulkAllocations[index].percentage = parseFloat(val) || 0;
+    recalcTotalPercentage();
+  }
+}
+
+function recalcTotalPercentage() {
+  let total = 0;
+  window.tpBulkAllocations.forEach(a => total += (parseFloat(a.percentage) || 0));
+  const badge = document.getElementById('percentageTotalBadge');
+  if (badge) {
+    if (Math.abs(total - 100) < 0.01) {
+      badge.style.background = '#dcfce7';
+      badge.style.color = '#15803d';
+      badge.textContent = 'Total: 100% (Valid)';
+    } else {
+      badge.style.background = '#fee2e2';
+      badge.style.color = '#dc2626';
+      badge.textContent = `Total: ${total}% (Must be 100%)`;
+    }
+  }
+}
+
+function presetSplit(type) {
+  const count = window.tpBulkAllocations.length;
+  if (count === 0) return;
+
+  if (type === 'equal') {
+    const each = Math.floor(100 / count);
+    const rem = 100 - (each * count);
+    window.tpBulkAllocations.forEach((a, i) => a.percentage = each + (i === count - 1 ? rem : 0));
+  } else if (type === '50-50' && count >= 2) {
+    window.tpBulkAllocations[0].percentage = 50;
+    window.tpBulkAllocations[1].percentage = 50;
+    for (let i = 2; i < count; i++) window.tpBulkAllocations[i].percentage = 0;
+  } else if (type === '50-30-20' && count >= 3) {
+    window.tpBulkAllocations[0].percentage = 50;
+    window.tpBulkAllocations[1].percentage = 30;
+    window.tpBulkAllocations[2].percentage = 20;
+    for (let i = 3; i < count; i++) window.tpBulkAllocations[i].percentage = 0;
+  }
+  renderAllocationRows();
+}
+
+function collectBulkChanges() {
+  const changes = {};
+
+  // Status
+  if (document.getElementById('chkUpdateStatus').checked) {
+    const st = document.getElementById('bulkNewStatus').value;
+    if (st) changes.status = st;
+  }
+
+  // Rating
+  if (document.getElementById('chkUpdateRating').checked) {
+    changes.rating = parseInt(document.getElementById('bulkRatingValue').value, 10);
+  }
+
+  // Reassignment
+  if (document.getElementById('chkReassign').checked) {
+    const role = document.getElementById('bulkReassignRole').value;
+    const strategy = document.getElementById('bulkReassignStrategy').value;
+    const taskHandling = document.querySelector('input[name="pending_task_handling"]:checked').value;
+
+    const reassignObj = {
+      role: role,
+      strategy: strategy,
+      pending_tasks: taskHandling,
+    };
+
+    if (strategy === 'single') {
+      const uId = document.getElementById('bulkSingleAssignee').value;
+      if (!uId) throw new Error("Please select a target assignee for single assignment.");
+      reassignObj.target_user_id = parseInt(uId, 10);
+    } else {
+      let totalPct = 0;
+      window.tpBulkAllocations.forEach(a => totalPct += (parseFloat(a.percentage) || 0));
+      if (Math.abs(totalPct - 100) > 0.01) {
+        throw new Error(`Allocation percentages must total exactly 100% (currently ${totalPct}%).`);
+      }
+      reassignObj.allocations = window.tpBulkAllocations;
+    }
+    changes.reassignment = reassignObj;
+  }
+
+  // Tags
+  if (document.getElementById('chkUpdateTags').checked) {
+    const addStr = document.getElementById('bulkAddTagsInput').value.trim();
+    const remStr = document.getElementById('bulkRemoveTagsInput').value.trim();
+    const addArr = addStr ? addStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const remArr = remStr ? remStr.split(',').map(s => s.trim()).filter(Boolean) : [];
+    if (addArr.length || remArr.length) {
+      changes.tags = { add: addArr, remove: remArr };
+    }
+  }
+
+  // Fields
+  if (document.getElementById('chkUpdateFields').checked) {
+    const fields = {};
+    const cat = document.getElementById('bulkFieldCategory').value;
+    if (cat) fields.category = cat;
+
+    const prod = document.getElementById('bulkFieldProduct').value;
+    if (prod) fields.product_id = parseInt(prod, 10);
+
+    const br = document.getElementById('bulkFieldBranch').value;
+    if (br) fields.branch_id = parseInt(br, 10);
+
+    const ch = document.getElementById('bulkFieldChannel').value;
+    if (ch) fields.channel_id = parseInt(ch, 10);
+
+    const notesText = document.getElementById('bulkNotesText').value.trim();
+    if (notesText) {
+      fields.notes_action = document.getElementById('bulkNotesAction').value;
+      fields.notes_text = notesText;
+    }
+
+    if (Object.keys(fields).length > 0) {
+      changes.fields = fields;
+    }
+  }
+
+  return changes;
+}
+
+function goToStep1() {
+  cancelPendingPreview();
+  document.getElementById('bulkEditStep1').style.display = 'block';
+  document.getElementById('bulkEditStep2').style.display = 'none';
+  document.getElementById('previewLoadingState').style.display = 'none';
+  document.getElementById('previewErrorState').style.display = 'none';
+  document.getElementById('previewContentState').style.display = 'none';
+  document.getElementById('btnBulkPreview').style.display = 'inline-block';
+  document.getElementById('btnBulkConfirm').style.display = 'none';
+  document.getElementById('btnBulkBack').style.display = 'none';
+  document.getElementById('bulkValidationAlert').style.display = 'none';
+}
+
+function showPreviewError(msg) {
+  document.getElementById('previewLoadingState').style.display = 'none';
+  document.getElementById('previewContentState').style.display = 'none';
+  document.getElementById('btnBulkConfirm').style.display = 'none';
+  const errDiv = document.getElementById('previewErrorState');
+  const msgEl = document.getElementById('previewErrorMessage');
+  if (msgEl) msgEl.textContent = msg;
+  if (errDiv) errDiv.style.display = 'block';
+}
+
+function requestBulkPreview() {
+  const alertEl = document.getElementById('bulkValidationAlert');
+  alertEl.style.display = 'none';
+
+  let changes;
+  try {
+    changes = collectBulkChanges();
+    if (Object.keys(changes).length === 0) {
+      throw new Error("Please enable and select at least one change to preview.");
+    }
+  } catch (err) {
+    alertEl.textContent = err.message;
+    alertEl.style.display = 'inline-block';
+    return;
+  }
+
+  // Cancel prior in-flight preview request
+  cancelPendingPreview();
+  const currentSeq = ++tpBulkRequestSeq;
+  const controller = new AbortController();
+  tpBulkPreviewAbortController = controller;
+
+  // Switch to Step 2
+  document.getElementById('bulkEditStep1').style.display = 'none';
+  document.getElementById('bulkEditStep2').style.display = 'block';
+  document.getElementById('previewLoadingState').style.display = 'block';
+  document.getElementById('previewErrorState').style.display = 'none';
+  document.getElementById('previewContentState').style.display = 'none';
+  document.getElementById('btnBulkPreview').style.display = 'none';
+  document.getElementById('btnBulkBack').style.display = 'inline-block';
+
+  // 15-second timeout safeguard
+  const timeoutId = setTimeout(() => {
+    if (currentSeq === tpBulkRequestSeq) {
+      controller.abort();
+      showPreviewError("Preview generation timed out after 15 seconds. Please check server logs or click Retry.");
+    }
+  }, 15000);
+
+  const ids = (typeof getSelectedLeadIds === 'function') ? getSelectedLeadIds() : [];
+  const filters = (typeof getActiveFilterParams === 'function') ? getActiveFilterParams() : {};
+  const isAllMatching = window.selectAllMatchingFilters || false;
+
+  fetch('/leads/api/bulk-edit/preview/', {
+    method: 'POST',
+    signal: controller.signal,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      lead_ids: isAllMatching ? [] : ids,
+      filters: isAllMatching ? filters : {},
+      changes: changes
+    })
+  })
+  .then(r => {
+    clearTimeout(timeoutId);
+    if (!r.ok) {
+      return r.json().catch(() => ({})).then(errData => {
+        throw new Error(errData.error || `Server responded with status ${r.status}`);
+      });
+    }
+    return r.json();
+  })
+  .then(res => {
+    if (currentSeq !== tpBulkRequestSeq) return; // Stale response discarded
+    document.getElementById('previewLoadingState').style.display = 'none';
+
+    if (!res.success) {
+      showPreviewError(res.error || 'Preview verification failed.');
+      return;
+    }
+    renderPreviewDetails(res.preview, changes);
+  })
+  .catch(err => {
+    clearTimeout(timeoutId);
+    if (currentSeq !== tpBulkRequestSeq) return; // Stale response discarded
+    if (err.name === 'AbortError') return; // Handled by timeout or cancel
+    document.getElementById('previewLoadingState').style.display = 'none';
+    showPreviewError(err.message || 'Unable to connect to verification preview service.');
+  });
+}
+
+function renderPreviewDetails(preview, changes) {
+  window.tpBulkCurrentPreview = { preview, changes };
+  window.tpBulkIdempotencyKey = 'idemp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+  document.getElementById('previewContentState').style.display = 'block';
+  document.getElementById('prevTotalCount').textContent = preview.total_authorized;
+  document.getElementById('btnBulkConfirm').style.display = 'inline-block';
+
+  // Warnings
+  const warnDiv = document.getElementById('previewWarningsContainer');
+  if (preview.warnings && preview.warnings.length > 0) {
+    warnDiv.innerHTML = `
+      <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 0.82rem; color: #92400e;">
+        <strong>Warnings & Notices:</strong>
+        <ul style="margin: 4px 0 0 16px; padding: 0;">
+          ${preview.warnings.map(w => `<li>${w}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+    warnDiv.style.display = 'block';
+  } else {
+    warnDiv.style.display = 'none';
+  }
+
+  // Summary Cards
+  const cardsContainer = document.getElementById('previewCardsContainer');
+  cardsContainer.innerHTML = '';
+  const summary = preview.changes_summary;
+
+  // 1. Status Card
+  if (summary.status) {
+    cardsContainer.innerHTML += `
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Lead Status</div>
+        <div style="font-size: 1rem; font-weight: 800; color: #0284c7; margin: 3px 0;">New Status: ${summary.status.target_status}</div>
+        ${summary.status.note ? `<div style="font-size: 0.78rem; color: #b45309;">${summary.status.note}</div>` : ''}
+      </div>
+    `;
+  }
+
+  // 2. Rating Card
+  if (summary.rating) {
+    cardsContainer.innerHTML += `
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Priority Rating</div>
+        <div style="font-size: 1rem; font-weight: 800; color: #d97706; margin: 3px 0;">★ ${summary.rating.stars_label}</div>
+      </div>
+    `;
+  }
+
+  // 3. Reassignment Card
+  if (summary.reassignment) {
+    const r = summary.reassignment;
+    let allocHtml = '';
+    if (r.strategy === 'single') {
+      allocHtml = `<div>Assign 100% (${r.assigned_count} leads) to <strong>${r.assignee_name}</strong></div>`;
+    } else if (r.allocations) {
+      allocHtml = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-top: 6px;">
+          ${r.allocations.map(a => `
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px;">
+              <div style="font-weight: 700; color: #0f172a;">${a.user_name}</div>
+              <div style="font-size: 0.8rem; color: #0284c7; font-weight: 600;">${a.percentage}% &rarr; ${a.count} leads</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    cardsContainer.innerHTML += `
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Reassignment & Task Handling</div>
+        <div style="font-size: 0.9rem; font-weight: 700; color: #0f172a; margin: 3px 0;">Role: ${r.target_role} (${r.strategy.toUpperCase()})</div>
+        ${allocHtml}
+        <div style="font-size: 0.78rem; color: #475569; margin-top: 6px;">
+          Pending follow-up tasks policy: <strong>${r.pending_tasks_handling}</strong>
+        </div>
+      </div>
+    `;
+  }
+
+  // 4. Tags Card
+  if (summary.tags) {
+    cardsContainer.innerHTML += `
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Tags</div>
+        ${summary.tags.add.length ? `<div style="font-size: 0.85rem; color: #059669;"><strong>Add:</strong> ${summary.tags.add.join(', ')}</div>` : ''}
+        ${summary.tags.remove.length ? `<div style="font-size: 0.85rem; color: #dc2626;"><strong>Remove:</strong> ${summary.tags.remove.join(', ')}</div>` : ''}
+      </div>
+    `;
+  }
+
+  // 5. Fields Card
+  if (summary.fields) {
+    cardsContainer.innerHTML += `
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+        <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Custom & Standard Fields</div>
+        <div style="font-size: 0.85rem; color: #0f172a; margin-top: 4px;">
+          ${Object.entries(summary.fields).map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+}
+
+function submitBulkExecution() {
+  if (!window.tpBulkCurrentPreview) return;
+  const btn = document.getElementById('btnBulkConfirm');
+  btn.disabled = true;
+  btn.textContent = 'Applying Updates...';
+
+  const ids = (typeof getSelectedLeadIds === 'function') ? getSelectedLeadIds() : [];
+  const filters = (typeof getActiveFilterParams === 'function') ? getActiveFilterParams() : {};
+  const isAllMatching = window.selectAllMatchingFilters || false;
+  const note = document.getElementById('bulkReassignNote').value.trim();
+
+  fetch('/leads/api/bulk-edit/execute/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      lead_ids: isAllMatching ? [] : ids,
+      filters: isAllMatching ? filters : {},
+      changes: window.tpBulkCurrentPreview.changes,
+      idempotency_key: window.tpBulkIdempotencyKey,
+      note: note
+    })
+  })
+  .then(r => r.json())
+  .then(res => {
+    btn.disabled = false;
+    btn.textContent = 'Confirm & Apply Updates';
+
+    if (!res.success) {
+      alert('Bulk operation error: ' + (res.error || 'Failed to apply changes.'));
+      return;
+    }
+
+    closeBulkEditModal();
+    if (typeof showToast === 'function') {
+      showToast(res.message, false);
+    } else {
+      alert(res.message);
+    }
+
+    // Reload lead list to reflect changes
+    setTimeout(() => {
+      window.location.reload();
+    }, 900);
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.textContent = 'Confirm & Apply Updates';
+    alert('Communication error during execution: ' + err);
+  });
+}
+
+// Modal Dismiss on Backdrop Click & Escape Key
+(function() {
+  const modalEl = document.getElementById('tpBulkEditModal');
+  if (modalEl) {
+    modalEl.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeBulkEditModal();
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modalEl.style.display === 'flex') {
+        closeBulkEditModal();
+      }
+    });
+  }
+})();
+</script>

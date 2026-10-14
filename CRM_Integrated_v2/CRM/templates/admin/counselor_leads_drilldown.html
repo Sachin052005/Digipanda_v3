@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% block title %}{{ counselor.get_full_name|default:counselor.username }} - Lead Drill-down - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">COUNSELOR LEAD DRILL-DOWN</h1>
+      <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.8rem; font-weight: 600; padding: 4px 8px;">
+        {{ total_leads }} Total Lead{{ total_leads|pluralize }}
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Counselor: <strong>{{ counselor.get_full_name|default:counselor.username }}</strong> &bull;
+      Branch: <strong>{{ counselor.branch.name|default:"General" }}</strong> &bull;
+      Detailed lead breakdown, RNR analysis, unattended leads, and conversion tracking.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <a href="{% url 'admin_counselor_detail' counselor.pk %}" class="btn btn-secondary">
+      &larr; Counselor Profile
+    </a>
+    <a href="{% url 'admin_counselors_list' %}" class="btn btn-secondary">
+      All Counselors
+    </a>
+  </div>
+</div>
+
+<!-- KPI SUMMARY CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px;">
+  <!-- Total Leads -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Total Assigned Leads</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #1e40af; margin: 4px 0;">{{ total_leads }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Direct + Supervised</div>
+  </div>
+
+  <!-- Unattended Leads -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Unattended Leads</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #d97706; margin: 4px 0;">{{ unattended_leads_count }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">New with 0 call logs</div>
+  </div>
+
+  <!-- RNR Leads -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">RNR Leads</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #dc2626; margin: 4px 0;">{{ rnr_leads_count }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Ring No Response</div>
+  </div>
+
+  <!-- In Counseling -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">In Counseling / Visited</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #7c3aed; margin: 4px 0;">{{ active_engagement_count }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Active counseling stages</div>
+  </div>
+
+  <!-- Enrolled -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Enrolled</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #16a34a; margin: 4px 0;">{{ joined_count }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Admissions confirmed</div>
+  </div>
+</div>
+
+<!-- FILTER & SEARCH BAR -->
+<div class="filter-card" style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); margin-bottom: 20px;">
+  <form method="get" class="filter-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: flex-end;">
+    <div class="filter-col">
+      <label style="font-size: 0.75rem; font-weight: 600; color: #4b5563; display: block; margin-bottom: 4px;">Search Lead</label>
+      <input type="text" name="search" class="form-control" placeholder="Name, Phone, Email..." value="{{ search_query }}">
+    </div>
+
+    <div class="filter-col">
+      <label style="font-size: 0.75rem; font-weight: 600; color: #4b5563; display: block; margin-bottom: 4px;">Status</label>
+      <select name="status" class="form-control">
+        <option value="">All Statuses</option>
+        {% for st_val, st_lbl in status_choices %}
+          <option value="{{ st_val }}" {% if status_filter == st_val %}selected{% endif %}>{{ st_lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-col">
+      <label style="font-size: 0.75rem; font-weight: 600; color: #4b5563; display: block; margin-bottom: 4px;">Category</label>
+      <select name="category" class="form-control">
+        <option value="">All Categories</option>
+        <option value="Training" {% if category_filter == 'Training' %}selected{% endif %}>Training</option>
+        <option value="Placement" {% if category_filter == 'Placement' %}selected{% endif %}>Placement</option>
+      </select>
+    </div>
+
+    <div class="filter-col">
+      <label style="font-size: 0.75rem; font-weight: 600; color: #4b5563; display: block; margin-bottom: 4px;">Special Queue</label>
+      <select name="special_filter" class="form-control">
+        <option value="">All Leads</option>
+        <option value="rnr" {% if special_filter == 'rnr' %}selected{% endif %}>RNR Only (Missed/Unanswered)</option>
+        <option value="unattended" {% if special_filter == 'unattended' %}selected{% endif %}>Unattended Only (0 Calls)</option>
+        <option value="repeat_rnr" {% if special_filter == 'repeat_rnr' %}selected{% endif %}>Repeat RNR (&ge;2 Attempts)</option>
+      </select>
+    </div>
+
+    <div class="filter-col" style="display: flex; gap: 8px;">
+      <a href="?" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- LEADS TABLE WITH 3-CALL HISTORY -->
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="table" style="margin: 0;">
+      <thead>
+        <tr>
+          <th>Lead Name</th>
+          <th>Contact</th>
+          <th>Status</th>
+          <th>Category</th>
+          <th>Assigned Telecaller</th>
+          <th>RNR Count</th>
+          <th style="min-width: 280px;">Recent 3-Call History</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lead in page_obj %}
+        <tr>
+          <td>
+            <a href="{% url 'admin_lead_detail' lead.id %}" style="font-weight: 600; color: #1e40af; text-decoration: none;">
+              {{ lead.name }}
+            </a>
+            <div style="font-size: 0.75rem; color: #6b7280;">ID #{{ lead.id }}</div>
+          </td>
+          <td>
+            <div style="font-family: monospace; font-size: 0.85rem;">{{ lead.phone }}</div>
+            {% if lead.email %}
+              <div style="font-size: 0.75rem; color: #6b7280;">{{ lead.email }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge" style="background: #e2e8f0; color: #1e293b; font-weight: 600;">
+              {{ lead.status }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" style="background: {% if lead.category == 'Training' %}#e0e7ff; color: #4338ca;{% else %}#fef3c7; color: #92400e;{% endif %}">
+              {{ lead.category|default:"Training" }}
+            </span>
+          </td>
+          <td>
+            {% if lead.assigned_telecaller %}
+              <span style="font-size: 0.85rem; font-weight: 500; color: #374151;">
+                {{ lead.assigned_telecaller.get_full_name|default:lead.assigned_telecaller.username }}
+              </span>
+            {% else %}
+              <span style="color: #9ca3af; font-size: 0.8rem; font-style: italic;">Direct Counselor</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if lead.rnr_count > 0 %}
+              <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700;">
+                {{ lead.rnr_count }} Attempt{{ lead.rnr_count|pluralize }}
+              </span>
+            {% else %}
+              <span style="color: #9ca3af; font-size: 0.8rem;">0</span>
+            {% endif %}
+          </td>
+          <td>
+            <!-- 3-CALL DETAIL HISTORY -->
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              {% for call in lead.last_three_calls %}
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+                  <div>
+                    <span style="font-weight: 600; color: #334155;">{{ call.call_started_at|date:"M d, H:i" }}</span>
+                    <span style="color: #64748b;">by {{ call.caller.get_full_name|default:call.caller.username|default:"Telecaller" }}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="badge" style="background: {% if call.call_outcome == 'RNR' or call.call_outcome == 'No Answer' %}#fee2e2; color: #b91c1c;{% elif call.call_outcome == 'Busy' %}#fef3c7; color: #b45309;{% else %}#dbeafe; color: #1e40af;{% endif %} font-size: 0.7rem; padding: 2px 6px;">
+                      {{ call.call_outcome|default:call.call_status }}
+                    </span>
+                    <span style="color: #64748b; font-family: monospace;">{{ call.duration }}s</span>
+                  </div>
+                </div>
+              {% empty %}
+                <span style="color: #9ca3af; font-size: 0.8rem; font-style: italic;">No call logs recorded</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            <a href="{% url 'admin_lead_detail' lead.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">
+              View Lead &rarr;
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 48px 16px; color: #6b7280;">
+            <div style="font-size: 1rem; font-weight: 600; color: #374151;">No Leads Found</div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">No lead records matching the selected drill-down filters.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 0.85rem; color: #6b7280;">
+      Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} leads)
+    </div>
+    <div style="display: flex; gap: 6px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if special_filter %}&special_filter={{ special_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if special_filter %}&special_filter={{ special_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

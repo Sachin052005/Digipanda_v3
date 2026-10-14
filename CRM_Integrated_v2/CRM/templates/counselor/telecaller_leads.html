@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}{{ telecaller.get_full_name|default:telecaller.username }} - Leads - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">
+      COUNSELOR &rsaquo; MY TELECALLERS &rsaquo; LEADS
+    </div>
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0;">
+      👤 {{ telecaller.get_full_name|default:telecaller.username }}'s Leads
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 4px 0 0;">
+      Telecaller &bull; @{{ telecaller.username }} &bull; Branch: {{ telecaller.branch.name|default:"General" }} &bull; Total Assigned: {{ leads|length }}
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'counselor_telecallers_list' %}" class="btn btn-secondary" style="font-weight: 600;">
+      &larr; Back to My Telecallers
+    </a>
+  </div>
+</div>
+
+<div class="crm-card">
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th>Lead Name</th>
+          <th>Phone</th>
+          <th>Channel / Source</th>
+          <th>Status</th>
+          <th>Assigned Date</th>
+          <th style="text-align: right; min-width: 280px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ld in leads %}
+        <tr>
+          <td>
+            <strong><a href="{% url 'counselor_lead_detail' ld.pk %}">{{ ld.name }}</a></strong>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">{{ ld.email|default:"No email" }}</div>
+          </td>
+          <td><span style="font-family: monospace; font-weight: 600;">{{ ld.phone }}</span></td>
+          <td>{{ ld.channel.name|default:"General" }}</td>
+          <td>
+            <span class="badge badge-{{ ld.status|lower|slugify }}">{{ ld.status }}</span>
+          </td>
+          <td>{{ ld.assigned_at|date:"M d, Y"|default:ld.created_at|date:"M d, Y" }}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 8px; align-items: center; justify-content: flex-end;">
+              <!-- Reassign Action Form -->
+              <form method="POST" action="{% url 'counselor_lead_reassign' ld.pk %}" style="display: inline-flex; gap: 4px; align-items: center; margin: 0;">
+                {% csrf_token %}
+                <select name="telecaller_id" class="form-select form-select-sm" style="max-width: 150px; font-size: 0.8rem; padding: 4px 8px;" required>
+                  <option value="">Reassign to...</option>
+                  {% for ot in other_telecallers %}
+                  <option value="{{ ot.pk }}">{{ ot.get_full_name|default:ot.username }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm" style="padding: 4px 10px; font-size: 0.8rem; font-weight: 600;">
+                  Reassign
+                </button>
+              </form>
+
+              <!-- Unassign Action Form -->
+              <form method="POST" action="{% url 'counselor_lead_unassign' ld.pk %}" style="display: inline; margin: 0;" onsubmit="return confirm('Unassign {{ ld.name|escapejs }} from {{ telecaller.get_full_name|default:telecaller.username|escapejs }}? The lead will become Pending Assignment.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm" style="padding: 4px 10px; font-size: 0.8rem; font-weight: 600;">
+                  Unassign
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state" style="padding: 36px 20px; text-align: center;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; color: var(--text-muted);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <h4 style="margin: 0 0 4px; color: var(--text-main);">No leads currently assigned</h4>
+              <p style="color: var(--text-muted); margin: 0; font-size: 0.875rem;">This Telecaller does not have any active leads assigned in your branch.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

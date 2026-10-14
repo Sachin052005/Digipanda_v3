@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% block title %}Counselor Follow-ups - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>Counselor Follow-up Tasks</h1>
+    <p>Monitor scheduled follow-ups, reassign across your telecallers, and reschedule overdue or pending tasks</p>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Today's Due</h4>
+      <div class="kpi-value">{{ today_count }}</div>
+    </div>
+    <div class="kpi-icon-wrap blue">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Pending</h4>
+      <div class="kpi-value">{{ pending_count }}</div>
+    </div>
+    <div class="kpi-icon-wrap amber">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Overdue</h4>
+      <div class="kpi-value" style="color: var(--danger);">{{ overdue_count }}</div>
+    </div>
+    <div class="kpi-icon-wrap rose">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon></svg>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Completed</h4>
+      <div class="kpi-value">{{ completed_count }}</div>
+    </div>
+    <div class="kpi-icon-wrap green">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-card">
+  <form method="GET" class="filter-form">
+    <div class="filter-col">
+      <label>Search</label>
+      <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Lead name, phone, notes...">
+    </div>
+    <div class="filter-col">
+      <label>Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Follow-ups</option>
+        <option value="today" {% if status_filter == 'today' %}selected{% endif %}>Today's Due</option>
+        <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+        <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+      </select>
+    </div>
+    <div class="filter-col">
+      <label>Telecaller</label>
+      <select name="telecaller" class="form-select">
+        <option value="">All My Telecallers</option>
+        {% for t in telecallers %}
+        <option value="{{ t.id }}" {% if telecaller_filter == t.id|stringformat:"i" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col">
+      <label>From Date</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+    </div>
+    <div class="filter-col">
+      <label>To Date</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+    </div>
+    <div style="display: flex; gap: 8px; align-items: flex-end;">
+      <a href="{% url 'counselor_followups_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="crm-card">
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th>Lead</th>
+          <th>Assigned Telecaller</th>
+          <th>Follow-up Date</th>
+          <th>Time</th>
+          <th>Status</th>
+          <th>Notes / History</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in page_obj %}
+        <tr>
+          <td>
+            <strong><a href="{% url 'counselor_lead_detail' f.lead.pk %}">{{ f.lead.name }}</a></strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ f.lead.phone }}</div>
+          </td>
+          <td>
+            {% if f.telecaller %}
+              <span class="badge" style="background: rgba(14, 165, 233, 0.1); color: var(--info); font-weight: 500;">
+                {{ f.telecaller.get_full_name|default:f.telecaller.username }}
+              </span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.8rem;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>{{ f.follow_up_date }}</td>
+          <td>{{ f.follow_up_time|default:"Anytime" }}</td>
+          <td>
+            {% if f.is_overdue %}
+            <span class="badge badge-overdue">Overdue</span>
+            {% elif f.status == 'Pending' %}
+            <span class="badge badge-pending">Pending</span>
+            {% elif f.status == 'Completed' %}
+            <span class="badge badge-completed">Completed</span>
+            {% else %}
+            <span class="badge badge-secondary">{{ f.status }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 250px; white-space: pre-line; word-break: break-word;">
+            {{ f.notes|default:"-"|truncatechars:120 }}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px;">
+              <!-- Reschedule Button -->
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openRescheduleModal('{{ f.pk }}', '{{ f.lead.name|escapejs }}', '{{ f.follow_up_date|date:"Y-m-d" }}', '{{ f.follow_up_time|default:"" }}')" title="Reschedule">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Reschedule
+              </button>
+
+              <!-- Reassign Button -->
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openReassignModal('{{ f.pk }}', '{{ f.lead.name|escapejs }}', '{{ f.telecaller_id|default:"" }}')" title="Reassign">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7.5" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                Reassign
+              </button>
+
+              {% if f.status != 'Completed' %}
+              <a href="{% url 'update_followup_status' f.pk 'Completed' %}" class="btn btn-success btn-sm" title="Mark Done">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <p>No follow-ups found for your scope.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination" style="padding: 12px 16px; display: flex; justify-content: flex-end; gap: 6px;">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&{{ extra_params }}" class="btn btn-secondary btn-sm">&laquo; Prev</a>
+    {% endif %}
+    <span style="font-size: 0.8125rem; align-self: center; color: var(--text-muted);">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&{{ extra_params }}" class="btn btn-secondary btn-sm">Next &raquo;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Reschedule Modal -->
+<div id="rescheduleModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center;">
+  <div class="crm-card" style="width: 100%; max-width: 480px; margin: 20px; background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl);">
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.05rem;" id="rescheduleModalTitle">Reschedule Follow-up</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeRescheduleModal()">&times;</button>
+    </div>
+    <form id="rescheduleForm" method="POST" action="">
+      {% csrf_token %}
+      <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 0.8125rem; font-weight: 500; margin-bottom: 6px; display: block;">New Follow-up Date <span style="color: var(--danger);">*</span></label>
+          <input type="date" name="follow_up_date" id="modalFollowUpDate" class="form-control" required>
+        </div>
+        <div>
+          <label style="font-size: 0.8125rem; font-weight: 500; margin-bottom: 6px; display: block;">New Follow-up Time</label>
+          <input type="time" name="follow_up_time" id="modalFollowUpTime" class="form-control">
+        </div>
+        <div>
+          <label style="font-size: 0.8125rem; font-weight: 500; margin-bottom: 6px; display: block;">Reschedule Reason / Notes</label>
+          <textarea name="notes" id="modalNotes" rows="3" class="form-control" placeholder="Specify reason for rescheduling..."></textarea>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">This reason will be logged with a timestamp into the follow-up history.</div>
+        </div>
+      </div>
+      <div style="padding: 12px 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeRescheduleModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Reschedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reassign Modal -->
+<div id="reassignModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center;">
+  <div class="crm-card" style="width: 100%; max-width: 480px; margin: 20px; background: var(--bg-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl);">
+    <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.05rem;" id="reassignModalTitle">Reassign Follow-up</h3>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeReassignModal()">&times;</button>
+    </div>
+    <form id="reassignForm" method="POST" action="">
+      {% csrf_token %}
+      <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 0.8125rem; font-weight: 500; margin-bottom: 6px; display: block;">Select Eligible Telecaller <span style="color: var(--danger);">*</span></label>
+          <select name="telecaller_id" id="modalReassignTelecaller" class="form-select" required>
+            <option value="">-- Choose Telecaller --</option>
+            {% for t in telecallers %}
+            <option value="{{ t.id }}">{{ t.get_full_name|default:t.username }}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+            Only telecallers under your counseling scope and branch are eligible.
+          </div>
+        </div>
+      </div>
+      <div style="padding: 12px 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeReassignModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Confirm Reassign</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRescheduleModal(id, leadName, curDate, curTime) {
+  const modal = document.getElementById('rescheduleModal');
+  const form = document.getElementById('rescheduleForm');
+  const title = document.getElementById('rescheduleModalTitle');
+  form.action = '/counselor/followups/' + id + '/reschedule/';
+  title.innerText = 'Reschedule Follow-up: ' + leadName;
+  document.getElementById('modalFollowUpDate').value = curDate || '';
+  document.getElementById('modalFollowUpTime').value = curTime || '';
+  document.getElementById('modalNotes').value = '';
+  modal.style.display = 'flex';
+}
+
+function closeRescheduleModal() {
+  document.getElementById('rescheduleModal').style.display = 'none';
+}
+
+function openReassignModal(id, leadName, curTcId) {
+  const modal = document.getElementById('reassignModal');
+  const form = document.getElementById('reassignForm');
+  const title = document.getElementById('reassignModalTitle');
+  form.action = '/counselor/followups/' + id + '/reassign/';
+  title.innerText = 'Reassign Follow-up: ' + leadName;
+  const tcSelect = document.getElementById('modalReassignTelecaller');
+  if (curTcId) {
+    tcSelect.value = curTcId;
+  } else {
+    tcSelect.selectedIndex = 0;
+  }
+  modal.style.display = 'flex';
+}
+
+function closeReassignModal() {
+  document.getElementById('reassignModal').style.display = 'none';
+}
+
+// Close on backdrop click
+window.addEventListener('click', function(e) {
+  const resModal = document.getElementById('rescheduleModal');
+  const reaModal = document.getElementById('reassignModal');
+  if (e.target === resModal) resModal.style.display = 'none';
+  if (e.target === reaModal) reaModal.style.display = 'none';
+});
+</script>
+{% endblock %}

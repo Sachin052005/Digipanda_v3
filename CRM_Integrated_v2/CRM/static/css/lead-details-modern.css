@@ -1,0 +1,877 @@
+/**
+ * Modern Full Lead Details Interface Stylesheet
+ * Faithfully matches the reference SaaS interface:
+ * - Two-column clean grid with field type indicators (T, [v], #, [cal])
+ * - Sticky header with lead status dropdown pill, star ratings, and contact actions
+ * - Assignee avatar badge and lead navigation (< Prev, Next >, "4 of 14")
+ * - Dynamic "Hide Empty Fields" / "Show Empty Fields" toggle
+ * - Embedded call completion & outcome logging panel
+ */
+
+:root {
+  --ld-bg-card: #ffffff;
+  --ld-border: #f1f5f9;
+  --ld-border-subtle: #e2e8f0;
+  --ld-text-main: #0f172a;
+  --ld-text-muted: #64748b;
+  --ld-text-empty: #94a3b8;
+  --ld-primary: #2563eb;
+  --ld-status-bg: #f3e8ff;
+  --ld-status-text: #7e22ce;
+  --ld-avatar-bg: #e0e7ff;
+  --ld-avatar-text: #4338ca;
+  --ld-banner-bg: #fffbeb;
+  --ld-banner-border: #fef3c7;
+  --ld-banner-text: #92400e;
+}
+
+[data-theme="dark"] {
+  --ld-bg-card: #1e293b;
+  --ld-border: #334155;
+  --ld-border-subtle: #475569;
+  --ld-text-main: #f8fafc;
+  --ld-text-muted: #94a3b8;
+  --ld-text-empty: #64748b;
+  --ld-primary: #3b82f6;
+  --ld-status-bg: #3b1d5c;
+  --ld-status-text: #d8b4fe;
+  --ld-avatar-bg: #312e81;
+  --ld-avatar-text: #a5b4fc;
+  --ld-banner-bg: #292524;
+  --ld-banner-border: #44403c;
+  --ld-banner-text: #fde68a;
+}
+
+/* Master Lead Detail Container */
+.lead-detail-wrapper {
+  background: var(--ld-bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--ld-border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+/* Top Notification Banner & Navigation Bar */
+.lead-top-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: transparent;
+  border-bottom: 1px solid var(--ld-border);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.lead-notification-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ld-banner-bg);
+  border: 1px solid var(--ld-banner-border);
+  color: var(--ld-banner-text);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  max-width: 680px;
+}
+
+.lead-notification-banner a {
+  color: var(--ld-banner-text);
+  font-weight: 700;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+.lead-notification-banner .btn-close-banner {
+  background: transparent;
+  border: none;
+  color: var(--ld-banner-text);
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.lead-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.lead-record-counter {
+  font-size: 0.85rem;
+  color: var(--ld-text-muted);
+  font-weight: 600;
+}
+
+.lead-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid var(--ld-border-subtle);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ld-text-main);
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.lead-nav-btn:hover {
+  background: var(--ld-border);
+  color: var(--ld-primary);
+}
+
+.lead-nav-btn.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Sticky Main Header */
+.lead-main-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--ld-bg-card);
+  border-bottom: 1px solid var(--ld-border);
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.lead-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lead-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.lead-name-heading {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--ld-text-main);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.lead-header-subrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Status Dropdown Pill */
+.lead-status-pill-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.lead-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ld-status-bg);
+  color: var(--ld-status-text);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.lead-status-pill:hover {
+  filter: brightness(0.96);
+}
+
+.lead-status-pill .pill-chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.lead-status-select-hidden {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Star Rating Controls */
+.lead-star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #cbd5e1;
+  font-size: 1.15rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.lead-star-rating .star {
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.lead-star-rating .star.filled {
+  color: #eab308;
+}
+
+.lead-star-rating .star:hover {
+  transform: scale(1.15);
+  color: #facc15;
+}
+
+/* Header Right Actions */
+.lead-header-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.lead-action-icons-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lead-action-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--ld-border-subtle);
+  background: var(--ld-bg-card);
+  color: var(--ld-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.lead-action-icon-btn:hover {
+  border-color: var(--ld-primary);
+  color: var(--ld-primary);
+  transform: translateY(-1px);
+}
+
+.lead-action-icon-btn.whatsapp-btn {
+  color: #16a34a;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.lead-action-icon-btn.whatsapp-btn:hover {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.lead-action-icon-btn.call-btn {
+  color: #2563eb;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.lead-action-icon-btn.call-btn:hover {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+/* More Actions Dropdown Menu */
+.more-actions-wrap {
+  position: relative;
+}
+
+.more-actions-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--ld-bg-card);
+  border: 1px solid var(--ld-border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  z-index: 50;
+  display: none;
+  padding: 6px 0;
+}
+
+.more-actions-menu.active {
+  display: block;
+}
+
+.more-actions-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  color: var(--ld-text-main);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+
+.more-actions-item:hover {
+  background: var(--ld-border);
+  color: var(--ld-primary);
+}
+
+/* Assignee Badge in Header */
+.lead-assignee-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+  border-left: 1px solid var(--ld-border);
+}
+
+.lead-assignee-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ld-text-main);
+}
+
+.lead-assignee-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ld-avatar-bg);
+  color: var(--ld-avatar-text);
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.03em;
+}
+
+/* Lead Details Content Body (Scrollable) */
+.lead-details-body {
+  padding: 28px 32px 36px 32px;
+  overflow-y: auto;
+  max-height: calc(100vh - 210px);
+}
+
+/* Two Balanced Columns Grid */
+.lead-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 48px;
+  row-gap: 24px;
+}
+
+.lead-field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 52px;
+  transition: opacity 0.2s ease;
+}
+
+.lead-field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ld-text-muted);
+}
+
+.field-icon {
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ld-text-muted);
+  width: 14px;
+  font-weight: 700;
+}
+
+.field-icon.icon-select {
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  width: 13px;
+  height: 13px;
+  font-size: 0.6rem;
+}
+
+.lead-field-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ld-text-main);
+  word-break: break-word;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lead-field-value.text-empty {
+  color: var(--ld-text-empty);
+  font-weight: 400;
+}
+
+/* Phone Special Badging */
+.lead-phone-sim-badge {
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.lead-phone-flag {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+/* Info Tooltip Icon */
+.field-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--ld-text-muted);
+  font-size: 0.65rem;
+  font-style: normal;
+  color: var(--ld-text-muted);
+  cursor: help;
+  margin-left: 4px;
+}
+
+/* Hide Empty Fields Toggle Divider */
+.lead-empty-toggle-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 28px 0;
+  text-align: center;
+}
+
+.lead-empty-toggle-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--ld-border-subtle);
+  z-index: 1;
+}
+
+.lead-empty-toggle-btn {
+  position: relative;
+  z-index: 2;
+  background: var(--ld-bg-card);
+  padding: 4px 18px;
+  border: 1px solid var(--ld-border-subtle);
+  border-radius: 20px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ld-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.lead-empty-toggle-btn:hover {
+  background: var(--ld-border);
+}
+
+.lead-empty-toggle-btn .toggle-chevron {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+/* When .hide-empty-active is applied on container */
+.lead-detail-wrapper.hide-empty-active .is-empty-field {
+  display: none !important;
+}
+
+/* Embedded Call Logging & Outcome Panel */
+.lead-call-logging-card {
+  margin-top: 32px;
+  background: var(--ld-border);
+  border: 1px solid var(--ld-border-subtle);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+.lead-call-logging-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--ld-border-subtle);
+  padding-bottom: 10px;
+}
+
+.lead-call-logging-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ld-text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.lead-call-duration-chip {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-family: monospace;
+}
+
+.lead-call-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.call-logging-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Responsive Breakpoint: Mobile single column */
+@media (max-width: 768px) {
+  .lead-fields-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .lead-main-header {
+    padding: 16px;
+  }
+  .lead-details-body {
+    padding: 16px;
+  }
+  .lead-assignee-badge {
+    border-left: none;
+    padding-left: 0;
+  }
+}
+
+/* ==========================================================
+   INLINE EDITING STYLES (Phase 2 Inline Lead Editing)
+   ========================================================== */
+
+/* Header Name Inline Editing */
+.lead-header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lead-name-edit-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--ld-text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  opacity: 0.6;
+}
+
+.lead-header-title-row:hover .lead-name-edit-btn {
+  opacity: 1;
+}
+
+.lead-name-edit-btn:hover {
+  background: var(--ld-border);
+  color: var(--ld-primary);
+  border-color: var(--ld-border-subtle);
+}
+
+.lead-name-inline-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lead-name-inline-editor input {
+  font-size: 1.4rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 2px solid var(--ld-primary);
+  background: var(--ld-bg-card);
+  color: var(--ld-text-main);
+  min-width: 240px;
+}
+
+/* Field Item Editable States */
+.lead-field-item.is-editable .lead-field-value {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.lead-field-item.is-editable .lead-field-value:hover {
+  background-color: rgba(37, 99, 235, 0.06);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.lead-field-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ld-primary);
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  margin-left: 4px;
+}
+
+.lead-field-item.is-editable:hover .lead-field-edit-btn {
+  opacity: 0.85;
+}
+
+.lead-field-edit-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* Read-Only Field Indicator */
+.lead-field-item.is-readonly {
+  user-select: text;
+}
+
+.lead-field-item.is-readonly .lead-field-value {
+  cursor: default;
+}
+
+.field-readonly-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ld-text-muted);
+  opacity: 0.65;
+  margin-left: 4px;
+  cursor: help;
+}
+
+.field-readonly-lock:hover {
+  opacity: 1;
+  color: var(--ld-text-main);
+}
+
+/* Inline Editor Container */
+.lead-inline-editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.lead-inline-input-wrap {
+  flex: 1;
+  min-width: 140px;
+  max-width: 280px;
+}
+
+.lead-inline-input {
+  width: 100%;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 5px 9px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1.5px solid var(--ld-primary);
+  background: var(--ld-bg-card);
+  color: var(--ld-text-main);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lead-inline-input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.lead-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-inline-save {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: #10b981;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-inline-save:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-inline-save:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
+.btn-inline-cancel {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--ld-border);
+  background: var(--ld-bg-card);
+  color: var(--ld-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.btn-inline-cancel:hover {
+  background: var(--ld-border);
+  color: var(--ld-text-main);
+  border-color: var(--ld-border-subtle);
+}
+
+.lead-inline-error {
+  width: 100%;
+  color: #dc2626;
+  font-size: 0.775rem;
+  font-weight: 600;
+  margin-top: 3px;
+  line-height: 1.25;
+}
+
+/* Auto-Save Status Indicators & Badges */
+.lead-inline-status-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.lead-field-status {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.lead-field-status.status-saving {
+  display: inline-flex;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.lead-field-status.status-saved {
+  display: inline-flex;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  animation: statusFadeOut 2.5s forwards;
+}
+
+.lead-field-status.status-error {
+  display: inline-flex;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.lead-field-status .spin-icon {
+  animation: leadSpin 0.9s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.inline-status-badge {
+  margin-left: 6px;
+}
+
+@keyframes leadSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes statusFadeOut {
+  0% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.95); }
+}
+
+.lead-field-item.field-just-saved {
+  background-color: rgba(16, 185, 129, 0.08);
+  transition: background-color 0.5s ease;
+}
+
+

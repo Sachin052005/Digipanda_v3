@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}My Leads - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>My Leads</h1>
+    <p>Leads handed off to you for counseling</p>
+  </div>
+  <div class="page-actions">
+    <div style="display: inline-flex; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-md); padding: 3px; box-shadow: var(--tp-shadow-sm);">
+      <span class="btn btn-sm" style="padding: 5px 12px; font-weight: 700; color: #ffffff; background: var(--tp-primary-600); border: none; border-radius: var(--tp-radius-sm);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        Table View
+      </span>
+      <a href="{% url 'leads_kanban' %}" class="btn btn-sm" style="padding: 5px 12px; font-weight: 600; color: var(--tp-text-muted); background: transparent; border: none; border-radius: var(--tp-radius-sm);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+        Kanban Board
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="filter-card">
+  <form method="GET" class="filter-form">
+    <div class="filter-col" style="flex: 2;">
+      <label>Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Search name, phone, email..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col">
+      <label>Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for code, label in statuses %}
+        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'counselor_leads_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="crm-card">
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th style="width: 36px; text-align: center;"><input type="checkbox" id="select-all-leads" title="Select all visible leads"></th>
+          <th>Lead</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th>Telecaller</th>
+          <th>Updated</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ld in page_obj %}
+        <tr>
+          <td style="text-align: center;">
+            <input type="checkbox" class="lead-row-select" value="{{ ld.id }}">
+          </td>
+          <td><strong><a href="{% url 'counselor_lead_detail' ld.pk %}">{{ ld.name }}</a></strong></td>
+          <td>
+            <a href="tel:{{ ld.phone }}" style="color: inherit; text-decoration: none; font-weight: 500;">{{ ld.phone }}</a>
+          </td>
+          <td><span class="badge badge-{{ ld.status|lower|slugify }}">{{ ld.status }}</span></td>
+          <td>
+            {% if ld.assigned_telecaller %}{{ ld.assigned_telecaller.get_full_name|default:ld.assigned_telecaller.username }}
+            {% else %}<span style="color: var(--text-muted); font-style: italic;">Unassigned</span>{% endif %}
+          </td>
+          <td>{{ ld.updated_at|date:"M d, H:i" }}</td>
+          <td style="text-align: right;">
+            <a href="{% url 'counselor_lead_detail' ld.pk %}" class="btn btn-secondary btn-sm">View</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <p>No leads found. Try changing your filters or search criteria.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include 'partials/pagination.html' %}
+</div>
+
+<!-- Floating Bulk Actions Dock -->
+<div id="tp-bulk-actions-dock" style="display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #0f172a; border: 1px solid #334155; border-radius: 9999px; padding: 10px 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); color: #fff;">
+  <div style="display: flex; align-items: center; gap: 16px;">
+    <span style="font-weight: 600; font-size: 0.85rem; color: #94a3b8;"><span id="selected-leads-count" style="color: #38bdf8; font-weight: 700;">0</span> leads selected</span>
+    <button type="button" class="btn btn-sm btn-primary" onclick="openBulkEditModal()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; border-radius: 9999px; padding: 6px 16px; background: #0284c7; border: none; color: #fff; cursor: pointer;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+      Bulk Edit
+    </button>
+  </div>
+</div>
+
+{% include 'leads/partials/bulk_edit_modal.html' %}
+
+<script>
+window.selectAllMatchingFilters = false;
+
+function getActiveFilterParams() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var params = {};
+  ['search', 'branch', 'status', 'telecaller', 'channel', 'product'].forEach(function(k) {
+    if (urlParams.get(k)) params[k] = urlParams.get(k);
+  });
+  return params;
+}
+
+function getSelectedLeadIds() {
+  var ids = [];
+  document.querySelectorAll('.lead-row-select:checked').forEach(function(cb) {
+    ids.push(parseInt(cb.value, 10));
+  });
+  return ids;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var selectAll = document.getElementById('select-all-leads');
+  var rowCheckboxes = document.querySelectorAll('.lead-row-select');
+  var dock = document.getElementById('tp-bulk-actions-dock');
+  var countEl = document.getElementById('selected-leads-count');
+
+  function updateDock() {
+    var checked = document.querySelectorAll('.lead-row-select:checked');
+    if (countEl) countEl.textContent = checked.length;
+    if (dock) {
+      dock.style.display = checked.length > 0 ? 'block' : 'none';
+    }
+    if (selectAll) {
+      selectAll.checked = rowCheckboxes.length > 0 && checked.length === rowCheckboxes.length;
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      rowCheckboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+      updateDock();
+    });
+  }
+
+  rowCheckboxes.forEach(function(cb) {
+    cb.addEventListener('change', updateDock);
+  });
+});
+</script>
+{% endblock %}

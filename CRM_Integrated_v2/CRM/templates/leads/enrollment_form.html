@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% block title %}Enroll Student - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="{% if request.user.is_admin_user %}{% url 'admin_lead_detail' lead.id %}{% elif request.user.is_sales_head_user %}{% url 'manager_lead_detail' lead.id %}{% elif request.user.is_branch_head_user %}{% url 'branch_head_lead_detail' lead.id %}{% else %}{% url 'counselor_lead_detail' lead.id %}{% endif %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">← Back to Lead</a>
+      <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Student Enrollment & Fee Setup</h1>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">
+      Register formal enrollment for <strong>{{ lead.name }}</strong> (Lead #{{ lead.id }}). Set course fees, GST treatment, and installment schedules.
+    </p>
+  </div>
+</div>
+
+<form method="post" action="" id="enrollmentForm">
+  {% csrf_token %}
+  <div class="tp-form-grid-2col" style="gap: 24px; align-items: start;">
+    
+    <!-- LEFT CARD: Student & Academic Details -->
+    <div class="crm-card" style="background: #fff; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); padding: 24px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 18px; color: var(--navy-dark, #0f172a); border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+        1. Student & Academic Profile
+      </h3>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Student Full Name *</label>
+        <input type="text" name="student_name" value="{{ enrollment.student_name|default:lead.name }}" required class="form-control" style="width: 100%;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div>
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Phone Number *</label>
+          <input type="text" name="student_phone" value="{{ enrollment.student_phone|default:lead.phone }}" required class="form-control" style="width: 100%;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Email Address</label>
+          <input type="email" name="student_email" value="{{ enrollment.student_email|default:lead.email }}" class="form-control" style="width: 100%;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+        <div>
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Enrolling Course / Program</label>
+          <select name="product_id" class="form-control" style="width: 100%;">
+            <option value="">-- Select Course --</option>
+            {% for p in products %}
+            <option value="{{ p.id }}" {% if enrollment.product_id == p.id or lead.product_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Branch Center</label>
+          <select name="branch_id" class="form-control" style="width: 100%;">
+            <option value="">-- Select Branch --</option>
+            {% for b in branches %}
+            <option value="{{ b.id }}" {% if enrollment.branch_id == b.id or lead.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Assigned Counselor</label>
+        <input type="text" readonly value="{% if lead.assigned_counselor %}{{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}{% else %}Unassigned{% endif %}" class="form-control" style="width: 100%; background: #f8fafc; color: var(--text-muted);">
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Counselor Remarks / Special Terms</label>
+        <textarea name="notes" rows="3" class="form-control" placeholder="Any agreed fee waivers, discount approvals, or notes" style="width: 100%;">{{ enrollment.notes|default:'' }}</textarea>
+      </div>
+    </div>
+
+    <!-- RIGHT CARD: Course Fee & GST Calculation -->
+    <div class="crm-card" style="background: #fff; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); padding: 24px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 18px; color: var(--navy-dark, #0f172a); border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+        2. Fee Structure & GST Accounting
+      </h3>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Agreed Course Fee (₹) *</label>
+        <input type="number" step="0.01" name="base_course_fee" id="id_base_course_fee" value="{% if enrollment and enrollment.base_course_fee %}{{ enrollment.base_course_fee }}{% elif lead.product and lead.product.price %}{{ lead.product.price }}{% else %}25000.00{% endif %}" required class="form-control" style="width: 100%; font-size: 1.2rem; font-weight: 700;">
+      </div>
+
+      <!-- MANDATORY GST TREATMENT (INCLUSIVE vs EXCLUSIVE) -->
+      <div style="margin-bottom: 18px; padding: 14px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--navy-dark); margin-bottom: 8px;">
+          GST Treatment (Mandatory) *
+        </label>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+            <input type="radio" name="gst_treatment" value="EXCLUSIVE" {% if not enrollment or enrollment.gst_treatment == 'EXCLUSIVE' %}checked{% endif %}>
+            <span><strong>Exclusive of GST</strong> (+ {{ default_gst_rate|default:'18' }}% added)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+            <input type="radio" name="gst_treatment" value="INCLUSIVE" {% if enrollment.gst_treatment == 'INCLUSIVE' %}checked{% endif %}>
+            <span><strong>Inclusive of GST</strong> ({{ default_gst_rate|default:'18' }}% included)</span>
+          </label>
+        </div>
+      </div>
+
+      <input type="hidden" name="tax_rate" id="id_tax_rate" value="{{ enrollment.tax_rate|default:default_gst_rate|default:'18.00' }}">
+
+      <!-- LIVE GST BREAKDOWN DISPLAY -->
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 20px; margin-bottom: 22px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;">
+          <span>Financial Breakdown (Pure Decimal Verified)</span>
+          <span style="font-size: 0.75rem; color: #15803d; font-weight: 600;" id="breakdownBadge">Live Sync Active</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 4px;">
+          <span style="color: var(--text-muted);">Taxable Fee (Subtotal):</span>
+          <span id="previewTaxable" style="font-weight: 600;">₹0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 6px;">
+          <span style="color: var(--text-muted);">GST Amount (<span id="previewTaxRate">{{ enrollment.tax_rate|default:default_gst_rate|default:'18' }}%</span>):</span>
+          <span id="previewTax" style="font-weight: 600;">₹0.00</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.1rem; border-top: 1px solid #bbf7d0; padding-top: 8px; margin-top: 6px;">
+          <span style="font-weight: 700; color: #166534;">Total Payable:</span>
+          <span id="previewTotal" style="font-weight: 800; color: #166534;">₹0.00</span>
+        </div>
+      </div>
+
+      <!-- PAYMENT PLAN -->
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 14px; color: var(--navy-dark, #0f172a); border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+        3. Payment Plan & Scheduling
+      </h3>
+
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; gap: 24px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+            <input type="radio" name="payment_plan" value="FULL_PAYMENT" {% if not enrollment or enrollment.payment_plan == 'FULL_PAYMENT' %}checked{% endif %}>
+            <span>Full One-Time Payment</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+            <input type="radio" name="payment_plan" value="SPLIT_PAYMENT" {% if enrollment.payment_plan == 'SPLIT_PAYMENT' %}checked{% endif %}>
+            <span>Split Payment / Installments</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- INSTALLMENT SETTINGS (Revealed if Split Payment) -->
+      <div id="splitPaymentSettings" style="display: none; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Number of Installments</label>
+            <select name="installment_count" id="id_installment_count" class="form-control" style="width: 100%;">
+              <option value="2" {% if enrollment and enrollment.installment_count == 2 %}selected{% endif %}>2 Installments</option>
+              <option value="3" {% if enrollment and enrollment.installment_count == 3 %}selected{% endif %}>3 Installments</option>
+              <option value="4" {% if enrollment and enrollment.installment_count == 4 %}selected{% endif %}>4 Installments</option>
+              <option value="6" {% if enrollment and enrollment.installment_count == 6 %}selected{% endif %}>6 Installments</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">First Installment Date</label>
+            <input type="date" name="first_installment_date" id="id_first_date" class="form-control" style="width: 100%;">
+          </div>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 12px;">
+          Equal installments are calculated. Any fractional rounding cents/paise are automatically absorbed by the final installment.
+        </span>
+
+        <!-- LIVE INSTALLMENT SCHEDULE PREVIEW -->
+        <div id="installmentSchedulePreview" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--navy-dark); text-transform: uppercase;">
+              Projected Installment Schedule
+            </span>
+            <span style="font-size: 0.75rem; color: #166534; font-weight: 600;">
+              Total Scheduled: <span id="previewScheduledTotal">₹0.00</span>
+            </span>
+          </div>
+          <div id="installmentCardsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+        <a href="{% if request.user.is_admin_user %}{% url 'admin_lead_detail' lead.id %}{% elif request.user.is_sales_head_user %}{% url 'manager_lead_detail' lead.id %}{% elif request.user.is_branch_head_user %}{% url 'branch_head_lead_detail' lead.id %}{% else %}{% url 'counselor_lead_detail' lead.id %}{% endif %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="padding: 10px 24px; font-weight: 600;">
+          Confirm Enrollment & Activate Schedule
+        </button>
+      </div>
+
+    </div>
+  </div>
+</form>
+
+<script>
+function formatINR(val) {
+  const num = Number(val) || 0;
+  return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getSelectedGST() {
+  const radios = document.getElementsByName('gst_treatment');
+  for (let r of radios) {
+    if (r.checked) return r.value;
+  }
+  return 'EXCLUSIVE';
+}
+
+function clientComputeBreakdown(feeNum, treatment, rateNum) {
+  if (isNaN(feeNum) || feeNum < 0) feeNum = 0;
+  if (isNaN(rateNum) || rateNum < 0) rateNum = 18;
+  const fraction = rateNum / 100.0;
+  let taxable, tax, total;
+
+  if (treatment === 'INCLUSIVE') {
+    taxable = Math.round((feeNum / (1.0 + fraction)) * 100) / 100;
+    tax = Math.round((feeNum - taxable) * 100) / 100;
+    total = Math.round(feeNum * 100) / 100;
+  } else {
+    taxable = Math.round(feeNum * 100) / 100;
+    tax = Math.round((taxable * fraction) * 100) / 100;
+    total = Math.round((taxable + tax) * 100) / 100;
+  }
+  return { taxable, tax, total };
+}
+
+function renderInstallmentPreview(installments, totalPayable) {
+  const container = document.getElementById('installmentCardsContainer');
+  const totalSpan = document.getElementById('previewScheduledTotal');
+  if (totalSpan) totalSpan.textContent = formatINR(totalPayable);
+  if (!container) return;
+
+  if (!installments || installments.length === 0) {
+    container.innerHTML = '<div style="font-size: 0.8rem; color: #94a3b8;">No installments scheduled</div>';
+    return;
+  }
+
+  let html = '';
+  installments.forEach(inst => {
+    html += `
+      <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+        <div style="font-size: 0.72rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Installment #${inst.number}</div>
+        <div style="font-size: 1rem; font-weight: 800; color: #0f172a; margin: 3px 0;">${formatINR(inst.amount)}</div>
+        <div style="font-size: 0.72rem; color: #0284c7; font-weight: 600;">Due: ${inst.formatted_due_date || inst.due_date}</div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function clientComputeInstallments(total, count, startDateStr) {
+  if (isNaN(count) || count < 1) count = 1;
+  const base = Math.round((total / count) * 100) / 100;
+  const baseSum = Math.round(base * count * 100) / 100;
+  const remainder = Math.round((total - baseSum) * 100) / 100;
+
+  const result = [];
+  const baseDate = startDateStr ? new Date(startDateStr) : new Date();
+
+  for (let i = 1; i <= count; i++) {
+    let amt = base;
+    if (i === count) {
+      amt = Math.round((amt + remainder) * 100) / 100;
+    }
+    const due = new Date(baseDate);
+    due.setDate(due.getDate() + (i - 1) * 30);
+    const dateFormatted = due.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    result.push({
+      number: i,
+      amount: amt.toFixed(2),
+      formatted_due_date: dateFormatted,
+    });
+  }
+  return result;
+}
+
+function recalculateGST() {
+  const feeInput = document.getElementById('id_base_course_fee');
+  const baseFee = feeInput ? (feeInput.value || '0') : '0';
+  const gstTreatment = getSelectedGST();
+  const taxRate = document.getElementById('id_tax_rate') ? document.getElementById('id_tax_rate').value : '18';
+  const instCountSelect = document.getElementById('id_installment_count');
+  const instCount = instCountSelect ? instCountSelect.value : '2';
+  const firstDate = document.getElementById('id_first_date') ? document.getElementById('id_first_date').value : '';
+
+  // 1. Instant optimistic calculation for immediate UI response
+  const optimistic = clientComputeBreakdown(parseFloat(baseFee), gstTreatment, parseFloat(taxRate));
+  document.getElementById('previewTaxable').textContent = formatINR(optimistic.taxable);
+  document.getElementById('previewTax').textContent = formatINR(optimistic.tax);
+  document.getElementById('previewTotal').textContent = formatINR(optimistic.total);
+
+  const optInstallments = clientComputeInstallments(optimistic.total, parseInt(instCount, 10), firstDate);
+  renderInstallmentPreview(optInstallments, optimistic.total);
+
+  // 2. Pure Decimal server validation via JSON endpoint
+  const url = `/enrollments/api/calculate-gst/?base_course_fee=${encodeURIComponent(baseFee)}&gst_treatment=${encodeURIComponent(gstTreatment)}&tax_rate=${encodeURIComponent(taxRate)}&installment_count=${encodeURIComponent(instCount)}&first_installment_date=${encodeURIComponent(firstDate)}`;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('previewTaxable').textContent = formatINR(data.taxable_amount);
+        document.getElementById('previewTax').textContent = formatINR(data.tax_amount);
+        document.getElementById('previewTotal').textContent = formatINR(data.total_payable);
+        if (data.tax_rate) {
+          const rateElem = document.getElementById('previewTaxRate');
+          if (rateElem) rateElem.textContent = parseFloat(data.tax_rate) + '%';
+        }
+        if (data.installments_preview) {
+          renderInstallmentPreview(data.installments_preview, data.total_payable);
+        }
+      }
+    })
+    .catch(err => {
+      console.warn("Server GST calculation sync error, falling back to client arithmetic:", err);
+    });
+}
+
+function togglePaymentPlan() {
+  const splitRadio = document.querySelector('input[name="payment_plan"][value="SPLIT_PAYMENT"]');
+  const isSplit = splitRadio ? splitRadio.checked : false;
+  const settingsDiv = document.getElementById('splitPaymentSettings');
+  if (settingsDiv) {
+    settingsDiv.style.display = isSplit ? 'block' : 'none';
+  }
+  recalculateGST();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Set default today date for first installment
+  const today = new Date().toISOString().split('T')[0];
+  const firstDate = document.getElementById('id_first_date');
+  if (firstDate && !firstDate.value) {
+    firstDate.value = today;
+  }
+
+  // Bind event listeners
+  const feeInput = document.getElementById('id_base_course_fee');
+  if (feeInput) {
+    feeInput.addEventListener('input', recalculateGST);
+    feeInput.addEventListener('change', recalculateGST);
+  }
+
+  const gstRadios = document.querySelectorAll('input[name="gst_treatment"]');
+  gstRadios.forEach(radio => radio.addEventListener('change', recalculateGST));
+
+  const planRadios = document.querySelectorAll('input[name="payment_plan"]');
+  planRadios.forEach(radio => radio.addEventListener('change', togglePaymentPlan));
+
+  const instCountSelect = document.getElementById('id_installment_count');
+  if (instCountSelect) {
+    instCountSelect.addEventListener('change', recalculateGST);
+  }
+
+  const firstDateInput = document.getElementById('id_first_date');
+  if (firstDateInput) {
+    firstDateInput.addEventListener('change', recalculateGST);
+  }
+
+  // Initial calculation on load
+  recalculateGST();
+  togglePaymentPlan();
+});
+</script>
+{% endblock %}

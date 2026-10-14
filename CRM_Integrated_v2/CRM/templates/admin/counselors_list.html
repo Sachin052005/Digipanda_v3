@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Counselors - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<!-- Progressive Hierarchy Breadcrumbs -->
+<div class="hierarchy-breadcrumbs">
+  <a href="{% url 'hierarchy_sales_heads_list' %}">Sales Heads</a>
+  <span class="separator">&gt;</span>
+  <a href="{% url 'admin_branch_heads_list' %}">Branch Heads</a>
+  <span class="separator">&gt;</span>
+  <span class="current">Counselors</span>
+</div>
+
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>Counselors</h1>
+    <p>All Counselors across branches &bull; Level 3</p>
+  </div>
+  {% if request.user.is_admin_user %}
+  <div class="page-actions">
+    <a href="{% url 'admin_counselor_create' %}" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Add Counselor
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="filter-card">
+  <form method="GET" class="filter-form">
+    <div class="filter-col" style="flex: 2;">
+      <label>Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Search by name, username, email, phone..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col">
+      <label>Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="filter-col">
+      <label>Branch</label>
+      <select name="branch" class="form-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'admin_counselors_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="crm-card">
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th>Counselor</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Branch</th>
+          <th>Assigned Leads</th>
+          <th>Status</th>
+          <th>Created Date</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page_obj %}
+        <tr>
+          <td>
+            <strong><a href="{% url 'counselor_telecallers' c.pk %}" style="color: var(--primary); text-decoration: none;">{{ c.get_full_name|default:c.username }}</a></strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ c.username }}</div>
+          </td>
+          <td>{{ c.email }}</td>
+          <td>{{ c.phone|default:"-" }}</td>
+          <td>{{ c.branch.name|default:"-" }}</td>
+          <td>
+            <a href="{% url 'admin_counselor_leads_drilldown' c.pk %}" class="badge" style="background: #e0e7ff; color: #4338ca; text-decoration: none; font-weight: 600; padding: 4px 8px;" title="Click to drill down counselor leads">
+              {{ c.lead_count|default:"0" }} Leads &rarr;
+            </a>
+          </td>
+          <td>
+            {% if c.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
+            {% if c.invitation_status == 'SENT' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem;">Invite Sent</span></div>
+            {% elif c.invitation_status == 'FAILED' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.68rem;">Invite Failed</span></div>
+            {% elif c.invitation_status == 'ACTIVATED' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.68rem;">Activated</span></div>
+            {% endif %}
+          </td>
+          <td>{{ c.date_joined|date:"M d, Y" }}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px;">
+              <a href="{% url 'resend_user_invitation' c.pk %}" class="btn btn-secondary btn-sm" title="Resend Welcome Email & Setup Link">Resend Invite</a>
+              <a href="{% url 'admin_counselor_leads_drilldown' c.pk %}" class="btn btn-secondary btn-sm" title="Drill down leads">Leads</a>
+              <a href="{% url 'counselor_telecallers' c.pk %}" class="btn btn-primary btn-sm" title="View Telecallers under this Counselor">
+                Telecallers &rarr;
+              </a>
+              {% if request.user.is_admin_user %}
+              <a href="{% url 'admin_counselor_change_password' c.pk %}" class="btn btn-secondary btn-sm">Password</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+              </div>
+              <h4>No Counselors Found</h4>
+              <p>No counselors match your query.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,152 @@
+/* ==========================================================================
+   Marketing Performance Dashboard - Responsive Stylesheet
+   Maintains the exact proportions of Image 3 with fluid behavior:
+   ========================================================================== */
+
+/* Laptops & Standard Desktops (1024px - 1366px) */
+@media (max-width: 1366px) {
+  .dashboard-wrapper {
+    padding: 18px 20px 30px 20px;
+  }
+
+  .kpi-big-num {
+    font-size: 1.85rem;
+  }
+
+  .channel-box-count {
+    font-size: 1.15rem;
+  }
+}
+
+/* Tablets (768px - 1024px) */
+@media (max-width: 1024px) {
+  .dashboard-wrapper {
+    padding: 16px 16px 28px 16px;
+  }
+
+  .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .channels-cards-grid {
+    grid-template-columns: repeat(7, minmax(140px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .charts-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* Mobile Phones (< 768px) */
+@media (max-width: 767.98px) {
+  .dashboard-wrapper {
+    padding: 12px 10px 24px 10px;
+  }
+
+  .header-title-wrap h1 {
+    font-size: 1.25rem;
+  }
+
+  .header-title-wrap p {
+    font-size: 0.78rem;
+  }
+
+  .filter-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .filter-group .filter-pill:first-child {
+    grid-column: span 2;
+  }
+
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .ui-kpi-card {
+    padding: 12px 14px;
+  }
+
+  .kpi-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 1.15rem;
+  }
+
+  .kpi-big-num {
+    font-size: 1.6rem;
+  }
+
+  .channels-cards-grid {
+    grid-template-columns: repeat(7, minmax(130px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .summary-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .donut-chart-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .donut-canvas-wrap {
+    width: 150px;
+    height: 150px;
+  }
+
+  .chart-custom-legend {
+    width: 100%;
+    max-width: 290px;
+  }
+}
+
+/* Extra Small Phones (< 480px) */
+@media (max-width: 480px) {
+  .filter-group {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-group .filter-pill:first-child {
+    grid-column: span 1;
+  }
+
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Static-site fix: channel strip scrolls inside its panel instead of widening the page */
+@media (max-width: 1024px) {
+  .channels-cards-grid {
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .summary-table-wrap { overflow-x: auto; }
+  body { overflow-x: hidden; }
+}

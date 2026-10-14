@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}WhatsApp Campaigns - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0 0 6px 0;">WhatsApp Campaigns</h1>
+    <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 0;">Multi-telecaller bulk messaging, compliant templates, and real-time delivery tracking</p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <a href="{% url 'inbox' %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      Inbox Chats
+    </a>
+    <a href="{% url 'admin_leads_list' %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+      Leads Directory
+    </a>
+    <a href="{% url 'whatsapp_campaign_create' %}" class="btn btn-primary tp-btn-primary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      New Campaign
+    </a>
+  </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="tp-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--tp-primary-50); color: var(--tp-primary-600); display: flex; align-items: center; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+    </div>
+    <div>
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Total Campaigns</div>
+      <div style="font-size: 1.45rem; font-weight: 800; color: var(--tp-text-primary);">{{ total_campaigns }}</div>
+    </div>
+  </div>
+
+  <div class="tp-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: #ecfdf5; color: #10b981; display: flex; align-items: center; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+    </div>
+    <div>
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Active / Scheduled</div>
+      <div style="font-size: 1.45rem; font-weight: 800; color: #10b981;">{{ active_count }}</div>
+    </div>
+  </div>
+
+  <div class="tp-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: #eff6ff; color: #3b82f6; display: flex; align-items: center; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    </div>
+    <div>
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Delivered Messages</div>
+      <div style="font-size: 1.45rem; font-weight: 800; color: #2563eb;">{{ total_delivered }}</div>
+    </div>
+  </div>
+
+  <div class="tp-card" style="padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: #faf5ff; color: #8b5cf6; display: flex; align-items: center; justify-content: center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </div>
+    <div>
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase;">Delivery Rate</div>
+      <div style="font-size: 1.45rem; font-weight: 800; color: #7c3aed;">{{ delivery_rate }}%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-card tp-card" style="padding: 16px 20px; margin-bottom: 20px;">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;">
+    <div class="filter-col" style="flex: 2; min-width: 220px;">
+      <label class="tp-label">Search Campaign</label>
+      <input type="text" name="search" class="form-control tp-input" placeholder="Search campaign name..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col" style="flex: 1; min-width: 170px;">
+      <label class="tp-label">Status</label>
+      <select name="status" class="form-select tp-select">
+        <option value="">All Statuses</option>
+        {% for code, label in status_choices %}
+        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'whatsapp_campaigns_list' %}" class="btn btn-secondary tp-btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Campaigns Table -->
+<div class="crm-card tp-card">
+  <div class="table-responsive">
+    <table class="crm-table tp-table">
+      <thead>
+        <tr>
+          <th style="width: 70px;">ID</th>
+          <th>Campaign Name</th>
+          <th>Created By</th>
+          <th>Sender Mode</th>
+          <th>Template / Type</th>
+          <th>Progress & Delivery</th>
+          <th>Status</th>
+          <th>Created On</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for camp in page_obj %}
+        <tr>
+          <td>
+            <span style="font-family: monospace; font-weight: 700; color: var(--tp-text-muted);">#{{ camp.id }}</span>
+          </td>
+          <td>
+            <strong><a href="{% url 'whatsapp_campaign_detail' camp.pk %}" style="color: var(--tp-text-primary); text-decoration: none;">{{ camp.name }}</a></strong>
+            {% if camp.branch %}
+            <div style="font-size: 0.75rem; color: var(--tp-text-muted);">Branch: {{ camp.branch.name }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-weight: 500;">{{ camp.created_by.get_full_name|default:camp.created_by.username }}</span>
+          </td>
+          <td>
+            {% if camp.sender_mode == 'assigned_telecaller' %}
+            <span class="badge tp-badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.75rem; padding: 3px 8px;">Telecaller's Number</span>
+            {% else %}
+            <span class="badge tp-badge" style="background: #f1f5f9; color: #334155; font-size: 0.75rem; padding: 3px 8px;">{{ camp.selected_sender.name|default:"Single Sender"|truncatechars:20 }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if camp.template %}
+            <span style="font-weight: 600; font-size: 0.82rem; color: var(--tp-primary-600);">{{ camp.template.name }}</span>
+            {% else %}
+            <span style="color: var(--tp-text-muted); font-size: 0.82rem;">Plain Text</span>
+            {% endif %}
+          </td>
+          <td style="min-width: 170px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px;">
+              <span>{{ camp.submitted_count }}/{{ camp.eligible_count }} sent</span>
+              <span style="color: var(--tp-primary-600);">{{ camp.progress_percentage }}%</span>
+            </div>
+            <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+              <div style="width: {{ camp.progress_percentage }}%; height: 100%; background: var(--tp-primary-600); transition: width 0.3s ease;"></div>
+            </div>
+            <div style="font-size: 0.72rem; color: var(--tp-text-muted); margin-top: 3px;">
+              Delivered: {{ camp.delivered_count }} | Failed: {{ camp.failed_count }} | Skipped: {{ camp.skipped_count }}
+            </div>
+          </td>
+          <td>
+            {% if camp.status == 'running' %}
+            <span class="badge tp-badge" style="background: #dbeafe; color: #1e40af; font-weight: 700; animation: pulse 1.5s infinite;">Running</span>
+            {% elif camp.status == 'completed' %}
+            <span class="badge tp-badge" style="background: #d1fae5; color: #065f46; font-weight: 700;">Completed</span>
+            {% elif camp.status == 'paused' %}
+            <span class="badge tp-badge" style="background: #fef3c7; color: #92400e; font-weight: 700;">Paused</span>
+            {% elif camp.status == 'scheduled' %}
+            <span class="badge tp-badge" style="background: #f3e8ff; color: #6b21a8; font-weight: 700;">Scheduled</span>
+            {% elif camp.status == 'cancelled' %}
+            <span class="badge tp-badge" style="background: #fee2e2; color: #991b1b; font-weight: 700;">Cancelled</span>
+            {% else %}
+            <span class="badge tp-badge" style="background: #f1f5f9; color: #475569; font-weight: 700;">Draft</span>
+            {% endif %}
+          </td>
+          <td>{{ camp.created_at|date:"M d, Y H:i" }}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 4px;">
+              <a href="{% url 'whatsapp_campaign_detail' camp.pk %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm" title="View Campaign Details">View</a>
+              <a href="{% url 'whatsapp_campaign_export_csv' camp.pk %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm" title="Export CSV Results">CSV</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9">
+            <div class="empty-state" style="text-align: center; padding: 48px 20px;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin-bottom: 12px;"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              <h4 style="font-weight: 700; color: var(--tp-text-primary); margin: 0 0 6px 0;">No WhatsApp Campaigns Found</h4>
+              <p style="color: var(--tp-text-muted); font-size: 0.9rem; margin: 0 0 16px 0;">Select leads from the Leads directory or click "New Campaign" to dispatch bulk messages.</p>
+              <a href="{% url 'whatsapp_campaign_create' %}" class="btn btn-primary tp-btn-primary">Create Your First Campaign</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--tp-surface-border); font-size: 0.85rem;">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <div style="display: flex; gap: 6px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}" class="btn btn-secondary tp-btn-secondary tp-btn-sm">&laquo; Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ status_filter }}" class="btn btn-secondary tp-btn-secondary tp-btn-sm">Next &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

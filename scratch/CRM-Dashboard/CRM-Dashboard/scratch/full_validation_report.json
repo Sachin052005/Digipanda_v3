@@ -1,0 +1,322 @@
+[
+  {
+    "branch": "Tnagar",
+    "gid": "0",
+    "totalRows": 32,
+    "dataRows": 31,
+    "validDates": 31,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-31",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Meta Lead Form",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 373,
+      "Meta Lead Form": 10,
+      "Website (Google Ad)": 96,
+      "Website (Google SEO)": 97,
+      "Instagram": 1,
+      "Google Calls": 78,
+      "Influencer": 0
+    },
+    "totalLeads": 655,
+    "unmappedHeaders": [
+      "Total Leads",
+      "Total Leads fromJC",
+      "Out of chennai",
+      "Irrelevent",
+      "Hindi",
+      "Prospected",
+      "call taken",
+      "Call not connected",
+      "Connected"
+    ]
+  },
+  {
+    "branch": "Velachery",
+    "gid": "875342187",
+    "totalRows": 25,
+    "dataRows": 24,
+    "validDates": 24,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-24",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Meta Lead Form",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 1,
+      "Meta Lead Form": 283,
+      "Website (Google Ad)": 44,
+      "Website (Google SEO)": 10,
+      "Instagram": 2,
+      "Google Calls": 48,
+      "Influencer": 0
+    },
+    "totalLeads": 388,
+    "unmappedHeaders": [
+      "Total Leads",
+      "Total Leads fromJC",
+      "Out of chennai",
+      "Irrelevent",
+      "Hindi",
+      "Prospected",
+      "call taken",
+      "Call not connected",
+      "Connected"
+    ]
+  },
+  {
+    "branch": "CBE",
+    "gid": "1844546948",
+    "totalRows": 25,
+    "dataRows": 24,
+    "validDates": 24,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-24",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Meta Lead Form",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 99,
+      "Meta Lead Form": 46,
+      "Website (Google Ad)": 54,
+      "Website (Google SEO)": 15,
+      "Instagram": 0,
+      "Google Calls": 18,
+      "Influencer": 0
+    },
+    "totalLeads": 232,
+    "unmappedHeaders": [
+      "Total Leads",
+      "Qualified Leads",
+      "RNR",
+      "Not Interested",
+      "Other language"
+    ]
+  },
+  {
+    "branch": "OMR",
+    "gid": "694041727",
+    "totalRows": 25,
+    "dataRows": 24,
+    "validDates": 24,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-24",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Meta Lead Form",
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 413,
+      "Meta Lead Form": 0,
+      "Website (Google Ad)": 45,
+      "Website (Google SEO)": 7,
+      "Instagram": 1,
+      "Google Calls": 49,
+      "Influencer": 0
+    },
+    "totalLeads": 515,
+    "unmappedHeaders": [
+      "Total Leads",
+      "Total Leads fromJC",
+      "Out of chennai",
+      "Irrelevent",
+      "Hindi",
+      "Prospected",
+      "call taken",
+      "Call not connected",
+      "Connected"
+    ]
+  },
+  {
+    "branch": "Porur",
+    "gid": "592575622",
+    "totalRows": 25,
+    "dataRows": 24,
+    "validDates": 24,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-24",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Meta Lead Form",
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 198,
+      "Meta Lead Form": 0,
+      "Website (Google Ad)": 31,
+      "Website (Google SEO)": 0,
+      "Instagram": 2,
+      "Google Calls": 7,
+      "Influencer": 0
+    },
+    "totalLeads": 238,
+    "unmappedHeaders": [
+      "Total Leads fromJC",
+      "Out of chennai",
+      "Irrelevent",
+      "Hindi",
+      "Prospected",
+      "call taken",
+      "Call not connected",
+      "Connected"
+    ]
+  },
+  {
+    "branch": "Tambaram",
+    "gid": "813463373",
+    "totalRows": 25,
+    "dataRows": 24,
+    "validDates": 24,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-24",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Meta Lead Form",
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 189,
+      "Meta Lead Form": 0,
+      "Website (Google Ad)": 20,
+      "Website (Google SEO)": 14,
+      "Instagram": 1,
+      "Google Calls": 44,
+      "Influencer": 0
+    },
+    "totalLeads": 268,
+    "unmappedHeaders": [
+      "Total Leads fromJC",
+      "Out of chennai",
+      "Irrelevent",
+      "Hindi",
+      "Prospected",
+      "call taken",
+      "Call not connected",
+      "Connected"
+    ]
+  },
+  {
+    "branch": "Anna Nagar",
+    "gid": "1607111616",
+    "totalRows": 25,
+    "dataRows": 24,
+    "validDates": 24,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-24",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Meta Lead Form",
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 385,
+      "Meta Lead Form": 0,
+      "Website (Google Ad)": 15,
+      "Website (Google SEO)": 4,
+      "Instagram": 3,
+      "Google Calls": 21,
+      "Influencer": 0
+    },
+    "totalLeads": 428,
+    "unmappedHeaders": [
+      "Total Leads fromJC",
+      "Out of chennai",
+      "Irrelevent",
+      "Hindi",
+      "Prospected",
+      "call taken",
+      "Call not connected",
+      "Connected"
+    ]
+  },
+  {
+    "branch": "Kochi",
+    "gid": "2113729191",
+    "totalRows": 25,
+    "dataRows": 24,
+    "validDates": 24,
+    "invalidDates": 0,
+    "dateRange": "2026-10-01 to 2026-10-24",
+    "channelsFound": [
+      "Meta WhatsApp",
+      "Website (Google Ad)",
+      "Website (Google SEO)",
+      "Instagram",
+      "Google Calls"
+    ],
+    "missingChannels": [
+      "Meta Lead Form",
+      "Influencer"
+    ],
+    "channelTotals": {
+      "Meta WhatsApp": 189,
+      "Meta Lead Form": 0,
+      "Website (Google Ad)": 5,
+      "Website (Google SEO)": 0,
+      "Instagram": 0,
+      "Google Calls": 0,
+      "Influencer": 0
+    },
+    "totalLeads": 194,
+    "unmappedHeaders": [
+      "Total Leads fromJC",
+      "Out of chennai",
+      "Irrelevent",
+      "Hindi",
+      "Prospected",
+      "call taken",
+      "Call not connected",
+      "Connected"
+    ]
+  }
+]

@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block title %}{{ lead.name }} - Lead Profile{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>{{ lead.name }}</h1>
+    <p>Lead Profile &bull; Status: <span class="badge badge-{{ lead.status|lower|slugify }}">{{ lead.status }}</span> &bull; Created {{ lead.created_at|date:"M d, Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <button type="button" class="btn btn-success" onclick="openCallDialer('{{ lead.pk }}', '{{ lead.name|escapejs }}', '{{ lead.phone|escapejs }}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+      Start Call
+    </button>
+    <a href="{% url 'admin_lead_edit' lead.pk %}" class="btn btn-secondary">Edit Lead</a>
+    <a href="{% url 'admin_leads_list' %}" class="btn btn-secondary">Back to Leads</a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Lead & Contact Info -->
+  <div class="crm-card">
+    <div class="crm-card-header">
+      <h3>Contact Information</h3>
+    </div>
+    <div class="crm-card-body">
+      <div style="display: grid; grid-template-columns: 140px 1fr; gap: 12px; font-size: 0.9rem;">
+        <span style="color: var(--text-muted);">Phone:</span>
+        <strong>{{ lead.phone }}</strong>
+
+        <span style="color: var(--text-muted);">Email:</span>
+        <span>{{ lead.email|default:"-" }}</span>
+
+        <span style="color: var(--text-muted);">Acquisition Channel:</span>
+        <span>{{ lead.channel.name|default:"Direct / Unknown" }}</span>
+
+        <span style="color: var(--text-muted);">Branch Center:</span>
+        <span>{{ lead.branch.name|default:"Unassigned" }}</span>
+
+        <span style="color: var(--text-muted);">Lead Source:</span>
+        <span>
+          {% if lead.is_offline %}
+            <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:600;">Offline Lead</span>
+          {% else %}
+            <span class="badge" style="background:#f1f5f9; color:#475569;">Online</span>
+          {% endif %}
+          {% if lead.source %}
+            <span class="badge" style="background:#e0e7ff; color:#3730a3; margin-left:4px;">{{ lead.source }}</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignment Details & Notes -->
+  <div class="crm-card">
+    <div class="crm-card-header">
+      <h3>Staff Assignment & Form Data</h3>
+    </div>
+    <div class="crm-card-body">
+      <div style="display: grid; grid-template-columns: 140px 1fr; gap: 12px; font-size: 0.9rem; margin-bottom: 16px;">
+        <span style="color: var(--text-muted);">Assigned Sales Head:</span>
+        <span>
+          {% if lead.assigned_manager %}
+          <a href="{% url 'admin_manager_detail' lead.assigned_manager.pk %}"><strong>{{ lead.assigned_manager.get_full_name|default:lead.assigned_manager.username }}</strong></a>
+          {% else %}
+          <em>Unassigned</em>
+          {% endif %}
+        </span>
+
+        <span style="color: var(--text-muted);">Assigned Telecaller:</span>
+        <span>
+          {% if lead.assigned_telecaller %}
+          <a href="{% url 'admin_telecaller_detail' lead.assigned_telecaller.pk %}"><strong>{{ lead.assigned_telecaller.get_full_name|default:lead.assigned_telecaller.username }}</strong></a>
+          {% else %}
+          <em>Unassigned</em>
+          {% endif %}
+        </span>
+      </div>
+
+      <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">Lead Form Data & Details</h4>
+      {% if lead.parsed_notes_data.fields %}
+      <div class="table-responsive" style="margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden;">
+        <table class="crm-table" style="font-size: 0.8125rem;">
+          <thead>
+            <tr>
+              <th style="width: 35%; background: var(--bg-body);">Field</th>
+              <th style="background: var(--bg-body);">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for field, val in lead.parsed_notes_data.fields %}
+            <tr>
+              <td style="font-weight: 600; color: var(--text-muted);">{{ field }}</td>
+              <td style="font-weight: 500;">{{ val }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      {% if lead.parsed_notes_data.logs %}
+      <h4 style="font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 10px; margin-bottom: 6px;">Notes & Activity Remarks</h4>
+      <div style="background: var(--bg-body); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 0.8125rem;">
+        {% for log in lead.parsed_notes_data.logs %}
+        <div style="margin-bottom: 4px; line-height: 1.4;">{{ log }}</div>
+        {% endfor %}
+      </div>
+      {% elif not lead.parsed_notes_data.fields %}
+      <div style="background: var(--bg-body); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--text-muted);">No additional details or notes recorded.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Follow-ups & Call History Tabs/Tables -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Call History -->
+  <div class="crm-card">
+    <div class="crm-card-header">
+      <h3>Call History ({{ calls|length }})</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th>Caller</th>
+            <th>Duration</th>
+            <th>Outcome</th>
+            <th>Date & Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in calls %}
+          <tr>
+            <td>{{ c.caller.username }}</td>
+            <td>{{ c.formatted_duration }}</td>
+            <td><span class="badge badge-telecaller">{{ c.call_outcome }}</span></td>
+            <td>{{ c.call_started_at|date:"M d, H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No calls logged for this lead yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Scheduled Follow-ups -->
+  <div class="crm-card">
+    <div class="crm-card-header">
+      <h3>Follow-ups ({{ followups|length }})</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in followups %}
+          <tr>
+            <td>{{ f.follow_up_date }}{% if f.follow_up_time %} {{ f.follow_up_time }}{% endif %}</td>
+            <td>
+              {% if f.is_overdue %}
+              <span class="badge badge-overdue">Overdue</span>
+              {% elif f.status == 'Pending' %}
+              <span class="badge badge-pending">Pending</span>
+              {% else %}
+              <span class="badge badge-completed">{{ f.status }}</span>
+              {% endif %}
+            </td>
+            <td>{{ f.notes|truncatechars:40|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No follow-ups recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% include 'calls/partials/lead_recordings_card.html' %}
+
+<!-- Activity Audit for this Lead -->
+<div class="crm-card">
+  <div class="crm-card-header">
+    <h3>Lead Activity Audit Trail</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Action</th>
+          <th>Description</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in activities %}
+        <tr>
+          <td><strong>{{ a.user.username }}</strong></td>
+          <td>{{ a.action }}</td>
+          <td>{{ a.description }}</td>
+          <td>{{ a.timestamp|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No activity logs for this lead.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

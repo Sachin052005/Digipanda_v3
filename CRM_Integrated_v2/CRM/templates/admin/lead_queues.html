@@ -1,0 +1,815 @@
+{% extends 'base.html' %}
+{% block title %}Lead Assignment Queues - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">LEAD ASSIGNMENT QUEUES</h1>
+      <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.775rem; font-weight: 600; padding: 4px 8px;">
+        {{ current_queue|upper }} QUEUE ({{ current_queue_count }} LEADS)
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Bulk redistribution and automated workload balancing for unassigned, untouched, unanswered, and unattended leads.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <a href="{% url 'admin_leads_list' %}" class="btn btn-secondary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      All Leads
+    </a>
+    <button type="button" class="btn btn-primary" onclick="openBulkAssignModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      Bulk Assign Queue
+    </button>
+  </div>
+</div>
+
+<!-- 4 QUEUE KPI CARDS / TABS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <!-- Unassigned -->
+  <a href="?queue=unassigned{% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
+     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if current_queue == 'unassigned' %}#4f46e5{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Unassigned</div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: #4f46e5; margin: 4px 0;">{{ queue_counts.unassigned }}</div>
+      </div>
+      <span style="background: #eef2ff; color: #4f46e5; border-radius: 6px; padding: 6px; display: inline-flex;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </span>
+    </div>
+    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">Pending initial telecaller allocation</div>
+  </a>
+
+  <!-- Untouched -->
+  <a href="?queue=untouched{% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
+     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if current_queue == 'untouched' %}#e11d48{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Untouched</div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: #e11d48; margin: 4px 0;">{{ queue_counts.untouched }}</div>
+      </div>
+      <span style="background: #ffe4e6; color: #e11d48; border-radius: 6px; padding: 6px; display: inline-flex;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+      </span>
+    </div>
+    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">Assigned leads with zero calls made</div>
+  </a>
+
+  <!-- Unanswered -->
+  <a href="?queue=unanswered{% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
+     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if current_queue == 'unanswered' %}#d97706{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Unanswered</div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: #d97706; margin: 4px 0;">{{ queue_counts.unanswered }}</div>
+      </div>
+      <span style="background: #fef3c7; color: #d97706; border-radius: 6px; padding: 6px; display: inline-flex;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path><line x1="23" y1="1" x2="1" y2="23"></line></svg>
+      </span>
+    </div>
+    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">Only RNR, No Answer, or Busy attempts</div>
+  </a>
+
+  <!-- Unattended -->
+  <a href="?queue=unattended{% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
+     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if current_queue == 'unattended' %}#2563eb{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Unattended</div>
+        <div style="font-size: 1.75rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ queue_counts.unattended }}</div>
+      </div>
+      <span style="background: #dbeafe; color: #2563eb; border-radius: 6px; padding: 6px; display: inline-flex;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </span>
+    </div>
+    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">No contact &gt; 48 hours or overdue</div>
+  </a>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-card" style="margin-bottom: 20px;">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <input type="hidden" name="queue" value="{{ current_queue }}">
+    <div class="filter-col" style="flex: 2 1 200px;">
+      <label>Search Leads</label>
+      <input type="text" name="search" class="form-control" placeholder="Search name, phone, notes..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col" style="flex: 1 1 160px;">
+      <label>Filter Branch</label>
+      <select name="branch" class="form-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="display: flex; gap: 8px;">
+      <a href="?queue={{ current_queue }}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- LEADS TABLE -->
+<div class="table-card">
+  <div style="padding: 12px 16px; background: #fafafa; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin: 0;">
+        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" style="cursor: pointer;">
+        Select All On Page
+      </label>
+      <span id="selectedCountBadge" style="font-size: 0.8rem; color: #4b5563; display: none;">0 leads selected</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;" onclick="assignSelectedModal()">
+        Assign Selected (<span id="btnSelectedCount">0</span>)
+      </button>
+      <button type="button" class="btn btn-primary" style="font-size: 0.8rem; padding: 4px 10px;" onclick="openBulkAssignModal()">
+        Assign Entire Queue
+      </button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table" style="margin: 0;">
+      <thead>
+        <tr>
+          <th style="width: 40px; text-align: center;"><input type="checkbox" disabled style="opacity: 0.5;"></th>
+          <th>Lead Name</th>
+          <th>Phone</th>
+          <th>Branch</th>
+          <th>Category</th>
+          <th>Current Telecaller</th>
+          <th>Call Attempts</th>
+          <th>Last Activity</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lead in page_obj %}
+        <tr>
+          <td style="text-align: center;">
+            <input type="checkbox" class="lead-checkbox" value="{{ lead.id }}" onchange="updateSelectedCount()" style="cursor: pointer;">
+          </td>
+          <td>
+            <a href="{% url 'admin_lead_detail' lead.id %}" style="font-weight: 600; color: #1e40af; text-decoration: none;">
+              {{ lead.name }}
+            </a>
+            <div style="font-size: 0.75rem; color: #6b7280;">ID: #{{ lead.id }} &bull; {{ lead.created_at|date:"M d, Y" }}</div>
+          </td>
+          <td>
+            <div style="font-family: monospace; font-size: 0.85rem;">{{ lead.phone }}</div>
+          </td>
+          <td>
+            <span class="badge" style="background: #f3f4f6; color: #374151;">
+              {{ lead.branch.name|default:"Unassigned Branch" }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" style="background: {% if lead.category == 'Training' %}#e0e7ff; color: #4338ca;{% else %}#fef3c7; color: #92400e;{% endif %}">
+              {{ lead.category|default:"Training" }}
+            </span>
+          </td>
+          <td>
+            {% if lead.assigned_telecaller %}
+              <span style="font-weight: 500; color: #374151;">{{ lead.assigned_telecaller.get_full_name|default:lead.assigned_telecaller.username }}</span>
+            {% else %}
+              <span style="color: #9ca3af; font-style: italic;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if current_queue == 'untouched' %}
+              <span class="badge" style="background: #fee2e2; color: #991b1b;">0 Calls</span>
+            {% elif current_queue == 'unanswered' %}
+              <span class="badge" style="background: #fef3c7; color: #92400e;">Unanswered Attempts</span>
+            {% else %}
+              <span style="font-size: 0.85rem;">{{ lead.calls.count }} call{{ lead.calls.count|pluralize }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; color: #6b7280;">{{ lead.updated_at|timesince }} ago</span>
+          </td>
+          <td style="text-align: right;">
+            <a href="{% url 'admin_lead_detail' lead.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 2px 8px;">
+              View Lead
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 48px 16px; color: #6b7280;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: #9ca3af;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg>
+            <div style="font-size: 1rem; font-weight: 600; color: #374151;">No leads in this queue</div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">All leads matching these criteria have been successfully attended or redistributed.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION -->
+  {% if page_obj.has_other_pages %}
+  <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 0.85rem; color: #6b7280;">
+      Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} total leads)
+    </div>
+    <div style="display: flex; gap: 6px;">
+      {% if page_obj.has_previous %}
+      <a href="?queue={{ current_queue }}&page={{ page_obj.previous_page_number }}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Previous</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?queue={{ current_queue }}&page={{ page_obj.next_page_number }}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- BULK ASSIGNMENT MODAL (MULTI-BRANCH & MULTI-TELECALLER ROUND-ROBIN) -->
+<div id="bulkAssignModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #fff; width: 100%; max-width: 580px; max-height: 92vh; display: flex; flex-direction: column; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25); overflow: hidden;">
+    <div style="padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Bulk Assign Leads
+      </h3>
+      <button type="button" onclick="closeBulkAssignModal()" style="border: none; background: none; font-size: 1.5rem; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="bulkAssignForm" onsubmit="submitBulkAssign(event)" style="padding: 20px; overflow-y: auto; flex: 1;">
+      {% csrf_token %}
+      <input type="hidden" name="queue_type" id="modalQueueType" value="{{ current_queue }}">
+      <input type="hidden" name="selected_lead_ids" id="modalSelectedLeadIds" value="">
+
+      <!-- Scope Notice -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Scope of Leads to Assign</label>
+        <div id="modalScopeNotice" style="background: #eef2ff; color: #3730a3; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; line-height: 1.4; border: 1px solid #c7d2fe;">
+          Assigning entire <strong>{{ current_queue|upper }}</strong> queue (up to 100 leads per execution).
+        </div>
+      </div>
+
+      <!-- Strategy Selector -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Distribution Strategy</label>
+        <select name="strategy" id="strategySelect" class="form-select" onchange="handleStrategyChange(this.value)" required style="width: 100%; padding: 8px 12px; font-size: 0.875rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+          <option value="round_robin">Round-Robin (Balance across active selected telecallers)</option>
+          <option value="single">Single Telecaller (Assign all eligible leads to one selected telecaller)</option>
+        </select>
+      </div>
+
+      <!-- Target Branches Multi-Select -->
+      <div id="targetBranchesGroup" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="font-size: 0.85rem; font-weight: 600; color: #334155; margin: 0;">Target Branches <span style="color: #e11d48;">*</span></label>
+          <div style="display: flex; gap: 8px; font-size: 0.775rem;">
+            <a href="javascript:void(0);" onclick="selectAllBranches()" style="color: #4f46e5; text-decoration: none; font-weight: 600;">Select All</a>
+            <span style="color: #cbd5e1;">|</span>
+            <a href="javascript:void(0);" onclick="clearAllBranches()" style="color: #64748b; text-decoration: none;">Clear Selection</a>
+          </div>
+        </div>
+
+        <!-- Removable branch chips -->
+        <div id="branchChipsContainer" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; margin-bottom: 6px;"></div>
+
+        <!-- Branch search input -->
+        <input type="text" id="searchBranchesInput" class="form-control" placeholder="Search branches..." style="font-size: 0.825rem; padding: 6px 10px; margin-bottom: 6px;" oninput="filterBranchOptions(this.value)">
+
+        <!-- Scrollable branch checkboxes list -->
+        <div id="branchOptionsContainer" style="max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; background: #fff;">
+          {% for b in modal_branches %}
+          <label class="branch-option-row" data-name="{{ b.name|lower }}" style="display: flex; align-items: center; gap: 8px; font-size: 0.825rem; padding: 4px 0; cursor: pointer; margin: 0;">
+            <input type="checkbox" class="modal-branch-checkbox" value="{{ b.id }}" data-name="{{ b.name }}" onchange="handleBranchCheckboxChange()">
+            <span>{{ b.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Target Telecallers Multi-Select -->
+      <div id="targetTelecallersGroup" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label id="telecallerGroupLabel" style="font-size: 0.85rem; font-weight: 600; color: #334155; margin: 0;">Target Telecallers <span style="color: #e11d48;">*</span></label>
+          <div id="telecallerQuickLinks" style="display: flex; gap: 8px; font-size: 0.775rem;">
+            <a href="javascript:void(0);" onclick="selectAllTelecallers()" style="color: #4f46e5; text-decoration: none; font-weight: 600;">Select All</a>
+            <span style="color: #cbd5e1;">|</span>
+            <a href="javascript:void(0);" onclick="clearAllTelecallers()" style="color: #64748b; text-decoration: none;">Clear Selection</a>
+          </div>
+        </div>
+
+        <!-- Removable telecaller chips -->
+        <div id="telecallerChipsContainer" style="display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; margin-bottom: 6px;"></div>
+
+        <!-- Telecaller search input -->
+        <input type="text" id="searchTelecallersInput" class="form-control" placeholder="Search telecallers by name or branch..." style="font-size: 0.825rem; padding: 6px 10px; margin-bottom: 6px;" oninput="filterTelecallerOptions(this.value)">
+
+        <!-- Scrollable telecallers checkboxes list -->
+        <div id="telecallerOptionsContainer" style="max-height: 140px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; background: #fff;">
+          <div id="telecallersEmptyNotice" style="color: #64748b; font-size: 0.8rem; text-align: center; padding: 12px;">
+            Select one or more target branches above to load eligible telecallers.
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignment Reason -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Assignment Reason / Note</label>
+        <input type="text" name="reason" id="modalReasonInput" class="form-control" placeholder="e.g. Workload redistribution for untouched leads" value="Workload redistribution from {{ current_queue|upper }} queue">
+      </div>
+
+      <!-- Live Assignment Preview Panel -->
+      <div id="assignmentPreviewCard" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; font-size: 0.825rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-weight: 700; color: #1e293b; text-transform: uppercase; font-size: 0.725rem; letter-spacing: 0.05em;">Assignment Preview</span>
+          <span id="previewLoadingIndicator" style="display: none; color: #4f46e5; font-size: 0.75rem;">Updating stats...</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 8px;">
+          <div style="background: #fff; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 0.7rem; color: #64748b;">Eligible Leads</div>
+            <div id="previewEligibleLeads" style="font-size: 1.15rem; font-weight: 800; color: #4f46e5;">0</div>
+          </div>
+          <div style="background: #fff; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 0.7rem; color: #64748b;">Selected Branches</div>
+            <div id="previewSelectedBranches" style="font-size: 1.15rem; font-weight: 800; color: #0284c7;">0</div>
+          </div>
+          <div style="background: #fff; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 0.7rem; color: #64748b;">Selected Staff</div>
+            <div id="previewSelectedStaff" style="font-size: 1.15rem; font-weight: 800; color: #16a34a;">0</div>
+          </div>
+        </div>
+        <div id="previewEstNote" style="color: #475569; font-size: 0.8rem; margin-top: 4px;">
+          Estimated distribution: <strong id="previewEstPerTc">0</strong> leads per telecaller.
+        </div>
+        <div id="previewWarningsBanner" style="display: none; background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; border-radius: 6px; padding: 8px 10px; margin-top: 8px; font-size: 0.775rem; line-height: 1.4;">
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeBulkAssignModal()">Cancel</button>
+        <button type="submit" id="btnSubmitBulkAssign" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+          <span>Start Assignment</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Raw active telecallers list passed from server
+const ALL_ACTIVE_TELECALLERS = {{ telecallers_data_json|safe }};
+
+// State for multi-selection
+let selectedBranchIds = new Set();
+let selectedTelecallerIds = new Set();
+let previewDebounceTimer = null;
+
+function toggleSelectAll(master) {
+  const checkboxes = document.querySelectorAll('.lead-checkbox');
+  checkboxes.forEach(cb => cb.checked = master.checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const selected = document.querySelectorAll('.lead-checkbox:checked');
+  const count = selected.length;
+  document.getElementById('btnSelectedCount').textContent = count;
+  const badge = document.getElementById('selectedCountBadge');
+  if (count > 0) {
+    badge.textContent = `${count} lead(s) selected`;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function openBulkAssignModal(selectedIds = []) {
+  const modal = document.getElementById('bulkAssignModal');
+  const hiddenInput = document.getElementById('modalSelectedLeadIds');
+  const notice = document.getElementById('modalScopeNotice');
+  const reasonInput = document.getElementById('modalReasonInput');
+
+  if (selectedIds && selectedIds.length > 0) {
+    hiddenInput.value = JSON.stringify(selectedIds);
+    notice.innerHTML = `Assigning <strong>${selectedIds.length} explicitly selected lead(s)</strong>.`;
+    reasonInput.value = `Workload redistribution for ${selectedIds.length} selected lead(s)`;
+  } else {
+    hiddenInput.value = '';
+    notice.innerHTML = `Assigning leads in the <strong>{{ current_queue|upper }}</strong> queue (up to 100 leads per execution).`;
+    reasonInput.value = `Workload redistribution from {{ current_queue|upper }} queue`;
+  }
+
+  // Pre-select current page filter branch if active
+  const pageBranchFilter = "{{ branch_filter }}";
+  if (pageBranchFilter && !selectedBranchIds.size) {
+    selectedBranchIds.add(parseInt(pageBranchFilter));
+    const cb = document.querySelector(`.modal-branch-checkbox[value="${pageBranchFilter}"]`);
+    if (cb) cb.checked = true;
+  }
+
+  renderBranchChips();
+  renderTelecallerOptions();
+  refreshPreview();
+
+  modal.style.display = 'flex';
+}
+
+function assignSelectedModal() {
+  const selected = Array.from(document.querySelectorAll('.lead-checkbox:checked')).map(cb => parseInt(cb.value));
+  if (selected.length === 0) {
+    alert("Please select at least one lead from the table to assign.");
+    return;
+  }
+  openBulkAssignModal(selected);
+}
+
+function closeBulkAssignModal() {
+  document.getElementById('bulkAssignModal').style.display = 'none';
+}
+
+function handleStrategyChange(strategy) {
+  const isSingle = (strategy === 'single');
+  const label = document.getElementById('telecallerGroupLabel');
+  const quickLinks = document.getElementById('telecallerQuickLinks');
+
+  if (isSingle) {
+    label.innerHTML = 'Target Telecaller (Select One) <span style="color: #e11d48;">*</span>';
+    quickLinks.style.display = 'none';
+    // If multiple telecallers were selected, keep only the first
+    if (selectedTelecallerIds.size > 1) {
+      const firstId = Array.from(selectedTelecallerIds)[0];
+      selectedTelecallerIds.clear();
+      selectedTelecallerIds.add(firstId);
+    }
+  } else {
+    label.innerHTML = 'Target Telecallers <span style="color: #e11d48;">*</span>';
+    quickLinks.style.display = 'flex';
+  }
+
+  renderTelecallerOptions();
+  renderTelecallerChips();
+  refreshPreview();
+}
+
+// ==========================================
+// BRANCHES MULTI-SELECT HANDLERS
+// ==========================================
+function filterBranchOptions(searchQuery) {
+  const q = (searchQuery || '').toLowerCase().trim();
+  const rows = document.querySelectorAll('.branch-option-row');
+  rows.forEach(row => {
+    const name = row.getAttribute('data-name') || '';
+    row.style.display = (!q || name.includes(q)) ? 'flex' : 'none';
+  });
+}
+
+function selectAllBranches() {
+  const cbs = document.querySelectorAll('.modal-branch-checkbox');
+  cbs.forEach(cb => {
+    cb.checked = true;
+    selectedBranchIds.add(parseInt(cb.value));
+  });
+  renderBranchChips();
+  handleBranchChangeSync();
+}
+
+function clearAllBranches() {
+  const cbs = document.querySelectorAll('.modal-branch-checkbox');
+  cbs.forEach(cb => cb.checked = false);
+  selectedBranchIds.clear();
+  renderBranchChips();
+  handleBranchChangeSync();
+}
+
+function handleBranchCheckboxChange() {
+  selectedBranchIds.clear();
+  const checked = document.querySelectorAll('.modal-branch-checkbox:checked');
+  checked.forEach(cb => selectedBranchIds.add(parseInt(cb.value)));
+  renderBranchChips();
+  handleBranchChangeSync();
+}
+
+function removeBranch(branchId) {
+  selectedBranchIds.delete(branchId);
+  const cb = document.querySelector(`.modal-branch-checkbox[value="${branchId}"]`);
+  if (cb) cb.checked = false;
+  renderBranchChips();
+  handleBranchChangeSync();
+}
+
+function renderBranchChips() {
+  const container = document.getElementById('branchChipsContainer');
+  container.innerHTML = '';
+  if (selectedBranchIds.size === 0) {
+    container.innerHTML = '<span style="color: #94a3b8; font-size: 0.775rem; font-style: italic;">No branches selected</span>';
+    return;
+  }
+  selectedBranchIds.forEach(bId => {
+    const cb = document.querySelector(`.modal-branch-checkbox[value="${bId}"]`);
+    const name = cb ? cb.getAttribute('data-name') : `Branch #${bId}`;
+    const chip = document.createElement('span');
+    chip.style.cssText = 'display: inline-flex; align-items: center; gap: 5px; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 12px; font-size: 0.775rem; font-weight: 600; border: 1px solid #c7d2fe;';
+    chip.innerHTML = `<span>${name}</span><button type="button" onclick="removeBranch(${bId})" style="background: none; border: none; color: #4338ca; cursor: pointer; padding: 0; line-height: 1; font-size: 0.9rem;" title="Remove ${name}">&times;</button>`;
+    container.appendChild(chip);
+  });
+}
+
+function handleBranchChangeSync() {
+  // Purge selected telecallers that no longer belong to selected branches
+  const validTcIdsForSelectedBranches = new Set(
+    ALL_ACTIVE_TELECALLERS
+      .filter(t => selectedBranchIds.has(t.branch_id))
+      .map(t => t.id)
+  );
+
+  const purged = new Set();
+  selectedTelecallerIds.forEach(tcId => {
+    if (validTcIdsForSelectedBranches.has(tcId)) {
+      purged.add(tcId);
+    }
+  });
+  selectedTelecallerIds = purged;
+
+  renderTelecallerOptions();
+  renderTelecallerChips();
+  refreshPreview();
+}
+
+// ==========================================
+// TELECALLERS MULTI-SELECT HANDLERS
+// ==========================================
+function filterTelecallerOptions(searchQuery) {
+  const q = (searchQuery || '').toLowerCase().trim();
+  const rows = document.querySelectorAll('.telecaller-option-row');
+  rows.forEach(row => {
+    const name = row.getAttribute('data-search') || '';
+    row.style.display = (!q || name.includes(q)) ? 'flex' : 'none';
+  });
+}
+
+function renderTelecallerOptions() {
+  const container = document.getElementById('telecallerOptionsContainer');
+  const isSingle = (document.getElementById('strategySelect').value === 'single');
+
+  if (selectedBranchIds.size === 0) {
+    container.innerHTML = '<div style="color: #64748b; font-size: 0.8rem; text-align: center; padding: 12px;">Select one or more target branches above to load eligible telecallers.</div>';
+    return;
+  }
+
+  // Filter telecallers matching selected branches
+  const eligible = ALL_ACTIVE_TELECALLERS.filter(t => selectedBranchIds.has(t.branch_id));
+
+  if (eligible.length === 0) {
+    container.innerHTML = '<div style="color: #ea580c; font-size: 0.8rem; text-align: center; padding: 12px; font-weight: 500;">No active telecallers found for the selected branches.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  eligible.forEach(t => {
+    const isChecked = selectedTelecallerIds.has(t.id);
+    const label = document.createElement('label');
+    label.className = 'telecaller-option-row';
+    label.setAttribute('data-search', `${t.name.toLowerCase()} ${t.username.toLowerCase()} ${t.branch_name.toLowerCase()}`);
+    label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 0.825rem; padding: 4px 0; cursor: pointer; margin: 0;';
+
+    const inputType = isSingle ? 'radio' : 'checkbox';
+    label.innerHTML = `
+      <input type="${inputType}" name="modal_tc_selection" class="modal-tc-checkbox" value="${t.id}" data-name="${t.name}" data-branch="${t.branch_name}" ${isChecked ? 'checked' : ''} onchange="handleTelecallerSelectionChange(this)">
+      <span style="font-weight: 500; color: #1e293b;">${t.name}</span>
+      <span style="font-size: 0.75rem; color: #64748b; background: #f1f5f9; padding: 1px 6px; border-radius: 4px;">${t.branch_name}</span>
+    `;
+    container.appendChild(label);
+  });
+}
+
+function handleTelecallerSelectionChange(inputEl) {
+  const isSingle = (document.getElementById('strategySelect').value === 'single');
+  const tcId = parseInt(inputEl.value);
+
+  if (isSingle) {
+    selectedTelecallerIds.clear();
+    if (inputEl.checked) selectedTelecallerIds.add(tcId);
+  } else {
+    if (inputEl.checked) {
+      selectedTelecallerIds.add(tcId);
+    } else {
+      selectedTelecallerIds.delete(tcId);
+    }
+  }
+
+  renderTelecallerChips();
+  refreshPreview();
+}
+
+function selectAllTelecallers() {
+  const isSingle = (document.getElementById('strategySelect').value === 'single');
+  if (isSingle) return;
+
+  const eligible = ALL_ACTIVE_TELECALLERS.filter(t => selectedBranchIds.has(t.branch_id));
+  eligible.forEach(t => selectedTelecallerIds.add(t.id));
+
+  const cbs = document.querySelectorAll('.modal-tc-checkbox');
+  cbs.forEach(cb => cb.checked = true);
+
+  renderTelecallerChips();
+  refreshPreview();
+}
+
+function clearAllTelecallers() {
+  selectedTelecallerIds.clear();
+  const cbs = document.querySelectorAll('.modal-tc-checkbox');
+  cbs.forEach(cb => cb.checked = false);
+
+  renderTelecallerChips();
+  refreshPreview();
+}
+
+function removeTelecaller(tcId) {
+  selectedTelecallerIds.delete(tcId);
+  const cb = document.querySelector(`.modal-tc-checkbox[value="${tcId}"]`);
+  if (cb) cb.checked = false;
+
+  renderTelecallerChips();
+  refreshPreview();
+}
+
+function renderTelecallerChips() {
+  const container = document.getElementById('telecallerChipsContainer');
+  container.innerHTML = '';
+  if (selectedTelecallerIds.size === 0) {
+    container.innerHTML = '<span style="color: #94a3b8; font-size: 0.775rem; font-style: italic;">No telecallers selected</span>';
+    return;
+  }
+
+  selectedTelecallerIds.forEach(tcId => {
+    const tcObj = ALL_ACTIVE_TELECALLERS.find(t => t.id === tcId);
+    const label = tcObj ? `${tcObj.name} (${tcObj.branch_name})` : `Staff #${tcId}`;
+    const chip = document.createElement('span');
+    chip.style.cssText = 'display: inline-flex; align-items: center; gap: 5px; background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 12px; font-size: 0.775rem; font-weight: 600; border: 1px solid #a7f3d0;';
+    chip.innerHTML = `<span>${label}</span><button type="button" onclick="removeTelecaller(${tcId})" style="background: none; border: none; color: #047857; cursor: pointer; padding: 0; line-height: 1; font-size: 0.9rem;" title="Remove ${label}">&times;</button>`;
+    container.appendChild(chip);
+  });
+}
+
+// ==========================================
+// LIVE PREVIEW CALCULATION
+// ==========================================
+function refreshPreview() {
+  clearTimeout(previewDebounceTimer);
+  previewDebounceTimer = setTimeout(calculatePreviewAsync, 180);
+}
+
+async function calculatePreviewAsync() {
+  const indicator = document.getElementById('previewLoadingIndicator');
+  const btnSubmit = document.getElementById('btnSubmitBulkAssign');
+  const queueType = document.getElementById('modalQueueType').value;
+  const branchIdsArr = Array.from(selectedBranchIds);
+  const tcIdsArr = Array.from(selectedTelecallerIds);
+
+  const selectedIdsVal = document.getElementById('modalSelectedLeadIds').value;
+  let leadIds = null;
+  if (selectedIdsVal) {
+    try { leadIds = JSON.parse(selectedIdsVal); } catch(err) {}
+  }
+
+  // Update counter badges
+  document.getElementById('previewSelectedBranches').textContent = branchIdsArr.length;
+  document.getElementById('previewSelectedStaff').textContent = tcIdsArr.length;
+
+  // Validate Start Assignment button readiness
+  const isReady = (branchIdsArr.length > 0 && tcIdsArr.length > 0);
+  btnSubmit.disabled = !isReady;
+  btnSubmit.style.opacity = isReady ? '1' : '0.6';
+
+  if (!isReady) {
+    document.getElementById('previewEligibleLeads').textContent = '0';
+    document.getElementById('previewEstPerTc').textContent = '0';
+    document.getElementById('previewWarningsBanner').style.display = 'none';
+    return;
+  }
+
+  if (indicator) indicator.style.display = 'inline';
+
+  try {
+    const response = await fetch("{% url 'api_bulk_assign_preview' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+      },
+      body: JSON.stringify({
+        queue_type: queueType,
+        branch_ids: branchIdsArr,
+        telecaller_ids: tcIdsArr,
+        lead_ids: leadIds,
+      })
+    });
+
+    const res = await response.json();
+    if (res.success && res.preview) {
+      const p = res.preview;
+      document.getElementById('previewEligibleLeads').textContent = p.total_eligible_leads;
+      document.getElementById('previewEstPerTc').textContent = p.estimated_leads_per_telecaller;
+
+      const warnBanner = document.getElementById('previewWarningsBanner');
+      if (p.warnings && p.warnings.length > 0) {
+        warnBanner.innerHTML = '⚠️ <strong>Branch Warning:</strong><br>' + p.warnings.join('<br>');
+        warnBanner.style.display = 'block';
+      } else {
+        warnBanner.style.display = 'none';
+      }
+    }
+  } catch(err) {
+    console.warn('Preview calculation error:', err);
+  } finally {
+    if (indicator) indicator.style.display = 'none';
+  }
+}
+
+// ==========================================
+// SUBMIT BULK ASSIGNMENT
+// ==========================================
+async function submitBulkAssign(e) {
+  e.preventDefault();
+  const form = document.getElementById('bulkAssignForm');
+  const btn = document.getElementById('btnSubmitBulkAssign');
+
+  const branchIdsArr = Array.from(selectedBranchIds);
+  const tcIdsArr = Array.from(selectedTelecallerIds);
+
+  if (branchIdsArr.length === 0) {
+    alert("Please select at least one target branch.");
+    return;
+  }
+  if (tcIdsArr.length === 0) {
+    alert("Please select at least one target telecaller.");
+    return;
+  }
+
+  const selectedIdsVal = document.getElementById('modalSelectedLeadIds').value;
+  let lead_ids = null;
+  if (selectedIdsVal) {
+    try { lead_ids = JSON.parse(selectedIdsVal); } catch(err) {}
+  }
+
+  const strategy = document.getElementById('strategySelect').value;
+  const reason = document.getElementById('modalReasonInput').value.trim();
+  const queue_type = document.getElementById('modalQueueType').value;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" style="width: 14px; height: 14px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite;"></span> Assigning...';
+
+  const payload = {
+    queue_type: queue_type,
+    strategy: strategy,
+    branch_ids: branchIdsArr,
+    telecaller_ids: tcIdsArr,
+    reason: reason,
+    lead_ids: lead_ids,
+  };
+
+  try {
+    const response = await fetch("{% url 'api_bulk_assign_leads' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      let breakdownMsg = `✅ Bulk Assignment Successful!\n\n• Leads Assigned: ${result.assigned_count}`;
+      if (result.telecaller_summary) {
+        breakdownMsg += '\n\nWorkload Allocation:';
+        for (const [tcName, count] of Object.entries(result.telecaller_summary)) {
+          breakdownMsg += `\n  - ${tcName}: ${count} lead(s)`;
+        }
+      }
+      if (result.skipped_count > 0) {
+        breakdownMsg += `\n\n⚠️ Skipped Leads (${result.skipped_count}):\nSkipped due to branch compatibility constraints.`;
+      }
+      alert(breakdownMsg);
+      window.location.reload();
+    } else {
+      alert(`Error: ${result.error || 'Failed to assign leads.'}`);
+      btn.disabled = false;
+      btn.innerHTML = '<span>Start Assignment</span>';
+    }
+  } catch(err) {
+    alert(`Request error: ${err.message}`);
+    btn.disabled = false;
+    btn.innerHTML = '<span>Start Assignment</span>';
+  }
+}
+</script>
+<style>
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

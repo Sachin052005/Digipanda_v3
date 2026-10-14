@@ -1,0 +1,433 @@
+import csv
+from django.shortcuts import render
+from django.http import JsonResponse, HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q, Avg, Sum
+from django.utils import timezone
+from datetime import datetime, time, timedelta
+from accounts.models import User, UserRole
+from accounts.permissions import admin_required, sales_head_required, role_required, get_accessible_branch_ids
+from branches.models import Branch
+from lead_channels.models import Channel
+from products.models import Product
+from decimal import Decimal
+from leads.models import (
+    Lead, LeadStatus, Enrollment, PaymentTransaction, Installment, InstallmentStatus
+)
+from followups.models import FollowUp, FollowUpStatus
+from calls.models import CallHistory, CallStatus
+from activities.models import Activity
+from branches.utils import get_admin_selected_branch
+from .services import (
+    get_dashboard_report_data, sync_google_sheets_data,
+    get_telecaller_rnr_report_data, get_management_chart_data
+)
+
+# ==========================================
+# ADMIN DASHBOARD (Section 15)
+# ==========================================
+
+@admin_required
+def admin_dashboard(request):
+    today = timezone.now().date()
+
+    # Filter parameters
+    manager_filter = request.GET.get('manager', '').strip()
+    telecaller_filter = request.GET.get('telecaller', '').strip()
+    branch_filter = request.GET.get('branch', '').strip()
+    channel_filter = request.GET.get('channel', '').strip()
+    product_filter = request.GET.get('product', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    period = request.GET.get('period', '').strip()
+
+    if period == 'today':
+        from_date = today.strftime('%Y-%m-%d')
+        to_date = today.strftime('%Y-%m-%d')
+    elif period == 'week':
+        start_of_week = today - timedelta(days=today.weekday())
+        from_date = start_of_week.strftime('%Y-%m-%d')
+        to_date = today.strftime('%Y-%m-%d')
+    elif period == 'month':
+        start_of_month = today.replace(day=1)
+        from_date = start_of_month.strftime('%Y-%m-%d')
+        to_date = today.strftime('%Y-%m-%d')
+    elif period == 'all':
+        from_date = ''
+        to_date = ''
+    elif from_date or to_date:
+        period = 'custom'
+
+    # Base QuerySets
+    leads_qs = Lead.objects.all()
+    calls_qs = CallHistory.objects.all()
+    followups_qs = FollowUp.objects.all()
+
+    # Apply filters dynamically
+    selected_branch = get_admin_selected_branch(request)
+    if selected_branch:
+        leads_qs = leads_qs.filter(branch=selected_branch)
+        calls_qs = calls_qs.filter(lead__branch=selected_branch)
+        followups_qs = followups_qs.filter(lead__branch=selected_branch)
+    elif branch_filter:
+        leads_qs = leads_qs.filter(branch_id=branch_filter)
+        calls_qs = calls_qs.filter(lead__branch_id=branch_filter)
+        followups_qs = followups_qs.filter(lead__branch_id=branch_filter)
+
+    if manager_filter:
+        leads_qs = leads_qs.filter(assigned_sales_head_id=manager_filter)
+        calls_qs = calls_qs.filter(manager_id=manager_filter)
+        followups_qs = followups_qs.filter(manager_id=manager_filter)
+    if telecaller_filter:
+        leads_qs = leads_qs.filter(assigned_telecaller_id=telecaller_filter)
+        calls_qs = calls_qs.filter(telecaller_id=telecaller_filter)
+        followups_qs = followups_qs.filter(telecaller_id=telecaller_filter)
+    if channel_filter:
+        leads_qs = leads_qs.filter(channel_id=channel_filter)
+    if product_filter:
+        leads_qs = leads_qs.filter(product_id=product_filter)
+    if status_filter:
+        leads_qs = leads_qs.filter(status=status_filter)
+    if from_date:
+        try:
+            fd = datetime.strptime(from_date, "%Y-%m-%d").date()
+            leads_qs = leads_qs.filter(created_at__date__gte=fd)
+            calls_qs = calls_qs.filter(call_started_at__date__gte=fd)
+            followups_qs = followups_qs.filter(follow_up_date__gte=fd)
+        except ValueError:
+            pass
+    if to_date:
+        try:
+            td = datetime.strptime(to_date, "%Y-%m-%d").date()
+            leads_qs = leads_qs.filter(created_at__date__lte=td)
+            calls_qs = calls_qs.filter(call_started_at__date__lte=td)
+            followups_qs = followups_qs.filter(follow_up_date__lte=td)
+        except ValueError:
+            pass
+
+    # Real DB Metrics (Section 15 KPI cards)
+    total_leads = leads_qs.count()
+    new_leads = leads_qs.filter(status=LeadStatus.NEW).count()
+    active_leads = leads_qs.exclude(status__in=[LeadStatus.LOST, LeadStatus.CONVERTED]).count()
+
+    manager_performance = User.objects.filter(role=UserRole.SALES_HEAD)
+    telecaller_performance = User.objects.filter(role=UserRole.TELECALLER).select_related('counselor')
+    activities_qs = Activity.objects.select_related('user')
+
+    if selected_branch:
+        total_managers = User.objects.filter(role=UserRole.SALES_HEAD, branch_access__branch=selected_branch).count()
+        total_branch_heads = User.objects.filter(role=UserRole.BRANCH_HEAD, branch=selected_branch).count()
+        total_counselors = User.objects.filter(role=UserRole.COUNSELOR, branch=selected_branch).count()
+        total_telecallers = User.objects.filter(role=UserRole.TELECALLER, branch=selected_branch).count()
+        manager_performance = manager_performance.filter(branch_access__branch=selected_branch).distinct()
+        telecaller_performance = telecaller_performance.filter(branch=selected_branch)
+        activities_qs = activities_qs.filter(user__branch=selected_branch)
+    else:
+        total_managers = User.objects.filter(role=UserRole.SALES_HEAD).count()
+        total_branch_heads = User.objects.filter(role=UserRole.BRANCH_HEAD).count()
+        total_counselors = User.objects.filter(role=UserRole.COUNSELOR).count()
+        total_telecallers = User.objects.filter(role=UserRole.TELECALLER).count()
+
+    pending_followups = followups_qs.filter(status=FollowUpStatus.PENDING, follow_up_date__gte=today).count()
+    overdue_followups = followups_qs.filter(
+        Q(status=FollowUpStatus.OVERDUE) | Q(status=FollowUpStatus.PENDING, follow_up_date__lt=today)
+    ).count()
+
+    total_calls = calls_qs.count()
+    completed_calls = calls_qs.filter(call_status='Completed').count()
+
+    total_products = Product.objects.count()
+    total_channels = Channel.objects.count()
+    total_branches = Branch.objects.count()
+
+    # Manager Performance Table
+    manager_performance = manager_performance.annotate(
+        lead_count=Count('manager_leads', distinct=True),
+        call_count=Count('manager_calls', distinct=True),
+        followup_count=Count('manager_followups', distinct=True),
+        converted_count=Count('manager_leads', filter=Q(manager_leads__status=LeadStatus.CONVERTED), distinct=True)
+    )
+
+    # Telecaller Performance Table
+    telecaller_performance = telecaller_performance.annotate(
+        lead_count=Count('telecaller_leads', distinct=True),
+        call_count=Count('telecaller_calls', distinct=True),
+        followup_count=Count('telecaller_followups', distinct=True)
+    )
+
+    # Recent Records
+    recent_leads = leads_qs.select_related('channel', 'assigned_sales_head', 'assigned_telecaller').order_by('-created_at')[:6]
+    recent_activities = activities_qs.order_by('-timestamp')[:6]
+    recent_calls = calls_qs.select_related('lead', 'caller', 'manager', 'telecaller').order_by('-call_started_at')[:6]
+
+    # Dropdown collections for filter form
+    managers = User.objects.filter(role=UserRole.SALES_HEAD, is_active=True)
+    telecallers = User.objects.filter(role=UserRole.TELECALLER, is_active=True)
+    branches = Branch.objects.filter(status='Active')
+    channels = Channel.objects.filter(status='Active')
+    products = Product.objects.filter(status='Active')
+
+    # Financial & Enrollment Metrics (Section 15 & Master Flow)
+    enrollments_qs = Enrollment.objects.all()
+    if selected_branch:
+        enrollments_qs = enrollments_qs.filter(branch=selected_branch)
+    elif branch_filter:
+        enrollments_qs = enrollments_qs.filter(branch_id=branch_filter)
+    if product_filter:
+        enrollments_qs = enrollments_qs.filter(product_id=product_filter)
+
+    total_enrolled = enrollments_qs.count()
+    total_revenue = enrollments_qs.aggregate(s=Sum('total_payable'))['s'] or Decimal('0.00')
+    total_collections = enrollments_qs.aggregate(s=Sum('total_paid'))['s'] or Decimal('0.00')
+    total_outstanding = enrollments_qs.aggregate(s=Sum('outstanding_balance'))['s'] or Decimal('0.00')
+    total_overdue_installments = Installment.objects.filter(enrollment__in=enrollments_qs, status=InstallmentStatus.OVERDUE).count()
+
+    return render(request, 'admin_dashboard/dashboard.html', {
+        'total_leads': total_leads,
+        'new_leads': new_leads,
+        'active_leads': active_leads,
+        'total_managers': total_managers,
+        'total_branch_heads': total_branch_heads,
+        'total_counselors': total_counselors,
+        'total_telecallers': total_telecallers,
+        'pending_followups': pending_followups,
+        'overdue_followups': overdue_followups,
+        'total_calls': total_calls,
+        'completed_calls': completed_calls,
+        'total_products': total_products,
+        'total_channels': total_channels,
+        'total_branches': total_branches,
+        'total_enrolled': total_enrolled,
+        'total_revenue': total_revenue,
+        'total_collections': total_collections,
+        'total_outstanding': total_outstanding,
+        'total_overdue_installments': total_overdue_installments,
+        'manager_performance': manager_performance,
+        'telecaller_performance': telecaller_performance,
+        'recent_leads': recent_leads,
+        'recent_activities': recent_activities,
+        'recent_calls': recent_calls,
+        'managers': managers,
+        'telecallers': telecallers,
+        'branches': branches,
+        'channels': channels,
+        'products': products,
+        'statuses': LeadStatus.choices,
+        'manager_filter': manager_filter,
+        'telecaller_filter': telecaller_filter,
+        'branch_filter': branch_filter,
+        'channel_filter': channel_filter,
+        'product_filter': product_filter,
+        'status_filter': status_filter,
+        'from_date': from_date,
+        'to_date': to_date,
+        'period': period,
+    })
+
+
+# ==========================================
+# ADMIN REPORTS (Problem 7: 10 Dynamic Charts + Full Working Filters)
+# ==========================================
+
+# ==========================================
+# ADMIN & EXECUTIVE MARKETING DASHBOARD REPORT
+# ==========================================
+
+@admin_required
+def admin_reports(request):
+    """
+    Executive Marketing Performance Dashboard report for Administrators.
+    Integrated from CRM-Dashboard.zip, backed by live CRM database models.
+    """
+    data = get_dashboard_report_data(request.user, request.GET)
+    return render(request, 'reports/dashboard_report.html', {
+        **data,
+        'page_title': 'Executive Marketing & Performance Reports',
+        'is_admin': True,
+    })
+
+
+# ==========================================
+# SALES HEAD & MANAGER REPORTS
+# ==========================================
+
+@sales_head_required
+def manager_reports(request):
+    """
+    Team Marketing Performance Dashboard report for Sales Heads and Managers.
+    Scoped strictly to the branches and telecallers accessible to the manager.
+    """
+    data = get_dashboard_report_data(request.user, request.GET)
+    return render(request, 'reports/dashboard_report.html', {
+        **data,
+        'page_title': 'Team Marketing & Performance Reports',
+        'is_admin': False,
+    })
+
+
+# ==========================================
+# ASYNCHRONOUS DASHBOARD REPORT APIS
+# ==========================================
+
+@login_required
+def reports_api_data(request):
+    """
+    Dynamic JSON API returning filtered KPI cards, channel counts, branch summaries,
+    and Chart.js datasets without requiring full page reloads.
+    """
+    data = get_dashboard_report_data(request.user, request.GET)
+    # Serialize branch models for JSON safety
+    serialized_branches = [
+        {'id': b.id, 'name': b.name} for b in data.get('accessible_branches', [])
+    ]
+    data['accessible_branches'] = serialized_branches
+    return JsonResponse(data)
+
+
+@login_required
+def reports_api_sync_sheets(request):
+    """
+    Server-side Google Sheets synchronization trigger.
+    Pulls the latest tab data from the configured Google Spreadsheet.
+    """
+    if not (getattr(request.user, 'is_admin_user', False) or getattr(request.user, 'is_sales_head_user', False)):
+        return JsonResponse({'status': 'error', 'message': 'Permission denied.'}, status=403)
+
+    result = sync_google_sheets_data(request.user)
+    return JsonResponse(result)
+
+
+# ==========================================
+# TELECALLER RNR REPORT & CHARTS API (REQ 10 & 13)
+# ==========================================
+
+@role_required(UserRole.ADMIN, UserRole.SALES_HEAD, UserRole.BRANCH_HEAD)
+def telecaller_rnr_report(request):
+    """
+    Telecaller-wise RNR Reporting (Req 10).
+    Displays telecaller call attempts, unique RNR leads, repeat RNRs,
+    average attempts per RNR lead, connection rates, and CSV export.
+    """
+    user = request.user
+    accessible_branches = get_accessible_branch_ids(user)
+
+    period = request.GET.get('period', 'all').strip().lower()
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+    branch_filter = request.GET.get('branch', '').strip()
+    counselor_filter = request.GET.get('counselor', '').strip()
+    search_query = request.GET.get('search', '').strip()
+
+    today = timezone.localdate()
+    start_dt, end_dt = None, None
+
+    if period == 'today':
+        start_dt = timezone.make_aware(datetime.combine(today, time.min))
+        end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    elif period == 'week':
+        start_of_week = today - timedelta(days=today.weekday())
+        start_dt = timezone.make_aware(datetime.combine(start_of_week, time.min))
+        end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    elif period == 'month':
+        start_of_month = today.replace(day=1)
+        start_dt = timezone.make_aware(datetime.combine(start_of_month, time.min))
+        end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    elif period == 'custom' and start_date_str and end_date_str:
+        try:
+            s_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            e_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            start_dt = timezone.make_aware(datetime.combine(s_date, time.min))
+            end_dt = timezone.make_aware(datetime.combine(e_date, time.max))
+        except ValueError:
+            pass
+
+    target_branch_ids = accessible_branches
+    if branch_filter and branch_filter.isdigit():
+        b_id = int(branch_filter)
+        if b_id in accessible_branches:
+            target_branch_ids = [b_id]
+
+    counselor_id = int(counselor_filter) if counselor_filter.isdigit() else None
+
+    data = get_telecaller_rnr_report_data(
+        branch_ids=target_branch_ids,
+        counselor_id=counselor_id,
+        start_dt=start_dt,
+        end_dt=end_dt,
+        search_query=search_query
+    )
+
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="telecaller_rnr_report_{today.strftime("%Y%m%d")}.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'Telecaller Name', 'Username', 'Branch', 'Supervising Counselor',
+            'Total Calls', 'Connected Calls', 'RNR Calls', 'Unique RNR Leads',
+            'Repeat RNR Leads (>=2)', 'Avg Attempts / RNR Lead', 'Connection Rate (%)', 'RNR Rate (%)'
+        ])
+        for r in data['rows']:
+            tc = r['telecaller']
+            writer.writerow([
+                tc.get_full_name() or tc.username,
+                tc.username,
+                tc.branch.name if tc.branch else 'General',
+                tc.counselor.get_full_name() if tc.counselor else '-',
+                r['total_calls'],
+                r['connected_calls'],
+                r['rnr_calls'],
+                r['unique_rnr_leads'],
+                r['repeat_rnr_leads'],
+                r['avg_attempts_per_rnr'],
+                f"{r['connection_rate']}%",
+                f"{r['rnr_rate']}%",
+            ])
+        return response
+
+    counselors_qs = User.objects.filter(role=UserRole.COUNSELOR, branch_id__in=accessible_branches)
+    branches_qs = Branch.objects.filter(id__in=accessible_branches, status='Active')
+
+    return render(request, 'reports/telecaller_rnr_report.html', {
+        'rows': data['rows'],
+        'summary': data['summary'],
+        'branches': branches_qs,
+        'counselors': counselors_qs,
+        'period': period,
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+        'branch_filter': branch_filter,
+        'counselor_filter': counselor_filter,
+        'search_query': search_query,
+    })
+
+
+@login_required
+def management_charts_api(request):
+    """
+    JSON API for management charts (Req 13):
+    Status distribution, Training vs Placement, Telecaller RNR, Counselor Workload.
+    """
+    user = request.user
+    accessible_branches = get_accessible_branch_ids(user)
+    chart_data = get_management_chart_data(branch_ids=accessible_branches)
+    return JsonResponse(chart_data)
+
+
+@admin_required
+def trigger_lead_sla_escalation_api(request):
+    """
+    API endpoint allowing Admin to manually trigger SLA escalation engine.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+
+    from leads.assignment import run_lead_sla_escalation
+    summary = run_lead_sla_escalation(stale_hours=24, untouched_days=7, triggered_by=request.user)
+    return JsonResponse({
+        'success': True,
+        'summary': summary,
+        'message': f"SLA Escalation executed: {summary['total_escalated']} leads escalated/reassigned, {summary['notified_managers']} managers alerted."
+    })
+
+

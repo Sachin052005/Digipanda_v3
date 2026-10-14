@@ -1,0 +1,395 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Official Fee Receipt #{{ txn.receipt_number }} — TECHPANDA</title>
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; background-color: #F1F5F9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    @media only screen and (max-width: 620px) {
+      .email-container { width: 100% !important; }
+      .stack-column { display: block !important; width: 100% !important; box-sizing: border-box !important; }
+      .qr-stack { display: block !important; width: 100% !important; margin-top: 14px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 24px 10px; background-color: #F1F5F9;">
+
+  <!-- Outer wrapper table -->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F1F5F9;">
+    <tr>
+      <td align="center">
+
+        <!-- 600px Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" class="email-container" style="max-width: 600px; width: 100%; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 10px 25px rgba(25, 43, 69, 0.08);">
+
+          <!-- 1. Navy Brand Header -->
+          <tr>
+            <td style="background-color: #192B45; padding: 22px 28px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td align="left" valign="middle">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <!-- White Circle Badge with 't' -->
+                        <td valign="middle">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="width: 38px; height: 38px; border-radius: 50%; background-color: #FFFFFF; text-align: center; vertical-align: middle;">
+                                <span style="font-size: 22px; font-weight: 800; color: #192B45; line-height: 38px; display: inline-block;">t</span>
+                              </td>
+                              <td style="padding-left: 10px; vertical-align: middle;">
+                                <span style="font-size: 24px; font-weight: 800; color: #38BDF8; letter-spacing: -0.5px;">tech</span><span style="font-size: 24px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">panda</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+
+                        <!-- Divider Line -->
+                        <td valign="middle" style="padding: 0 16px;">
+                          <div style="width: 1.5px; height: 34px; background-color: rgba(255, 255, 255, 0.25);"></div>
+                        </td>
+
+                        <!-- Header Title & Tagline -->
+                        <td valign="middle">
+                          <div style="font-size: 13px; font-weight: 800; color: #FFFFFF; letter-spacing: 0.8px; text-transform: uppercase;">
+                            OFFICIAL FEE RECEIPT
+                          </div>
+                          <div style="font-size: 10.5px; color: #CBD5E1; margin-top: 2px;">
+                            Your Learning Journey, Our Priority
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <!-- Top Right Accent Orbs -->
+                  <td align="right" valign="top" style="width: 40px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background-color: #2563EB; opacity: 0.6; display: inline-block; margin-right: -10px;"></div>
+                    <div style="width: 22px; height: 22px; border-radius: 50%; background-color: #10B981; opacity: 0.55; display: inline-block;"></div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- 2. Main Content Wrapper -->
+          <tr>
+            <td style="padding: 24px 28px;">
+
+              <!-- Top Meta & QR Verification Card Row -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 20px;">
+                <tr>
+                  <!-- Left: Heading & Pill -->
+                  <td valign="top" class="stack-column" style="width: 58%; padding-right: 12px;">
+                    <!-- Payment Verified Pill -->
+                    <div style="display: inline-block; background-color: #E6F8F1; border: 1px solid rgba(7, 134, 92, 0.25); border-radius: 16px; padding: 4px 12px; margin-bottom: 8px;">
+                      <span style="color: #07865C; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                        &#10004; PAYMENT VERIFIED
+                      </span>
+                    </div>
+
+                    <h2 style="margin: 0 0 6px 0; font-size: 24px; font-weight: 800; color: #192B45; letter-spacing: -0.3px;">
+                      Payment Receipt
+                    </h2>
+
+                    <div style="font-size: 12px; color: #60718A; line-height: 1.4;">
+                      Receipt Number: <strong style="color: #192B45;">{{ txn.receipt_number }}</strong>
+                      <span style="color: #CBD5E1; margin: 0 6px;">|</span>
+                      Date: {{ txn.payment_date|date:"d M Y, h:i A"|default:txn.payment_date }}
+                    </div>
+                  </td>
+
+                  <!-- Right: QR Verification Card -->
+                  <td valign="top" class="stack-column qr-stack" style="width: 42%;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F4F8FD; border: 1px solid #D0E5F5; border-radius: 10px; padding: 10px 12px;">
+                      <tr>
+                        <!-- QR Image -->
+                        <td valign="middle" style="width: 60px; padding-right: 10px;">
+                          <div style="width: 56px; height: 56px; background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 2px; text-align: center;">
+                            {% if qr_b64 %}
+                              <img src="cid:receipt_qr_code" width="52" height="52" alt="QR" style="display: block; border: 0;" />
+                            {% else %}
+                              <div style="font-size: 8px; color: #60718A; line-height: 52px;">QR Code</div>
+                            {% endif %}
+                          </div>
+                        </td>
+                        <!-- QR Text -->
+                        <td valign="middle">
+                          <div style="font-size: 11.5px; font-weight: 700; color: #192B45; line-height: 1.2;">Verify This Receipt</div>
+                          <div style="font-size: 10px; color: #60718A; line-height: 1.3; margin: 2px 0 3px 0;">Scan the QR code to verify this receipt online.</div>
+                          <div style="font-size: 10px; font-weight: 700; color: #07865C;">
+                            &#128737; Secure &amp; Authentic
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 3. Hero Amount Received Card -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F0FDF8; border: 1px solid #A7F3D0; border-radius: 10px; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <!-- Left Amount Area -->
+                        <td valign="middle" class="stack-column" style="width: 55%; padding-right: 14px;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td valign="middle" style="width: 48px;">
+                                <div style="width: 44px; height: 44px; border-radius: 50%; background-color: #07865C; text-align: center; line-height: 44px; color: #FFFFFF; font-size: 24px; font-weight: 800;">
+                                  ₹
+                                </div>
+                              </td>
+                              <td valign="middle" style="padding-left: 12px;">
+                                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #60718A; letter-spacing: 0.5px;">Amount Received</div>
+                                <div style="font-size: 28px; font-weight: 800; color: #07865C; line-height: 1.15; margin: 2px 0;">
+                                  ₹{{ this_payment|floatformat:2 }}
+                                </div>
+                                <div style="font-size: 11.5px; color: #60718A;">
+                                  Paid via {{ txn.payment_method }}
+                                  <span style="color: #CBD5E1; margin: 0 4px;">|</span>
+                                  Transaction ID: {{ txn.transaction_reference|default:txn.receipt_number }}
+                                </div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+
+                        <!-- Right Status Details Area -->
+                        <td valign="middle" class="stack-column" style="width: 45%; border-left: 1px solid rgba(7, 134, 92, 0.2); padding-left: 16px;">
+                          <div style="font-size: 12px; font-weight: 700; color: #07865C; margin-bottom: 4px;">
+                            &#10004; Payment Successful
+                          </div>
+                          <div style="font-size: 11.5px; color: #60718A; padding: 1.5px 0;">
+                            Date &amp; Time: <strong style="color: #192B45;">{{ txn.payment_date|date:"d M Y, h:i A" }}</strong>
+                          </div>
+                          <div style="font-size: 11.5px; color: #60718A; padding: 1.5px 0;">
+                            Payment Method: <strong style="color: #192B45;">{{ txn.payment_method }}</strong>
+                          </div>
+                          <div style="font-size: 11.5px; color: #60718A; padding: 1.5px 0;">
+                            UPI Ref: <strong style="color: #192B45;">{{ txn.transaction_reference|default:txn.receipt_number }}</strong>
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 4. Student Information Card -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; margin-bottom: 20px;">
+                <tr>
+                  <td style="background-color: #F4F8FD; padding: 10px 16px; border-bottom: 1px solid #E2E8F0;">
+                    <span style="font-size: 13px; font-weight: 700; color: #192B45;">
+                      &#128100; Student Information
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 12.5px;">
+                      <tr>
+                        <td style="padding: 9px 16px; color: #60718A; width: 35%; border-bottom: 1px solid #F1F5F9;">Student Name</td>
+                        <td style="padding: 9px 16px; color: #192B45; font-weight: 700; border-bottom: 1px solid #F1F5F9;">{{ enrollment.student_name }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 9px 16px; color: #60718A; border-bottom: 1px solid #F1F5F9;">Student ID</td>
+                        <td style="padding: 9px 16px; color: #192B45; font-weight: 700; border-bottom: 1px solid #F1F5F9;">{{ student_id }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 9px 16px; color: #60718A; border-bottom: 1px solid #F1F5F9;">Enrollment Number</td>
+                        <td style="padding: 9px 16px; color: #0284C7; font-weight: 700; border-bottom: 1px solid #F1F5F9;">{{ enrollment.enrollment_number }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 9px 16px; color: #60718A; border-bottom: 1px solid #F1F5F9;">Course / Program</td>
+                        <td style="padding: 9px 16px; color: #192B45; font-weight: 700; border-bottom: 1px solid #F1F5F9;">{{ enrollment.product.name|default:"Course Program" }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 9px 16px; color: #60718A;">Branch / Campus</td>
+                        <td style="padding: 9px 16px; color: #192B45; font-weight: 700;">{{ branch_name }}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 5. Two-Column Grid: Fee Summary & GST Breakdown -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 20px;">
+                <tr>
+                  <!-- Left: Fee Summary -->
+                  <td valign="top" class="stack-column" style="width: 50%; padding-right: 8px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
+                      <tr>
+                        <td style="background-color: #F4F8FD; padding: 9px 14px; border-bottom: 1px solid #E2E8F0;">
+                          <span style="font-size: 12.5px; font-weight: 700; color: #192B45;">
+                            &#128196; Fee Summary
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 12px;">
+                            <tr>
+                              <td style="padding: 7px 14px; color: #60718A; border-bottom: 1px solid #F1F5F9;">Total Course Fee</td>
+                              <td style="padding: 7px 14px; color: #192B45; font-weight: 700; text-align: right; border-bottom: 1px solid #F1F5F9;">₹{{ total_payable|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 7px 14px; color: #60718A; border-bottom: 1px solid #F1F5F9;">Previously Paid Amount</td>
+                              <td style="padding: 7px 14px; color: #192B45; font-weight: 700; text-align: right; border-bottom: 1px solid #F1F5F9;">₹{{ prior_paid|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 7px 14px; color: #07865C; font-weight: 600; border-bottom: 1px solid #F1F5F9;">Current Paid Amount</td>
+                              <td style="padding: 7px 14px; color: #07865C; font-weight: 800; text-align: right; border-bottom: 1px solid #F1F5F9;">₹{{ this_payment|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 7px 14px; color: #07865C; font-weight: 600; border-bottom: 1px solid #F1F5F9;">Total Paid to Date</td>
+                              <td style="padding: 7px 14px; color: #07865C; font-weight: 800; text-align: right; border-bottom: 1px solid #F1F5F9;">₹{{ cumulative_paid|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 7px 14px; color: #E45A08; font-weight: 700;">Outstanding Balance</td>
+                              <td style="padding: 7px 14px; color: #E45A08; font-weight: 800; text-align: right; font-size: 13px;">₹{{ remaining_balance_after_txn|floatformat:2 }}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+
+                  <!-- Right: GST Breakdown -->
+                  <td valign="top" class="stack-column" style="width: 50%; padding-left: 8px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
+                      <tr>
+                        <td style="background-color: #F4F8FD; padding: 9px 14px; border-bottom: 1px solid #E2E8F0;">
+                          <span style="font-size: 12.5px; font-weight: 700; color: #192B45;">
+                            &#37; GST Breakdown
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 12px;">
+                            <tr>
+                              <td style="padding: 7px 14px; color: #60718A; border-bottom: 1px solid #F1F5F9;">GST Treatment</td>
+                              <td style="padding: 7px 14px; color: #192B45; font-weight: 700; text-align: right; border-bottom: 1px solid #F1F5F9;">{{ enrollment.get_gst_treatment_display|default:enrollment.gst_treatment }}</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 7px 14px; color: #60718A; border-bottom: 1px solid #F1F5F9;">Taxable Course Fee</td>
+                              <td style="padding: 7px 14px; color: #192B45; font-weight: 700; text-align: right; border-bottom: 1px solid #F1F5F9;">₹{{ taxable_amount|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 7px 14px; color: #60718A; border-bottom: 1px solid #F1F5F9;">GST Rate &amp; Component</td>
+                              <td style="padding: 7px 14px; color: #192B45; font-weight: 700; text-align: right; border-bottom: 1px solid #F1F5F9;">₹{{ tax_amount|floatformat:2 }} ({{ tax_rate|floatformat:2 }}% GST)</td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 7px 14px; color: #192B45; font-weight: 700;">Total Payable</td>
+                              <td style="padding: 7px 14px; color: #192B45; font-weight: 800; text-align: right;">₹{{ total_payable|floatformat:2 }}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 6. Outstanding Balance Banner (When balance > 0) -->
+              {% if remaining_balance_after_txn > 0 %}
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #FFF5EB; border: 1px solid #FCD9BD; border-radius: 8px; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 12px 18px;">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td valign="middle" style="width: 36px;">
+                          <div style="width: 32px; height: 32px; border-radius: 50%; background-color: #E45A08; text-align: center; line-height: 32px; color: #FFFFFF; font-size: 16px;">
+                            &#9200;
+                          </div>
+                        </td>
+                        <td valign="middle" style="padding-left: 10px;">
+                          <div style="font-size: 13px; font-weight: 700; color: #E45A08;">Outstanding Balance</div>
+                          <div style="font-size: 11.5px; color: #9A3412;">
+                            Next installment due date: <strong>{{ next_installment.due_date|date:"d M Y"|default:enrollment.next_installment_date|date:"d M Y"|default:"To be scheduled" }}</strong>
+                          </div>
+                        </td>
+                        <td valign="middle" align="right">
+                          <div style="font-size: 22px; font-weight: 800; color: #E45A08;">
+                            ₹{{ remaining_balance_after_txn|floatformat:2 }}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              {% endif %}
+
+              <!-- 7. Electronic Receipt Notice -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #EBF3FC; border: 1px solid #CDE0F7; border-radius: 8px; margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 10px 14px; font-size: 11.5px; color: #1E40AF; line-height: 1.4;">
+                    &#9432; This is an official system generated electronic receipt issued by TECHPANDA. No signature is required.
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 8. PDF Download Notice Card -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 20px;">
+                <tr>
+                  <td align="center" style="padding: 16px 20px;">
+                    <div style="font-size: 12px; font-weight: 600; color: #192B45; margin-bottom: 8px;">
+                      &#128206; Your Official PDF Receipt is attached to this email!
+                    </div>
+                    {% if verification_url %}
+                    <a href="{{ verification_url }}" target="_blank" style="background-color: #192B45; color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; padding: 10px 24px; border-radius: 6px; display: inline-block;">
+                      View &amp; Verify Receipt Online &rarr;
+                    </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 9. Footer Contact & Script Thank You -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-top: 1px solid #E2E8F0; padding-top: 16px;">
+                <tr>
+                  <!-- Contacts -->
+                  <td valign="middle" style="font-size: 11.5px; color: #60718A;">
+                    <a href="https://www.techpanda.in" target="_blank" style="color: #60718A; text-decoration: none;">www.techpanda.in</a>
+                    <span style="color: #CBD5E1; margin: 0 4px;">|</span>
+                    <a href="mailto:support@techpanda.in" style="color: #60718A; text-decoration: none;">support@techpanda.in</a>
+                    <span style="color: #CBD5E1; margin: 0 4px;">|</span>
+                    <span>+91 98765 43210</span>
+                  </td>
+                  <!-- Thank You Script -->
+                  <td valign="middle" align="right">
+                    <div style="font-family: 'Segoe Script', cursive, sans-serif; font-size: 18px; font-weight: bold; color: #327BC4; line-height: 1;">
+                      Thank You!
+                    </div>
+                    <div style="font-size: 10px; color: #60718A; margin-top: 2px;">
+                      for choosing TECHPANDA
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- 10. Navy Bottom Bar -->
+          <tr>
+            <td style="background-color: #192B45; padding: 14px 28px; text-align: center; font-size: 10.5px; color: #64748B;">
+              &copy; 2026 TECHPANDA. All rights reserved. &bull; Professional Software &amp; Cloud Engineering Institute
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

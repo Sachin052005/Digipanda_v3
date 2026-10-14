@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Dashboard</title>
+  
+  <!-- Auth Guard: redirect to login.html if not authenticated -->
+  <script>
+    (function() {
+      var user = sessionStorage.getItem('crm_auth_user') || localStorage.getItem('crm_auth_user');
+      if (!user) {
+        window.location.replace('login.html');
+      }
+    })();
+  </script>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  
+  <!-- Custom CSS matching target mockup -->
+  <link rel="stylesheet" href="css/dashboard.css?v=live4">
+  <link rel="stylesheet" href="css/responsive.css?v=live4">
+</head>
+<body>
+
+  <div class="dashboard-wrapper">
+    
+    <!-- Top Header & Filter Controls -->
+    <header class="header-row">
+      <div class="header-title-wrap">
+        <h1>CRM Dashboard</h1>
+        <p>Track leads from all channels across all branches and call outcomes</p>
+      </div>
+
+      <div class="filter-group">
+        <!-- Date Selector Pill (Exact Match to Image 3) -->
+        <div class="filter-pill filter-pill-date" id="dateFilterPill">
+          <i class="fa-regular fa-calendar date-pill-icon"></i>
+          <div class="date-pill-text">
+            <span class="date-pill-label" id="datePillLabel">Today</span>
+            <span class="date-pill-val" id="datePillVal">—</span>
+          </div>
+          <i class="fa-solid fa-chevron-down pill-chevron"></i>
+          <select id="dateFilter" class="pill-select-overlay" aria-label="Date Filter">
+            <option value="today" selected>Today</option>
+          </select>
+          <input type="date" id="customDatePicker" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0;" >
+        </div>
+
+        <!-- Branch Selector Pill (Exact Match to Image 3) -->
+        <div class="filter-pill filter-pill-select" id="branchFilterPill">
+          <span class="pill-current-text" id="branchPillText">All Branches</span>
+          <i class="fa-solid fa-chevron-down pill-chevron"></i>
+          <select id="branchFilter" class="pill-select-overlay" aria-label="Branch Filter">
+            <option value="" selected>All Branches</option>
+          </select>
+        </div>
+
+        <!-- Channel Selector Pill (Exact Match to Image 3) -->
+        <div class="filter-pill filter-pill-select" id="channelFilterPill">
+          <span class="pill-current-text" id="channelPillText">All Channels</span>
+          <i class="fa-solid fa-chevron-down pill-chevron"></i>
+          <select id="channelFilter" class="pill-select-overlay" aria-label="Channel Filter">
+            <option value="" selected>All Channels</option>
+          </select>
+        </div>
+
+        <!-- Data controls (replaces the Django sync endpoint) -->
+        <button type="button" class="filter-pill action-pill" id="btnRefreshSync" title="Pull latest leads from the Google Sheet">
+          <i class="fa-solid fa-rotate" id="syncIcon"></i><span>Sync Now</span>
+        </button>
+        <button type="button" class="filter-pill action-pill" id="btnImportCsv" title="Load leads from a CSV file">
+          <i class="fa-solid fa-file-arrow-up"></i><span>Import CSV</span>
+        </button>
+        <input type="file" id="csvFileInput" accept=".csv,text/csv" hidden>
+
+        <!-- User Badge & Logout -->
+        <div class="filter-pill user-pill" id="userPill" title="Logged in user">
+          <span class="user-avatar-dot"></span>
+          <span id="headerUserName">Techpanda</span>
+        </div>
+        <button type="button" class="filter-pill action-pill logout-pill" id="btnLogout" title="Sign out of CRM Dashboard">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i><span>Logout</span>
+        </button>
+      </div>
+    </header>
+    <div class="sync-status-line"><span class="live-dot"></span><span id="lastSyncText">Loading…</span></div>
+
+    <!-- 1. Top 4 Pastel KPI Cards Row -->
+    <section class="kpi-row">
+      <!-- Total Leads -->
+      <div class="ui-kpi-card card-blue">
+        <div class="kpi-left-section">
+          <div class="kpi-avatar">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <div class="kpi-meta">
+            <span class="kpi-title-txt">Total Leads</span>
+            <span class="kpi-big-num" id="kpiTotalLeads">0</span>
+          </div>
+        </div>
+        <div class="kpi-sub-trend">
+          <span class="kpi-trend-badge" id="kpiTotalPct">—</span>
+          <span class="kpi-trend-label" id="kpiTotalPctLabel">vs previous day</span>
+        </div>
+      </div>
+
+      <div class="ui-kpi-card card-green">
+        <div class="kpi-left-section">
+          <div class="kpi-avatar">
+            <i class="fa-solid fa-phone"></i>
+          </div>
+          <div class="kpi-meta">
+            <span class="kpi-title-txt" id="kpiTitle1">Connected</span>
+            <span class="kpi-big-num" id="kpiVal1">0</span>
+          </div>
+        </div>
+        <div class="kpi-sub-trend">
+          <span class="kpi-trend-badge" id="kpiPct1">0%</span>
+          <span class="kpi-trend-label">of total leads</span>
+        </div>
+      </div>
+
+      <div class="ui-kpi-card card-yellow">
+        <div class="kpi-left-section">
+          <div class="kpi-avatar">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+          <div class="kpi-meta">
+            <span class="kpi-title-txt" id="kpiTitle2">Prospected</span>
+            <span class="kpi-big-num" id="kpiVal2">0</span>
+          </div>
+        </div>
+        <div class="kpi-sub-trend">
+          <span class="kpi-trend-badge" id="kpiPct2">0%</span>
+          <span class="kpi-trend-label">of total leads</span>
+        </div>
+      </div>
+
+      <div class="ui-kpi-card card-red">
+        <div class="kpi-left-section">
+          <div class="kpi-avatar">
+            <i class="fa-solid fa-phone-slash"></i>
+          </div>
+          <div class="kpi-meta">
+            <span class="kpi-title-txt" id="kpiTitle3">Call not connected</span>
+            <span class="kpi-big-num" id="kpiVal3">0</span>
+          </div>
+        </div>
+        <div class="kpi-sub-trend">
+          <span class="kpi-trend-badge" id="kpiPct3">0%</span>
+          <span class="kpi-trend-label">of total leads</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Leads by Channel - Flat White Panel -->
+    <section class="panel-card">
+      <div class="panel-header-title">Leads by Channel <span data-period>(Today)</span></div>
+      
+      <div class="channels-cards-grid">
+        <!-- 1. Meta WhatsApp -->
+        <div class="channel-box">
+          <div class="channel-box-icon">
+            <svg viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="#22c55e"/>
+              <path d="M18 9C13.03 9 9 13.03 9 18C9 19.64 9.44 21.18 10.22 22.51L9 27L13.62 25.8C14.9 26.54 16.4 27 18 27C22.97 27 27 22.97 27 18C27 13.03 22.97 9 18 9ZM22.5 21.75C22.31 22.28 21.57 22.7 20.94 22.84C20.5 22.94 19.94 23.01 18.01 22.21C15.54 21.19 13.95 18.68 13.83 18.52C13.71 18.36 12.83 17.19 12.83 15.98C12.83 14.77 13.45 14.18 13.69 13.93C13.89 13.72 14.22 13.63 14.52 13.63C14.62 13.63 14.71 13.63 14.79 13.64C15.03 13.65 15.15 13.66 15.31 14.04C15.51 14.52 16 15.71 16.06 15.83C16.12 15.96 16.18 16.12 16.1 16.28C16.01 16.45 15.94 16.53 15.82 16.67C15.7 16.81 15.58 16.92 15.46 17.07C15.33 17.22 15.19 17.38 15.34 17.64C15.49 17.9 16.01 18.75 16.78 19.43C17.77 20.31 18.58 20.59 18.87 20.71C19.16 20.83 19.33 20.81 19.5 20.61C19.67 20.41 20.23 19.76 20.45 19.45C20.67 19.14 20.89 19.19 21.19 19.3C21.49 19.41 23.09 20.2 23.42 20.36C23.75 20.52 23.97 20.6 24.05 20.74C24.13 20.88 24.13 21.52 22.5 21.75Z" fill="white"/>
+            </svg>
+          </div>
+          <div class="channel-box-details">
+            <span class="channel-box-title">Meta WhatsApp</span>
+            <span class="channel-box-count" data-chan-count="Meta WhatsApp">0</span>
+            <span class="channel-box-pct" data-chan-pct="Meta WhatsApp">0%</span>
+          </div>
+        </div>
+
+        <!-- 2. Meta Lead Form -->
+        <div class="channel-box">
+          <div class="channel-box-icon">
+            <svg viewBox="0 0 36 36" fill="none">
+              <path d="M12.44 14.5C10.54 14.5 9 16.07 9 18C9 19.93 10.54 21.5 12.44 21.5C14.73 21.5 16.32 19.37 17.43 17.73C16.33 16.14 14.73 14.5 12.44 14.5ZM23.56 14.5C21.27 14.5 19.67 16.14 18.57 17.73C19.68 19.37 21.27 21.5 23.56 21.5C25.46 21.5 27 19.93 27 18C27 16.07 25.46 14.5 23.56 14.5Z" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="channel-box-details">
+            <span class="channel-box-title">Meta Lead Form</span>
+            <span class="channel-box-count" data-chan-count="Meta Lead Form">0</span>
+            <span class="channel-box-pct" data-chan-pct="Meta Lead Form">0%</span>
+          </div>
+        </div>
+
+        <!-- 3. Website (Google Ad) -->
+        <div class="channel-box">
+          <div class="channel-box-icon">
+            <svg viewBox="0 0 36 36" fill="none">
+              <path d="M24.8 16.4H18V19.8H21.9C21.4 21.6 19.8 22.8 18 22.8C15.3 22.8 13.2 20.6 13.2 18C13.2 15.4 15.3 13.2 18 13.2C19.2 13.2 20.3 13.6 21.1 14.4L23.5 12C22 10.6 20.1 9.8 18 9.8C13.5 9.8 9.8 13.5 9.8 18C9.8 22.5 13.5 26.2 18 26.2C22.6 26.2 25.5 22.9 25.5 18.3C25.5 17.6 25.4 17 24.8 16.4Z" fill="#ea4335"/>
+              <path d="M12.1 14.3L14.7 16.2C15.4 14.4 16.6 13.2 18 13.2V9.8C15.4 9.8 13.4 11.7 12.1 14.3Z" fill="#fbbc05"/>
+              <path d="M18 26.2C20.1 26.2 22 25.4 23.4 24.1L20.8 22C19.9 22.6 18.9 22.8 18 22.8C16.2 22.8 14.6 21.6 14.1 19.8L11.5 21.8C12.8 24.4 15.2 26.2 18 26.2Z" fill="#34a853"/>
+              <path d="M25.5 18.3C25.5 17.6 25.4 17 24.8 16.4H18V19.8H21.9C21.6 20.6 21.1 21.4 20.8 22L23.4 24.1C24.9 22.7 25.5 20.6 25.5 18.3Z" fill="#4285f4"/>
+            </svg>
+          </div>
+          <div class="channel-box-details">
+            <span class="channel-box-title">Website (Google Ad)</span>
+            <span class="channel-box-count" data-chan-count="Website (Google Ad)">0</span>
+            <span class="channel-box-pct" data-chan-pct="Website (Google Ad)">0%</span>
+          </div>
+        </div>
+
+        <!-- 4. Website (Google SEO) -->
+        <div class="channel-box">
+          <div class="channel-box-icon">
+            <svg viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="#8b5cf6"/>
+              <path d="M18 10C13.58 10 10 13.58 10 18C10 22.42 13.58 26 18 26C22.42 26 26 22.42 26 18C26 13.58 22.42 10 18 10ZM17.2 12.08C15.14 12.55 13.43 14.07 12.63 16.1H14.82C15.25 14.28 16.09 12.85 17.2 12.08ZM18.8 12.08C19.91 12.85 20.75 14.28 21.18 16.1H23.37C22.57 14.07 20.86 12.55 18.8 12.08ZM16.32 18C16.32 17.34 16.41 16.7 16.58 16.1H19.42C19.59 16.7 19.68 17.34 19.68 18C19.68 18.66 19.59 19.3 19.42 19.9H16.58C16.41 19.3 16.32 18.66 16.32 18ZM17.2 23.92C16.09 23.15 15.25 21.72 14.82 19.9H12.63C13.43 21.93 15.14 23.45 17.2 23.92ZM18.8 23.92C20.86 23.45 22.57 21.93 23.37 19.9H21.18C20.75 21.72 19.91 23.15 18.8 23.92ZM23.82 18C23.82 18.67 23.72 19.31 23.54 19.9H21.62C21.73 19.29 21.8 18.65 21.8 18C21.8 17.35 21.73 16.71 21.62 16.1H23.54C23.72 16.69 23.82 17.33 23.82 18ZM14.38 18C14.38 18.65 14.45 19.29 14.56 19.9H12.46C12.28 19.31 12.18 18.67 12.18 18C12.18 17.33 12.28 16.69 12.46 16.1H14.56C14.45 16.71 14.38 17.35 14.38 18Z" fill="white"/>
+            </svg>
+          </div>
+          <div class="channel-box-details">
+            <span class="channel-box-title">Website (Google SEO)</span>
+            <span class="channel-box-count" data-chan-count="Website (Google SEO)">0</span>
+            <span class="channel-box-pct" data-chan-pct="Website (Google SEO)">0%</span>
+          </div>
+        </div>
+
+        <!-- 5. Instagram -->
+        <div class="channel-box">
+          <div class="channel-box-icon">
+            <svg viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="url(#ig-grad)"/>
+              <path d="M22 10H14C11.79 10 10 11.79 10 14V22C10 24.21 11.79 26 14 26H22C24.21 26 26 24.21 26 22V14C26 11.79 24.21 10 22 10ZM24 22C24 23.1 23.1 24 22 24H14C12.9 24 12 23.1 12 22V14C12 12.9 12.9 12 14 12H22C23.1 12 24 12.9 24 14V22ZM18 14C15.79 14 14 15.79 14 18C14 20.21 15.79 22 18 22C20.21 22 22 20.21 22 18C22 15.79 20.21 14 18 14ZM18 20.2C16.78 20.2 15.8 19.22 15.8 18C15.8 16.78 16.78 15.8 18 15.8C19.22 15.8 20.2 16.78 20.2 18C20.2 19.22 19.22 20.2 18 20.2ZM22.5 14.2C22.5 14.64 22.14 15 21.7 15C21.26 15 20.9 14.64 20.9 14.2C20.9 13.76 21.26 13.4 21.7 13.4C22.14 13.4 22.5 13.76 22.5 14.2Z" fill="white"/>
+              <defs>
+                <linearGradient id="ig-grad" x1="0" y1="36" x2="36" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#f59e0b"/>
+                  <stop offset="0.5" stop-color="#ec4899"/>
+                  <stop offset="1" stop-color="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="channel-box-details">
+            <span class="channel-box-title">Instagram</span>
+            <span class="channel-box-count" data-chan-count="Instagram">0</span>
+            <span class="channel-box-pct" data-chan-pct="Instagram">0%</span>
+          </div>
+        </div>
+
+        <!-- 6. Google Calls -->
+        <div class="channel-box">
+          <div class="channel-box-icon">
+            <svg viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="#10b981"/>
+              <path d="M24.5 20.8C23.2 20.8 22 20.6 20.9 20.2C20.5 20.1 20.1 20.2 19.8 20.5L18.2 22.1C15.8 20.8 14.2 19.2 12.9 16.8L14.5 15.2C14.8 14.9 14.9 14.5 14.8 14.1C14.4 13 14.2 11.8 14.2 10.5C14.2 9.9 13.7 9.5 13.2 9.5H10.5C10 9.5 9.5 9.9 9.5 10.5C9.5 18.8 16.2 25.5 24.5 25.5C25.1 25.5 25.5 25 25.5 24.5V21.8C25.5 21.2 25.1 20.8 24.5 20.8Z" fill="white"/>
+            </svg>
+          </div>
+          <div class="channel-box-details">
+            <span class="channel-box-title">Google Calls</span>
+            <span class="channel-box-count" data-chan-count="Google Calls">0</span>
+            <span class="channel-box-pct" data-chan-pct="Google Calls">0%</span>
+          </div>
+        </div>
+
+        <!-- 7. Influencer (Problem 2 & Problem 4) -->
+        <div class="channel-box">
+          <div class="channel-box-icon">
+            <svg viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="8" fill="#6366f1"/>
+              <path d="M12 14V22H15L20 26V10L15 14H12ZM22.5 15.5C23.4 16.2 24 17 24 18C24 19 23.4 19.8 22.5 20.5V15.5ZM22.5 12V13.6C24.6 14.5 26 16.1 26 18C26 19.9 24.6 21.5 22.5 22.4V24C25.5 23 27.5 20.7 27.5 18C27.5 15.3 25.5 13 22.5 12Z" fill="white"/>
+            </svg>
+          </div>
+          <div class="channel-box-details">
+            <span class="channel-box-title">Influencer</span>
+            <span class="channel-box-count" data-chan-count="Influencer">0</span>
+            <span class="channel-box-pct" data-chan-pct="Influencer">0%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Branch Wise Lead Summary (Today) - Segmented Pastel Table -->
+    <section class="panel-card">
+      <div class="panel-header-title panel-header-flex">
+        <span>Branch Wise Lead Summary <span data-period>(Today)</span></span>
+        <button type="button" class="export-btn" id="btnExportCsv"><i class="fa-solid fa-download"></i> Export CSV</button>
+      </div>
+      
+      <div class="summary-table-wrap">
+        <table class="branch-summary-table" id="branchSummaryTable">
+          <thead id="branchTableHead"></thead>
+          <tbody id="branchTableBody">
+            <!-- Dynamically populated rows -->
+          </tbody>
+          <tfoot>
+            <tr id="branchTableFooter">
+              <!-- Dynamically populated totals footer -->
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Bottom Row: 3 Visual Charts Matching Target UI -->
+    <section class="charts-row">
+      
+      <!-- Leads by Channel Donut Chart -->
+      <div class="chart-panel">
+        <div class="chart-panel-title">Leads by Channel <span data-period>(Today)</span></div>
+        <div class="donut-chart-container">
+          <div class="donut-canvas-wrap">
+            <canvas id="channelDonutChart"></canvas>
+            <div class="donut-center-badge">
+              <div class="donut-center-num" id="donutChannelTotal">0</div>
+              <div class="donut-center-sub">Total Leads</div>
+            </div>
+          </div>
+          <div class="chart-custom-legend" id="channelCustomLegend">
+            <!-- Custom legends populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Branch Wise Lead Distribution Stacked Chart -->
+      <div class="chart-panel">
+        <div class="chart-panel-title">Branch Wise Lead Distribution</div>
+        <div class="stacked-canvas-wrap">
+          <canvas id="branchStackedChart"></canvas>
+        </div>
+        <div class="stacked-bottom-legend" id="branchStackedLegend">
+          <!-- Stacked legend chips below -->
+        </div>
+      </div>
+
+      <!-- Call Outcomes & Lead Quality (other numeric columns of the sheet) -->
+      <div class="chart-panel">
+        <div class="chart-panel-title">Call Outcomes &amp; Lead Quality <span data-period>(Today)</span></div>
+        <div class="outcomes-note" id="outcomesNote">% of total leads</div>
+        <div class="outcomes-canvas-wrap">
+          <canvas id="outcomesChart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Chart.js (jQuery was loaded before but never used, so it's removed) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- App scripts (order matters) -->
+  <script src="js/config.js?v=v5"></script>
+  <script src="js/store.js?v=v5"></script>
+  <script src="js/dropdown.js?v=v5"></script>
+  <script src="js/api.js?v=v5"></script>
+  <script src="js/charts.js?v=v5"></script>
+  <script src="js/filters.js?v=v5"></script>
+  <script src="js/dashboard.js?v=v5"></script>
+
+</body>
+</html>

@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% block title %}Telecaller RNR Report - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0;">TELECALLER RNR &amp; OUTCOME REPORT</h1>
+      <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; padding: 4px 8px;">
+        {{ summary.total_telecallers }} Telecaller{{ summary.total_telecallers|pluralize }}
+      </span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0 0;">
+      Telecaller-wise Ring No Response (RNR) diagnostics, repeat unanswered calls, connection rates, and supervisory reporting.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <a href="?export=csv{% if period %}&period={{ period }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if counselor_filter %}&counselor={{ counselor_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="background: #10b981; color: #fff; border: none; font-weight: 600;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Export CSV
+    </a>
+    <a href="{% url 'admin_reports' %}" class="btn btn-secondary">
+      Reports Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-card" style="background: #fff; border-radius: 8px; padding: 14px 18px; border: 1px solid var(--border-color, #e5e7eb); margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+  <form method="get" class="filter-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: flex-end;">
+    <!-- Period Buttons/Dropdown -->
+    <div>
+      <label style="font-size: 0.75rem; font-weight: 700; color: #4b5563; display: block; margin-bottom: 4px;">Period</label>
+      <select name="period" class="form-control" onchange="this.form.submit()">
+        <option value="all" {% if period == 'all' or not period %}selected{% endif %}>All Time</option>
+        <option value="today" {% if period == 'today' %}selected{% endif %}>Today</option>
+        <option value="week" {% if period == 'week' %}selected{% endif %}>This Week</option>
+        <option value="month" {% if period == 'month' %}selected{% endif %}>This Month</option>
+        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom Range</option>
+      </select>
+    </div>
+
+    <div>
+      <label style="font-size: 0.75rem; font-weight: 700; color: #4b5563; display: block; margin-bottom: 4px;">Branch</label>
+      <select name="branch" class="form-control">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+          <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label style="font-size: 0.75rem; font-weight: 700; color: #4b5563; display: block; margin-bottom: 4px;">Counselor</label>
+      <select name="counselor" class="form-control">
+        <option value="">All Counselors</option>
+        {% for c in counselors %}
+          <option value="{{ c.id }}" {% if counselor_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.get_full_name|default:c.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label style="font-size: 0.75rem; font-weight: 700; color: #4b5563; display: block; margin-bottom: 4px;">Search Telecaller</label>
+      <input type="text" name="search" class="form-control" placeholder="Name or username..." value="{{ search_query }}">
+    </div>
+
+    <div style="display: flex; gap: 8px;">
+      <a href="?" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+
+  {% if period == 'custom' %}
+  <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #f3f4f6; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <form method="get" class="filter-form" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <input type="hidden" name="period" value="custom">
+      {% if branch_filter %}<input type="hidden" name="branch" value="{{ branch_filter }}">{% endif %}
+      {% if counselor_filter %}<input type="hidden" name="counselor" value="{{ counselor_filter }}">{% endif %}
+      <span style="font-size: 0.8rem; color: #6b7280;">From:</span>
+      <input type="date" name="start_date" class="form-control" style="width: 140px; font-size: 0.8rem;" value="{{ start_date }}">
+      <span style="font-size: 0.8rem; color: #6b7280;">To:</span>
+      <input type="date" name="end_date" class="form-control" style="width: 140px; font-size: 0.8rem;" value="{{ end_date }}">
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- KPI SUMMARY CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px;">
+  <!-- Total Calls -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Total Call Attempts</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #1e40af; margin: 4px 0;">{{ summary.overall_total_calls }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">All logged calls in period</div>
+  </div>
+
+  <!-- Connected Calls -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Connected Calls</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #16a34a; margin: 4px 0;">{{ summary.overall_connected_calls }}</div>
+    <div style="font-size: 0.75rem; color: #16a34a; font-weight: 600;">{{ summary.overall_connection_rate }}% Connection Rate</div>
+  </div>
+
+  <!-- RNR Calls -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Total RNR Calls</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #dc2626; margin: 4px 0;">{{ summary.overall_rnr_calls }}</div>
+    <div style="font-size: 0.75rem; color: #dc2626; font-weight: 600;">{{ summary.overall_rnr_rate }}% RNR Rate</div>
+  </div>
+
+  <!-- Unique RNR Leads -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Unique RNR Leads</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #ea580c; margin: 4px 0;">{{ summary.overall_unique_rnr_leads }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Unanswered leads count</div>
+  </div>
+
+  <!-- Repeat RNR Leads -->
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Repeat RNR (&ge;2 Attempts)</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #b45309; margin: 4px 0;">{{ summary.overall_repeat_rnr_leads }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Persistent no-answer leads</div>
+  </div>
+</div>
+
+<!-- TELECALLER RNR DATA TABLE -->
+<style>
+  .telecaller-rnr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .telecaller-rnr-table th,
+  .telecaller-rnr-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    vertical-align: middle;
+  }
+  .telecaller-rnr-table th {
+    background: var(--bg-body, #f8fafc);
+    color: var(--text-muted, #475569);
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+  }
+  .telecaller-rnr-table tbody tr:hover {
+    background-color: var(--bg-hover, #f8fafc);
+  }
+  .col-telecaller { min-width: 190px; text-align: left; }
+  .col-branch { min-width: 130px; text-align: left; }
+  .col-counselor { min-width: 140px; text-align: left; }
+  .col-num { min-width: 100px; text-align: right; }
+  .col-rate { min-width: 105px; text-align: right; }
+  .telecaller-rnr-table tfoot tr {
+    background: #f1f5f9;
+    border-top: 2px solid var(--border-color, #cbd5e1);
+    font-weight: 700;
+  }
+  [data-theme="dark"] .telecaller-rnr-table tfoot tr {
+    background: #1e293b;
+    border-top: 2px solid #334155;
+  }
+  .telecaller-rnr-table tfoot td {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: var(--text-main, #0f172a);
+  }
+</style>
+
+<div class="table-card">
+  <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+    <table class="crm-table telecaller-rnr-table" style="margin: 0;">
+      <thead>
+        <tr>
+          <th class="col-telecaller">Telecaller</th>
+          <th class="col-branch">Branch</th>
+          <th class="col-counselor">Counselor</th>
+          <th class="col-num">Total Calls</th>
+          <th class="col-num">Connected</th>
+          <th class="col-num">RNR Calls</th>
+          <th class="col-num">Unique RNR</th>
+          <th class="col-num">Repeat RNR</th>
+          <th class="col-num">Avg Attempts</th>
+          <th class="col-rate">Conn. Rate</th>
+          <th class="col-rate">RNR Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="col-telecaller">
+            <strong>{{ r.telecaller.get_full_name|default:r.telecaller.username }}</strong>
+            <div style="font-size: 0.75rem; color: #6b7280;">@{{ r.telecaller.username }}</div>
+          </td>
+          <td class="col-branch">
+            <span class="badge" style="background: #f3f4f6; color: #374151;">
+              {{ r.telecaller.branch.name|default:"General" }}
+            </span>
+          </td>
+          <td class="col-counselor">
+            {% if r.telecaller.counselor %}
+              <span style="font-size: 0.85rem; color: #1e40af; font-weight: 500;">
+                {{ r.telecaller.counselor.get_full_name|default:r.telecaller.counselor.username }}
+              </span>
+            {% else %}
+              <span style="color: #9ca3af; font-size: 0.8rem;">-</span>
+            {% endif %}
+          </td>
+          <td class="col-num" style="font-weight: 600;">{{ r.total_calls }}</td>
+          <td class="col-num" style="color: #16a34a; font-weight: 600;">{{ r.connected_calls }}</td>
+          <td class="col-num" style="color: #dc2626; font-weight: 700;">{{ r.rnr_calls }}</td>
+          <td class="col-num">{{ r.unique_rnr_leads }}</td>
+          <td class="col-num">
+            {% if r.repeat_rnr_leads > 0 %}
+              <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700;">
+                {{ r.repeat_rnr_leads }}
+              </span>
+            {% else %}
+              <span style="color: #9ca3af;">0</span>
+            {% endif %}
+          </td>
+          <td class="col-num" style="font-family: monospace;">{{ r.avg_attempts_per_rnr }}</td>
+          <td class="col-rate">
+            <span class="badge" style="background: {% if r.connection_rate >= 50 %}#dcfce7; color: #15803d;{% elif r.connection_rate >= 25 %}#fef3c7; color: #92400e;{% else %}#fee2e2; color: #991b1b;{% endif %} font-weight: 600;">
+              {{ r.connection_rate }}%
+            </span>
+          </td>
+          <td class="col-rate">
+            <span class="badge" style="background: {% if r.rnr_rate >= 50 %}#fee2e2; color: #991b1b;{% else %}#f1f5f9; color: #475569;{% endif %} font-weight: 600;">
+              {{ r.rnr_rate }}%
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="11" style="text-align: center; padding: 48px 16px; color: #6b7280;">
+            <div style="font-size: 1rem; font-weight: 600; color: #374151;">No Telecallers Found</div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">No telecaller activity matching the selected filters.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if rows %}
+      <tfoot>
+        <tr>
+          <td class="col-telecaller" colspan="3" style="font-weight: 800; text-align: left;">
+            Total Summary ({{ summary.total_telecallers }} Telecaller{{ summary.total_telecallers|pluralize }})
+          </td>
+          <td class="col-num" style="font-weight: 800; color: #1e40af;">{{ summary.overall_total_calls }}</td>
+          <td class="col-num" style="font-weight: 800; color: #16a34a;">{{ summary.overall_connected_calls }}</td>
+          <td class="col-num" style="font-weight: 800; color: #dc2626;">{{ summary.overall_rnr_calls }}</td>
+          <td class="col-num" style="font-weight: 800;">{{ summary.overall_unique_rnr_leads }}</td>
+          <td class="col-num" style="font-weight: 800; color: #b45309;">{{ summary.overall_repeat_rnr_leads }}</td>
+          <td class="col-num" style="color: #6b7280; text-align: right;">—</td>
+          <td class="col-rate" style="font-weight: 800;">
+            <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700;">
+              {{ summary.overall_connection_rate }}%
+            </span>
+          </td>
+          <td class="col-rate" style="font-weight: 800;">
+            <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700;">
+              {{ summary.overall_rnr_rate }}%
+            </span>
+          </td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

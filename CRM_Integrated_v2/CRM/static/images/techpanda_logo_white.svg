@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none" width="280" height="64">
+  <!-- Circular Badge in White -->
+  <circle cx="32" cy="32" r="28" fill="#FFFFFF"/>
+  <!-- Floating Dot at 1 o'clock in Cyan -->
+  <circle cx="50" cy="14" r="5" fill="#0EA5E9"/>
+  <!-- Letter 't' in Navy -->
+  <path d="M30 18v7h-6v5h6v12c0 4.5 2.5 7 7 7 2.2 0 4.2-.6 5.5-1.5l-1.5-4.5c-.8.5-1.8.8-2.8.8-2 0-3.2-1.2-3.2-3.5V30h6.5v-5H35v-7h-5z" fill="#192B45"/>
+  
+  <!-- Wordmark 'tech' in sky blue -->
+  <text x="74" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', Helvetica, sans-serif" font-size="34" font-weight="800" fill="#38BDF8" letter-spacing="-0.03em">tech</text>
+  <!-- Wordmark 'panda' in pure white -->
+  <text x="148" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', Helvetica, sans-serif" font-size="34" font-weight="800" fill="#FFFFFF" letter-spacing="-0.03em">panda</text>
+</svg>
