@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, time
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -394,25 +395,29 @@ def complete_call_record(request):
     success_msg = "Call notes saved successfully. You can now call another lead."
     messages.success(request, success_msg)
 
+    # Determine redirect URL based on user role
+    redirect_target = 'admin_lead_detail'
+    if caller.is_telecaller_user:
+        redirect_target = 'telecaller_lead_detail'
+    elif caller.is_sales_head_user:
+        redirect_target = 'manager_lead_detail'
+    elif caller.is_branch_head_user:
+        redirect_target = 'branch_head_lead_detail'
+    elif caller.is_counselor_user:
+        redirect_target = 'counselor_lead_detail'
+    redirect_url = reverse(redirect_target, args=[lead.pk])
+
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
         return JsonResponse({
             'success': True,
             'message': success_msg,
             'call_id': call_record.pk,
             'duration': call_record.duration,
-            'formatted_duration': call_record.formatted_duration
+            'formatted_duration': call_record.formatted_duration,
+            'redirect_url': redirect_url
         })
 
-    # Redirect based on user role
-    if caller.is_telecaller_user:
-        return redirect('telecaller_lead_detail', pk=lead.pk)
-    elif caller.is_sales_head_user:
-        return redirect('manager_lead_detail', pk=lead.pk)
-    elif caller.is_branch_head_user:
-        return redirect('branch_head_lead_detail', pk=lead.pk)
-    elif caller.is_counselor_user:
-        return redirect('counselor_lead_detail', pk=lead.pk)
-    return redirect('admin_lead_detail', pk=lead.pk)
+    return redirect(redirect_target, pk=lead.pk)
 
 
 # ==========================================
@@ -458,14 +463,16 @@ def admin_calls_list(request):
     if date_from:
         try:
             df = datetime.strptime(date_from, "%Y-%m-%d").date()
-            calls_qs = calls_qs.filter(call_started_at__date__gte=df)
-        except ValueError:
+            dt_from = timezone.make_aware(datetime.combine(df, time.min))
+            calls_qs = calls_qs.filter(call_started_at__gte=dt_from)
+        except (ValueError, TypeError):
             pass
     if date_to:
         try:
             dt = datetime.strptime(date_to, "%Y-%m-%d").date()
-            calls_qs = calls_qs.filter(call_started_at__date__lte=dt)
-        except ValueError:
+            dt_to = timezone.make_aware(datetime.combine(dt, time.max))
+            calls_qs = calls_qs.filter(call_started_at__lte=dt_to)
+        except (ValueError, TypeError):
             pass
 
     calls_qs = calls_qs.order_by('-call_started_at')
@@ -558,7 +565,16 @@ def manager_calls_list(request):
 
     outcome_filter = request.GET.get('outcome', '').strip()
     telecaller_filter = request.GET.get('telecaller', '').strip()
+    date_filter = request.GET.get('date', '').strip()
+    status_filter = request.GET.get('status', '').strip()
 
+    if date_filter == 'today':
+        today = timezone.localdate()
+        today_start = timezone.make_aware(datetime.combine(today, time.min))
+        today_end = timezone.make_aware(datetime.combine(today, time.max))
+        calls_qs = calls_qs.filter(call_started_at__range=(today_start, today_end))
+    if status_filter:
+        calls_qs = calls_qs.filter(call_status__iexact=status_filter)
     if outcome_filter:
         calls_qs = calls_qs.filter(call_outcome=outcome_filter)
     if telecaller_filter:
@@ -573,6 +589,8 @@ def manager_calls_list(request):
         'outcomes': CallOutcome.choices,
         'outcome_filter': outcome_filter,
         'telecaller_filter': telecaller_filter,
+        'date_filter': date_filter,
+        'status_filter': status_filter,
     })
 
 

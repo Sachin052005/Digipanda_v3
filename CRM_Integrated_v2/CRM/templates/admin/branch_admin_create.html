@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Create Branch Admin - DigipandaCRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>Create Branch Admin</h1>
+    <p>Onboard a new Branch Admin dedicated to branch student enrollment, payment receipts, and admissions oversight.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'admin_branch_admins_list' %}" class="btn btn-secondary">Back to Branch Admins</a>
+  </div>
+</div>
+
+<div style="max-width: 650px;">
+  <div class="crm-card" style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; padding: 24px;">
+    <form method="POST">
+      {% csrf_token %}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">First Name <span class="required" style="color: #ef4444;">*</span></label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Last Name <span class="required" style="color: #ef4444;">*</span></label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.last_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+{{ form.username.as_hidden }}
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Email Address <span class="required" style="color: #ef4444;">*</span></label>
+        {{ form.email }}
+        {% if form.email.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Phone Number</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.phone.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Assigned Branch <span class="required" style="color: #ef4444;">*</span></label>
+          {{ form.branch }}
+          {% if form.branch.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.branch.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-check" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        {{ form.is_active }}
+        <label class="form-check-label" style="font-size: 0.85rem; font-weight: 500;">Active Account</label>
+      </div>
+
+      <!-- SECURE ONBOARDING INFO -->
+      <div style="background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+        <div style="color: #0284c7; flex-shrink: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-main);">
+          <strong>Automated Account Activation:</strong> A welcome email with secure password setup link will be dispatched immediately to the registered email address.
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <a href="{% url 'admin_branch_admins_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="font-weight: 600;">Create Branch Admin &amp; Send Invite</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Simple client-side preview for username
+  const fnInput = document.querySelector('input[name="first_name"]');
+  const lnInput = document.querySelector('input[name="last_name"]');
+  const unInput = document.querySelector('input[name="username"]');
+  const hint = document.getElementById('username-preview-hint');
+
+  function updatePreview() {
+    const fn = (fnInput?.value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const ln = (lnInput?.value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (fn || ln) {
+      const candidate = (fn + (ln ? '.' + ln : '')).substring(0, 20);
+      if (unInput) unInput.value = candidate;
+      if (hint) hint.textContent = 'Preview: @' + candidate + ' (system will guarantee uniqueness on save)';
+    }
+  }
+
+  if (fnInput) fnInput.addEventListener('input', updatePreview);
+  if (lnInput) lnInput.addEventListener('input', updatePreview);
+</script>
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Offline Leads - TECHPANDA CRM{% endblock %}
+{% block title %}Offline Leads - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="offline-leads-container" style="max-width: 1200px; margin: 0 auto; padding: 20px 0;">
@@ -128,7 +128,7 @@
             </div>
           </div>
 
-          <!-- All 7 Actions (Requirement 1) -->
+          <!-- Actions Grid with Smart Mapping Engine -->
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;">
             <button 
               type="button" 
@@ -141,6 +141,15 @@
             </button>
             <button 
               type="button" 
+              class="btn btn-sm btn-primary" 
+              onclick="openSmartMappingModal('{{ sheet.id }}')" 
+              style="padding: 5px 8px; font-size: 0.775rem; font-weight: 600; background: #0284c7; border-color: #0284c7;"
+              title="Intelligent column mapping & preview"
+            >
+              🎯 Mapping
+            </button>
+            <button 
+              type="button" 
               class="btn btn-sm btn-outline-secondary" 
               onclick="handleTestConnection('{{ sheet.id }}')" 
               style="padding: 5px 8px; font-size: 0.775rem; font-weight: 600;"
@@ -148,6 +157,9 @@
             >
               🔍 Test
             </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;">
             <button 
               type="button" 
               class="btn btn-sm btn-outline-secondary" 
@@ -157,9 +169,6 @@
             >
               ✏️ Edit
             </button>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
             <a 
               href="{% url 'admin_google_sheet_toggle' sheet.id %}" 
               class="btn btn-sm btn-outline-secondary" 
@@ -512,6 +521,212 @@
     </form>
   </div>
 </div>
+<!-- Modal 3: Intelligent Column Mapping & Pre-Sync Preview Engine -->
+<div 
+  id="smartMappingModal" 
+  style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 16px;"
+>
+  <div 
+    style="background: var(--bg-card, #ffffff); width: 100%; max-width: 980px; max-height: 90vh; border-radius: var(--radius-lg, 12px); box-shadow: var(--shadow-xl, 0 25px 50px -12px rgba(0,0,0,0.25)); border: 1px solid var(--border-color, #e2e8f0); display: flex; flex-direction: column; overflow: hidden; animation: modalPop 0.2s ease-out;"
+  >
+    <!-- Modal Header -->
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main, #0f172a); display: flex; align-items: center; gap: 8px;">
+            <span>🎯</span> INTELLIGENT COLUMN MATCHING & SYNC ENGINE
+          </h3>
+          <span id="mappingModalSheetBadge" class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 0.8rem; padding: 4px 10px; border-radius: 9999px;">
+            Live Sheet
+          </span>
+        </div>
+        <p id="mappingModalSubTitle" style="color: var(--text-muted, #64748b); font-size: 0.85rem; margin: 4px 0 0 0;">
+          Connecting arbitrary spreadsheet structures intelligently into DigiPanda CRM
+        </p>
+      </div>
+      <button 
+        type="button" 
+        onclick="closeSmartMappingModal()" 
+        style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 4px 8px;"
+      >
+        &times;
+      </button>
+    </div>
+
+    <!-- Metric Pill Bar & Tab Switcher -->
+    <div style="padding: 12px 24px; background: #ffffff; border-bottom: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <!-- Stats Pills -->
+      <div id="mappingStatsBar" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <span id="statPillHigh" class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 5px 10px; font-weight: 600; border-radius: 9999px;">
+          🟢 0 Confident Matches
+        </span>
+        <span id="statPillMedium" class="badge" style="background: #fefce8; color: #854d0e; border: 1px solid #fef08a; padding: 5px 10px; font-weight: 600; border-radius: 9999px;">
+          🟡 0 Reviews
+        </span>
+        <span id="statPillUnmapped" class="badge" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 5px 10px; font-weight: 600; border-radius: 9999px;">
+          ⚪ 0 Custom Fields Preserved
+        </span>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div style="display: flex; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 8px;">
+        <button 
+          type="button" 
+          id="tabBtnColumns" 
+          class="btn btn-sm" 
+          onclick="switchMappingTab('columns')" 
+          style="background: #ffffff; color: var(--text-main); font-weight: 600; border: none; border-radius: 6px; padding: 6px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+        >
+          1. Column Mappings
+        </button>
+        <button 
+          type="button" 
+          id="tabBtnPreview" 
+          class="btn btn-sm" 
+          onclick="switchMappingTab('preview')" 
+          style="background: transparent; color: var(--text-muted); font-weight: 600; border: none; border-radius: 6px; padding: 6px 14px;"
+        >
+          2. Pre-Sync Preview (Dry Run)
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body (Scrollable) -->
+    <div style="flex: 1; overflow-y: auto; padding: 18px 24px; position: relative;">
+      <!-- Loading State -->
+      <div id="mappingLoadingState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 16px; gap: 12px;">
+        <div style="width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #0284c7; border-radius: 50%; animation: livePulse 0.8s linear infinite;"></div>
+        <div style="font-weight: 600; color: var(--text-main);">Analyzing Spreadsheet Headers & Cell Data Patterns...</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted);">Executing multi-engine matching (Exact, Aliases, Tamil/Hindi, Fuzzy, Regex)...</div>
+      </div>
+
+      <!-- Tab Content 1: Column Mappings Table -->
+      <div id="tabContentColumns" style="display: none;">
+        <!-- Missing Critical Warning Banner (if any) -->
+        <div id="missingCriticalAlert" style="display: none; margin-bottom: 16px; padding: 12px 16px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: var(--radius-sm); color: #b45309; font-size: 0.875rem;">
+          <strong>⚠️ Warning:</strong> Neither a primary Phone Number nor an Email Address could be confidently identified. Please review and assign at least one contact field below so leads can be imported into CRM.
+        </div>
+
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.875rem;">
+          <thead>
+            <tr style="background: #f8fafc; color: var(--text-muted); text-align: left; font-weight: 700; font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              <th style="padding: 10px 14px; border-bottom: 2px solid #e2e8f0; width: 32%;">Spreadsheet Header & Sample Values</th>
+              <th style="padding: 10px 14px; border-bottom: 2px solid #e2e8f0; width: 36%;">Match Analysis & Explainability</th>
+              <th style="padding: 10px 14px; border-bottom: 2px solid #e2e8f0; width: 32%;">Target CRM Field</th>
+            </tr>
+          </thead>
+          <tbody id="mappingColumnsTableBody">
+            <!-- Dynamically populated rows -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab Content 2: Pre-Sync Preview & Dry-Run -->
+      <div id="tabContentPreview" style="display: none;">
+        <div style="margin-bottom: 16px;">
+          <h4 style="margin: 0 0 6px 0; font-size: 1rem; font-weight: 700; color: var(--text-main);">
+            Non-Destructive Pre-Sync Projection (Dry Run)
+          </h4>
+          <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">
+            Simulates the intake and synchronization of all rows without modifying the live database.
+          </p>
+        </div>
+
+        <!-- 4 Projection KPIs -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;">
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 16px; text-align: center;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase;">New Leads to Create</div>
+            <div id="previewNewCount" style="font-size: 1.8rem; font-weight: 800; color: #15803d; margin-top: 4px;">-</div>
+          </div>
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 16px; text-align: center;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #1e40af; text-transform: uppercase;">In-Place Updates</div>
+            <div id="previewUpdateCount" style="font-size: 1.8rem; font-weight: 800; color: #1d4ed8; margin-top: 4px;">-</div>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; text-align: center;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase;">Unchanged Records</div>
+            <div id="previewUnchangedCount" style="font-size: 1.8rem; font-weight: 800; color: #334155; margin-top: 4px;">-</div>
+          </div>
+          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; text-align: center;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #991b1b; text-transform: uppercase;">Skipped / Empty</div>
+            <div id="previewSkippedCount" style="font-size: 1.8rem; font-weight: 800; color: #b91c1c; margin-top: 4px;">-</div>
+          </div>
+        </div>
+
+        <!-- Sample Actions Table -->
+        <div style="margin-bottom: 20px;">
+          <h5 style="margin: 0 0 10px 0; font-size: 0.9rem; font-weight: 700; color: var(--text-main);">
+            Sample Row Intake Outcomes:
+          </h5>
+          <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+              <thead style="background: #f8fafc; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted);">
+                <tr>
+                  <th style="padding: 8px 12px; text-align: left;">Row</th>
+                  <th style="padding: 8px 12px; text-align: left;">Proposed Action</th>
+                  <th style="padding: 8px 12px; text-align: left;">Lead Identity</th>
+                  <th style="padding: 8px 12px; text-align: left;">Explanation</th>
+                </tr>
+              </thead>
+              <tbody id="previewActionsTableBody">
+                <!-- Sample rows dynamically added -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Preserved Unmapped Banner -->
+        <div id="previewUnmappedBanner" style="padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted);">
+          <strong style="color: var(--text-main);">🛡️ Zero Data Loss Guarantee:</strong> All non-mapped spreadsheet columns are automatically preserved into <code>lead.custom_fields['all_answers']</code> and recorded in the lead notes.
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div style="padding: 16px 24px; border-top: 1px solid var(--border-color, #e2e8f0); background: #f8fafc; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <button 
+          type="button" 
+          id="btnTriggerPreview" 
+          class="btn btn-outline-secondary" 
+          onclick="handleRunPreSyncPreview()" 
+          style="font-weight: 600; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px;"
+        >
+          <span>👁️</span> Run Dry-Run Preview
+        </button>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button 
+          type="button" 
+          class="btn btn-secondary" 
+          onclick="closeSmartMappingModal()" 
+          style="padding: 8px 18px;"
+        >
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          id="btnSaveMappingProfile" 
+          class="btn btn-outline-primary" 
+          onclick="handleSaveMappingProfile(false)" 
+          style="padding: 8px 18px; font-weight: 600;"
+        >
+          Save Mapping Profile
+        </button>
+        <button 
+          type="button" 
+          id="btnSaveAndSync" 
+          class="btn btn-primary" 
+          onclick="handleSaveMappingProfile(true)" 
+          style="padding: 8px 22px; font-weight: 600; background: #047857; border-color: #047857;"
+        >
+          Save & Sync Now 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <style>
 @keyframes livePulse {
@@ -984,5 +1199,368 @@ document.addEventListener('DOMContentLoaded', () => {
     startLiveRefresh();
   }
 });
+
+// ==============================================================================
+// INTELLIGENT COLUMN MATCHING & PRE-SYNC PREVIEW CONTROLLER
+// ==============================================================================
+let currentMappingConnId = null;
+let currentInspectionData = null;
+
+function openSmartMappingModal(connectionId) {
+  currentMappingConnId = connectionId;
+  const modal = document.getElementById('smartMappingModal');
+  if (!modal) return;
+
+  modal.style.display = 'flex';
+  document.getElementById('mappingLoadingState').style.display = 'flex';
+  document.getElementById('tabContentColumns').style.display = 'none';
+  document.getElementById('tabContentPreview').style.display = 'none';
+  switchMappingTab('columns');
+
+  fetch('/api/google-sheets/inspect-mapping/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify({ connection_id: connectionId })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      currentInspectionData = data;
+      renderSmartMappingUI(data);
+    } else {
+      alert('Failed to inspect spreadsheet: ' + (data.error || 'Unknown error'));
+      closeSmartMappingModal();
+    }
+  })
+  .catch(err => {
+    alert('Error inspecting spreadsheet mapping: ' + err);
+    closeSmartMappingModal();
+  });
+}
+
+function closeSmartMappingModal() {
+  const modal = document.getElementById('smartMappingModal');
+  if (modal) modal.style.display = 'none';
+  currentMappingConnId = null;
+  currentInspectionData = null;
+}
+
+function switchMappingTab(tabName) {
+  const tabColumns = document.getElementById('tabContentColumns');
+  const tabPreview = document.getElementById('tabContentPreview');
+  const btnCol = document.getElementById('tabBtnColumns');
+  const btnPrev = document.getElementById('tabBtnPreview');
+
+  if (tabName === 'columns') {
+    if (tabColumns) tabColumns.style.display = 'block';
+    if (tabPreview) tabPreview.style.display = 'none';
+    if (btnCol) {
+      btnCol.style.background = '#ffffff';
+      btnCol.style.color = 'var(--text-main)';
+      btnCol.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+    }
+    if (btnPrev) {
+      btnPrev.style.background = 'transparent';
+      btnPrev.style.color = 'var(--text-muted)';
+      btnPrev.style.boxShadow = 'none';
+    }
+  } else {
+    if (tabColumns) tabColumns.style.display = 'none';
+    if (tabPreview) tabPreview.style.display = 'block';
+    if (btnPrev) {
+      btnPrev.style.background = '#ffffff';
+      btnPrev.style.color = 'var(--text-main)';
+      btnPrev.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+    }
+    if (btnCol) {
+      btnCol.style.background = 'transparent';
+      btnCol.style.color = 'var(--text-muted)';
+      btnCol.style.boxShadow = 'none';
+    }
+    // Auto-trigger dry run if not yet generated
+    if (document.getElementById('previewNewCount').textContent === '-') {
+      handleRunPreSyncPreview();
+    }
+  }
+}
+
+function renderSmartMappingUI(data) {
+  document.getElementById('mappingLoadingState').style.display = 'none';
+  document.getElementById('tabContentColumns').style.display = 'block';
+
+  // Subtitle info
+  const subTitle = document.getElementById('mappingModalSubTitle');
+  if (subTitle) {
+    subTitle.textContent = `${data.connection_name} (${data.worksheet_name}) • ${data.total_columns} columns detected • ${data.total_rows} rows found in sheet`;
+  }
+
+  // Stat badges
+  const pillHigh = document.getElementById('statPillHigh');
+  const pillMed = document.getElementById('statPillMedium');
+  const pillLow = document.getElementById('statPillUnmapped');
+  if (pillHigh) pillHigh.textContent = `🟢 ${data.high_confidence_count} Confident Matches`;
+  if (pillMed) pillMed.textContent = `🟡 ${data.medium_confidence_count} Reviews`;
+  if (pillLow) pillLow.textContent = `⚪ ${data.unmapped_headers.length} Custom Fields Preserved`;
+
+  // Missing critical warning
+  const critAlert = document.getElementById('missingCriticalAlert');
+  if (critAlert) {
+    critAlert.style.display = (data.missing_critical_fields && data.missing_critical_fields.length > 0) ? 'block' : 'none';
+  }
+
+  // Populate Columns Table
+  const tbody = document.getElementById('mappingColumnsTableBody');
+  tbody.innerHTML = '';
+
+  const available = data.available_crm_fields || [];
+  const colMappings = data.column_mappings || {};
+
+  data.headers.forEach((header, idx) => {
+    const colInfo = colMappings[header] || {
+      crm_field: null,
+      confidence: 0,
+      tier: 'LOW',
+      reasons: [],
+      alternatives: [],
+      sample_values: []
+    };
+
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #f1f5f9';
+
+    // Tier badge formatting
+    let badgeHtml = '';
+    if (colInfo.tier === 'HIGH') {
+      badgeHtml = `<span style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; border: 1px solid #a7f3d0;">HIGH (${Math.round(colInfo.confidence * 100)}%)</span>`;
+    } else if (colInfo.tier === 'MEDIUM') {
+      badgeHtml = `<span style="background: #fefce8; color: #854d0e; font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; border: 1px solid #fef08a;">MEDIUM (${Math.round(colInfo.confidence * 100)}%)</span>`;
+    } else {
+      badgeHtml = `<span style="background: #f1f5f9; color: #475569; font-weight: 600; font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; border: 1px solid #cbd5e1;">UNMAPPED</span>`;
+    }
+
+    // Sample chips
+    const sampleChips = (colInfo.sample_values || []).map(sv => 
+      `<span style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 6px; font-size: 0.75rem; color: #475569; font-family: monospace;">${escapeHtml(sv)}</span>`
+    ).join(' ');
+
+    // Reasons list
+    const reasonsList = (colInfo.reasons || []).map(r => 
+      `<div style="font-size: 0.75rem; color: #64748b; line-height: 1.3;">• ${escapeHtml(r)}</div>`
+    ).join('');
+
+    // Alternative pills
+    let altPills = '';
+    if (colInfo.alternatives && colInfo.alternatives.length > 0) {
+      altPills = '<div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center;"><span style="font-size: 0.7rem; color: #94a3b8;">Suggestions:</span>' +
+        colInfo.alternatives.map(alt => 
+          `<button type="button" class="btn btn-sm" onclick="setColumnMappingSelection('${escapeHtml(header)}', '${alt.field}')" style="padding: 1px 6px; font-size: 0.7rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer;">${escapeHtml(alt.label)} (${Math.round(alt.confidence * 100)}%)</button>`
+        ).join('') + '</div>';
+    }
+
+    // Dropdown options
+    let selectOptions = `<option value="">-- Leave Unmapped (Preserve in Custom Fields) --</option>`;
+    // Group by category
+    const categories = {};
+    available.forEach(af => {
+      categories[af.category] = categories[af.category] || [];
+      categories[af.category].push(af);
+    });
+
+    Object.keys(categories).forEach(cat => {
+      selectOptions += `<optgroup label="${cat}">`;
+      categories[cat].forEach(af => {
+        const selected = (colInfo.crm_field === af.field) ? 'selected' : '';
+        const star = af.is_primary ? ' ★' : '';
+        selectOptions += `<option value="${af.field}" ${selected}>${af.label}${star}</option>`;
+      });
+      selectOptions += `</optgroup>`;
+    });
+
+    tr.innerHTML = `
+      <td style="padding: 12px 14px; vertical-align: top;">
+        <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem; margin-bottom: 4px;">
+          ${escapeHtml(header)}
+        </div>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+          ${sampleChips || '<span style="color: #94a3b8; font-size: 0.75rem;">(No sample values)</span>'}
+        </div>
+      </td>
+      <td style="padding: 12px 14px; vertical-align: top;">
+        <div style="margin-bottom: 4px;">${badgeHtml}</div>
+        <div>${reasonsList}</div>
+        ${altPills}
+      </td>
+      <td style="padding: 12px 14px; vertical-align: top;">
+        <select 
+          class="form-select column-mapping-select" 
+          data-header="${escapeHtml(header)}" 
+          style="width: 100%; padding: 8px 12px; font-size: 0.85rem; border-radius: 6px; border: 1px solid #cbd5e1;"
+        >
+          ${selectOptions}
+        </select>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+function setColumnMappingSelection(header, fieldKey) {
+  const selects = document.querySelectorAll('.column-mapping-select');
+  selects.forEach(sel => {
+    if (sel.getAttribute('data-header') === header) {
+      sel.value = fieldKey;
+      sel.style.borderColor = '#0284c7';
+      sel.style.backgroundColor = '#f0f9ff';
+    }
+  });
+}
+
+function gatherCurrentMappingPayload() {
+  const mapping = {};
+  const selects = document.querySelectorAll('.column-mapping-select');
+  selects.forEach(sel => {
+    const header = sel.getAttribute('data-header');
+    const field = sel.value;
+    if (field) {
+      mapping[field] = header;
+    }
+  });
+  return mapping;
+}
+
+function handleRunPreSyncPreview() {
+  if (!currentMappingConnId) return;
+  const btn = document.getElementById('btnTriggerPreview');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳</span> Calculating Dry-Run...';
+
+  const mappingPayload = gatherCurrentMappingPayload();
+
+  fetch('/api/google-sheets/preview-sync/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify({
+      connection_id: currentMappingConnId,
+      field_mapping: mappingPayload
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.innerHTML = '<span>👁️</span> Re-run Dry-Run Preview';
+
+    if (data.success && data.preview) {
+      const prev = data.preview;
+      document.getElementById('previewNewCount').textContent = prev.created || 0;
+      document.getElementById('previewUpdateCount').textContent = prev.updated || 0;
+      document.getElementById('previewUnchangedCount').textContent = prev.unchanged || 0;
+      document.getElementById('previewSkippedCount').textContent = prev.skipped || 0;
+
+      const actTbody = document.getElementById('previewActionsTableBody');
+      actTbody.innerHTML = '';
+      const sampleActs = prev.sample_preview_actions || [];
+      if (sampleActs.length > 0) {
+        sampleActs.forEach(act => {
+          const tr = document.createElement('tr');
+          tr.style.borderBottom = '1px solid #f1f5f9';
+          let actBadge = '';
+          if (act.action === 'CREATE') {
+            actBadge = '<span style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">CREATE NEW</span>';
+          } else if (act.action === 'UPDATE') {
+            actBadge = '<span style="background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">IN-PLACE UPDATE</span>';
+          } else if (act.action === 'EXISTING_MATCH') {
+            actBadge = '<span style="background: #fefce8; color: #854d0e; font-weight: 700; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">MATCH EXISTING</span>';
+          } else {
+            actBadge = '<span style="background: #f1f5f9; color: #475569; font-weight: 600; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">UNCHANGED</span>';
+          }
+
+          tr.innerHTML = `
+            <td style="padding: 8px 12px; font-weight: 700; color: #64748b;">Row ${act.row}</td>
+            <td style="padding: 8px 12px;">${actBadge}</td>
+            <td style="padding: 8px 12px; font-weight: 600; color: var(--text-main);">${escapeHtml(act.name)} <span style="color: #64748b; font-size: 0.75rem;">(${escapeHtml(act.phone || 'No phone')})</span></td>
+            <td style="padding: 8px 12px; color: #64748b; font-size: 0.8rem;">${escapeHtml(act.reason)}</td>
+          `;
+          actTbody.appendChild(tr);
+        });
+      } else {
+        actTbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 16px;">No rows evaluated in preview.</td></tr>';
+      }
+    } else {
+      alert('Preview failed: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.innerHTML = '<span>👁️</span> Run Dry-Run Preview';
+    alert('Dry-run preview failed: ' + err);
+  });
+}
+
+function handleSaveMappingProfile(andSync = false) {
+  if (!currentMappingConnId) return;
+
+  const btnSave = document.getElementById('btnSaveMappingProfile');
+  const btnSync = document.getElementById('btnSaveAndSync');
+  btnSave.disabled = true;
+  btnSync.disabled = true;
+
+  if (andSync) {
+    btnSync.textContent = 'Saving & Syncing...';
+  } else {
+    btnSave.textContent = 'Saving Profile...';
+  }
+
+  const mappingPayload = gatherCurrentMappingPayload();
+
+  fetch(`/api/google-sheets/${currentMappingConnId}/save-mapping/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: JSON.stringify({ field_mapping: mappingPayload })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to save mapping');
+    }
+
+    if (andSync) {
+      return fetch(`/api/google-sheets/${currentMappingConnId}/sync/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        }
+      })
+      .then(r => r.json())
+      .then(syncData => {
+        closeSmartMappingModal();
+        alert('🎉 Synchronization complete! ' + (syncData.sync_result?.message || 'Updated successfully.'));
+        window.location.reload();
+      });
+    } else {
+      closeSmartMappingModal();
+      alert('✓ Column mapping configuration saved successfully!');
+      window.location.reload();
+    }
+  })
+  .catch(err => {
+    btnSave.disabled = false;
+    btnSync.disabled = false;
+    btnSave.textContent = 'Save Mapping Profile';
+    btnSync.textContent = 'Save & Sync Now 🚀';
+    alert('Error: ' + err);
+  });
+}
+
 </script>
 {% endblock %}

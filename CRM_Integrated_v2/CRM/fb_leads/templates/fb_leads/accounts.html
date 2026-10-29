@@ -2,17 +2,18 @@
 {% block title %}Facebook Accounts & Pages - TECHPANDA CRM{% endblock %}
 
 {% block content %}
-<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
   <div class="page-title-group">
     <div style="display: flex; align-items: center; gap: 10px;">
       <a href="{% url 'fb_leads:facebook_leads' %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;">← Back to Leads</a>
-      <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Facebook Accounts & Pages</h1>
+      <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Facebook Accounts & Auto-Sync</h1>
     </div>
     <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">
-      Connect and manage multiple Facebook business accounts and assign branch-specific lead routing per Facebook Page.
+      Manage Facebook connections, configure automated lead synchronization (default 3 mins), and set branch routing per Facebook Page.
     </p>
   </div>
-  <div style="display: flex; gap: 12px;">
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <button type="button" class="btn btn-secondary" onclick="refreshAllPagesStatus()" title="Refresh Auto-Sync Status">⟳ Check Status</button>
     <button type="button" class="btn btn-primary" onclick="openConnectModal()">+ Connect Facebook Account</button>
   </div>
 </div>
@@ -28,9 +29,9 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
   {% for account in accounts %}
   <div class="crm-card" style="background: var(--card-bg, #ffffff); border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid var(--border-color, #e2e8f0);">
-    <div style="background: var(--navy-dark, #0f172a); color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="background: var(--navy-dark, #0f172a); color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
       <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 36px; height: 36px; border-radius: 50%; background: #1877f2; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+        <div style="width: 38px; height: 38px; border-radius: 50%; background: #1877f2; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem; color: #fff;">
           f
         </div>
         <div>
@@ -39,7 +40,7 @@
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
-        <span class="badge" style="background: #10b981; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem;">{{ account.status }}</span>
+        <span class="badge" style="background: #10b981; color: #fff; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">{{ account.status }}</span>
         <form method="post" action="{% url 'fb_leads:fb_account_disconnect' account.id %}" onsubmit="return confirm('Disconnect this Facebook account and all its {{ account.pages.count }} connected pages?');" style="margin: 0;">
           {% csrf_token %}
           <button type="submit" class="btn btn-sm btn-outline-danger" style="color: #f87171; border: 1px solid #f87171; background: transparent; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">Disconnect</button>
@@ -54,31 +55,40 @@
       </div>
       {% endif %}
 
-      <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 14px;">Connected Facebook Pages</h4>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin: 0;">Connected Facebook Pages</h4>
+        <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span>
+          Auto-sync active in background
+        </div>
+      </div>
 
       {% if account.pages.all %}
       <div class="table-responsive">
         <table class="crm-table" style="width: 100%; border-collapse: collapse;">
           <thead>
             <tr style="border-bottom: 2px solid var(--border-color, #e2e8f0); text-align: left; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
-              <th style="padding: 10px 12px;">Page Name & ID</th>
-              <th style="padding: 10px 12px;">Assigned Branch</th>
-              <th style="padding: 10px 12px;">Webhook Sync</th>
-              <th style="padding: 10px 12px;">Last Sync Status</th>
-              <th style="padding: 10px 12px; text-align: right;">Actions</th>
+              <th style="padding: 10px 12px; width: 22%;">Page Name & ID</th>
+              <th style="padding: 10px 12px; width: 18%;">Assigned Branch</th>
+              <th style="padding: 10px 12px; width: 24%;">Auto-Sync Engine</th>
+              <th style="padding: 10px 12px; width: 12%;">Webhook</th>
+              <th style="padding: 10px 12px; width: 14%;">Last Sync Status</th>
+              <th style="padding: 10px 12px; text-align: right; width: 10%;">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for page in account.pages.all %}
-            <tr style="border-bottom: 1px solid var(--border-color, #f1f5f9); font-size: 0.875rem;">
+            <tr id="pageRow-{{ page.id }}" style="border-bottom: 1px solid var(--border-color, #f1f5f9); font-size: 0.875rem;">
               <td style="padding: 12px;">
                 <div style="font-weight: 600; color: var(--text-main);">{{ page.page_name }}</div>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">Page ID: <code>{{ page.page_id }}</code></div>
               </td>
+
+              <!-- Branch Assignment -->
               <td style="padding: 12px;">
                 <form method="post" action="{% url 'fb_leads:fb_page_update_branch' page.id %}" style="display: flex; gap: 6px; align-items: center; margin: 0;">
                   {% csrf_token %}
-                  <select name="branch_id" class="form-control" style="font-size: 0.8rem; padding: 4px 8px; width: 170px;" onchange="this.form.submit()">
+                  <select name="branch_id" class="form-control" style="font-size: 0.8rem; padding: 4px 8px; width: 100%; max-width: 170px;" onchange="this.form.submit()">
                     <option value="">-- No Branch (Default) --</option>
                     {% for b in branches %}
                     <option value="{{ b.id }}" {% if page.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
@@ -86,34 +96,74 @@
                   </select>
                 </form>
               </td>
+
+              <!-- Auto-Sync Engine (Toggle + Interval) -->
+              <td style="padding: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <label class="switch-toggle" style="position: relative; display: inline-block; width: 38px; height: 20px; margin: 0; cursor: pointer;">
+                      <input type="checkbox" id="autoSyncToggle-{{ page.id }}" {% if page.auto_sync_enabled %}checked{% endif %} onchange="toggleAutoSync({{ page.id }})" style="opacity: 0; width: 0; height: 0;">
+                      <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: {% if page.auto_sync_enabled %}#10b981{% else %}#cbd5e1{% endif %}; transition: .3s; border-radius: 20px;">
+                        <span style="position: absolute; content: ''; height: 14px; width: 14px; left: {% if page.auto_sync_enabled %}20px{% else %}3px{% endif %}; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%;"></span>
+                      </span>
+                    </label>
+                    <span id="autoSyncStatusText-{{ page.id }}" style="font-size: 0.8rem; font-weight: 600; color: {% if page.auto_sync_enabled %}#059669{% else %}#64748b{% endif %};">
+                      {% if page.auto_sync_enabled %}Auto-Sync ON{% else %}Paused{% endif %}
+                    </span>
+                  </div>
+
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Interval:</span>
+                    <select id="intervalSelect-{{ page.id }}" class="form-control" style="font-size: 0.75rem; padding: 2px 6px; height: 26px; width: auto; min-width: 120px;" onchange="updateSyncInterval({{ page.id }}, this.value)">
+                      <option value="1" {% if page.sync_interval_minutes == 1 %}selected{% endif %}>Every 1 Min</option>
+                      <option value="3" {% if page.sync_interval_minutes == 3 or not page.sync_interval_minutes %}selected{% endif %}>Every 3 Mins (Rec.)</option>
+                      <option value="5" {% if page.sync_interval_minutes == 5 %}selected{% endif %}>Every 5 Mins</option>
+                      <option value="10" {% if page.sync_interval_minutes == 10 %}selected{% endif %}>Every 10 Mins</option>
+                      <option value="15" {% if page.sync_interval_minutes == 15 %}selected{% endif %}>Every 15 Mins</option>
+                      <option value="30" {% if page.sync_interval_minutes == 30 %}selected{% endif %}>Every 30 Mins</option>
+                      <option value="60" {% if page.sync_interval_minutes == 60 %}selected{% endif %}>Every 1 Hour</option>
+                    </select>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Webhook Sync -->
               <td style="padding: 12px;">
                 {% if page.webhook_subscribed %}
                 <span class="badge" style="background: #10b981; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">Subscribed</span>
                 {% else %}
                 <span class="badge" style="background: #f59e0b; color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem;">Not Subscribed</span>
                 {% endif %}
+                <form method="post" action="{% url 'fb_leads:fb_page_toggle_webhook' page.id %}" style="margin-top: 6px;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-secondary" style="padding: 2px 8px; font-size: 0.72rem;">
+                    {% if page.webhook_subscribed %}Unsubscribe{% else %}Subscribe{% endif %}
+                  </button>
+                </form>
               </td>
+
+              <!-- Last Sync Status & Next Timer -->
               <td style="padding: 12px; font-size: 0.8rem; color: var(--text-muted);">
-                {% if page.last_sync_at %}
-                <div>{{ page.last_sync_at|date:"d M, H:i" }}</div>
-                <div style="font-size: 0.75rem; color: #059669;">{{ page.last_sync_status }}</div>
-                {% else %}
-                <span>Never synced</span>
-                {% endif %}
-              </td>
-              <td style="padding: 12px; text-align: right;">
-                <div style="display: inline-flex; gap: 8px;">
-                  <form method="post" action="{% url 'fb_leads:fb_page_sync' page.id %}" style="margin: 0;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">⟳ Sync Leads</button>
-                  </form>
-                  <form method="post" action="{% url 'fb_leads:fb_page_toggle_webhook' page.id %}" style="margin: 0;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-secondary" style="padding: 4px 10px; font-size: 0.78rem;">
-                      {% if page.webhook_subscribed %}Unsubscribe{% else %}Subscribe{% endif %}
-                    </button>
-                  </form>
+                <div id="lastSyncAt-{{ page.id }}" style="font-weight: 500;">
+                  {% if page.last_sync_at %}{{ page.last_sync_at|date:"d M, H:i" }}{% else %}Never synced{% endif %}
                 </div>
+                <div id="lastSyncStatus-{{ page.id }}" style="font-size: 0.75rem; color: #059669; margin-top: 2px;">
+                  {{ page.last_sync_status }}
+                </div>
+                <div id="nextSyncTimer-{{ page.id }}" style="font-size: 0.73rem; color: #2563eb; margin-top: 3px; font-weight: 500;">
+                  {% if page.auto_sync_enabled and page.next_sync_at %}
+                    Next: {{ page.next_sync_at|date:"H:i" }}
+                  {% else %}
+                    Next: —
+                  {% endif %}
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td style="padding: 12px; text-align: right;">
+                <button type="button" id="syncBtn-{{ page.id }}" class="btn btn-sm btn-primary" onclick="syncPageNow({{ page.id }})" style="padding: 5px 12px; font-size: 0.78rem; white-space: nowrap;">
+                  ⟳ Sync Now
+                </button>
               </td>
             </tr>
             {% endfor %}
@@ -134,7 +184,7 @@
   <div style="font-size: 2.5rem; margin-bottom: 12px;">📱</div>
   <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 8px;">No Facebook Accounts Connected</h3>
   <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px auto; font-size: 0.9rem;">
-    Connect your Facebook Business or User account token to synchronize pages, route leads to branches, and capture ad submissions automatically.
+    Connect your Facebook Business or User account token to synchronize pages, route leads to branches, and capture ad submissions automatically with background auto-sync.
   </p>
   <button type="button" class="btn btn-primary" onclick="openConnectModal()">Connect Facebook Account</button>
 </div>
@@ -168,6 +218,9 @@
   </div>
 </div>
 
+<!-- Floating Toast Container -->
+<div id="fbToastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
+
 <script>
 function openConnectModal() {
   document.getElementById('connectAccountModal').style.display = 'flex';
@@ -175,5 +228,189 @@ function openConnectModal() {
 function closeConnectModal() {
   document.getElementById('connectAccountModal').style.display = 'none';
 }
+
+function showToast(message, isError = false) {
+  const container = document.getElementById('fbToastContainer');
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    padding: 12px 18px;
+    border-radius: 8px;
+    background: ${isError ? '#ef4444' : '#10b981'};
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: fadeIn 0.2s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  `;
+  toast.textContent = (isError ? '⚠️ ' : '✓ ') + message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+function getCsrfToken() {
+  const el = document.querySelector('[name=csrfmiddlewaretoken]');
+  return el ? el.value : '';
+}
+
+// 1. Toggle Auto-Sync
+function toggleAutoSync(pageId) {
+  const toggle = document.getElementById(`autoSyncToggle-${pageId}`);
+  const statusText = document.getElementById(`autoSyncStatusText-${pageId}`);
+  const slider = toggle.nextElementSibling;
+  const knob = slider.querySelector('span');
+
+  fetch(`/facebook-leads/pages/${pageId}/toggle-autosync/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCsrfToken(),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      if (data.auto_sync_enabled) {
+        statusText.textContent = 'Auto-Sync ON';
+        statusText.style.color = '#059669';
+        slider.style.backgroundColor = '#10b981';
+        knob.style.left = '20px';
+      } else {
+        statusText.textContent = 'Paused';
+        statusText.style.color = '#64748b';
+        slider.style.backgroundColor = '#cbd5e1';
+        knob.style.left = '3px';
+      }
+      const timerEl = document.getElementById(`nextSyncTimer-${pageId}`);
+      if (timerEl) {
+        timerEl.textContent = data.auto_sync_enabled ? `Next: ${data.next_sync_at}` : 'Next: —';
+      }
+      showToast(data.message || 'Auto-sync updated');
+    } else {
+      toggle.checked = !toggle.checked;
+      showToast(data.error || 'Failed to update auto-sync', true);
+    }
+  })
+  .catch(err => {
+    toggle.checked = !toggle.checked;
+    showToast('Network error while toggling auto-sync', true);
+  });
+}
+
+// 2. Update Sync Interval
+function updateSyncInterval(pageId, interval) {
+  fetch(`/facebook-leads/pages/${pageId}/interval/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCsrfToken(),
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: `interval=${encodeURIComponent(interval)}`
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      const statusEl = document.getElementById(`lastSyncStatus-${pageId}`);
+      if (statusEl && data.last_sync_status) statusEl.textContent = data.last_sync_status;
+
+      const timerEl = document.getElementById(`nextSyncTimer-${pageId}`);
+      if (timerEl) timerEl.textContent = `Next: ${data.next_sync_at}`;
+
+      showToast(data.message || 'Sync interval updated');
+    } else {
+      showToast(data.error || 'Failed to update interval', true);
+    }
+  })
+  .catch(err => {
+    showToast('Network error updating interval', true);
+  });
+}
+
+// 3. Trigger Immediate Sync
+function syncPageNow(pageId) {
+  const btn = document.getElementById(`syncBtn-${pageId}`);
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⟳ Syncing...';
+
+  fetch(`/facebook-leads/pages/${pageId}/sync/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCsrfToken(),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    if (data.success) {
+      const atEl = document.getElementById(`lastSyncAt-${pageId}`);
+      if (atEl) atEl.textContent = data.last_sync_at;
+
+      const statusEl = document.getElementById(`lastSyncStatus-${pageId}`);
+      if (statusEl) statusEl.textContent = data.last_sync_status;
+
+      const timerEl = document.getElementById(`nextSyncTimer-${pageId}`);
+      if (timerEl) timerEl.textContent = `Next: ${data.next_sync_at}`;
+
+      showToast(data.message || 'Sync complete!');
+    } else {
+      showToast(data.error || 'Sync failed', true);
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    showToast('Sync request error', true);
+  });
+}
+
+// 4. Background Heartbeat & Status Refresh
+function refreshAllPagesStatus() {
+  fetch('{% url "fb_leads:fb_api_autosync_status" %}', {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success || !data.pages) return;
+    data.pages.forEach(p => {
+      const atEl = document.getElementById(`lastSyncAt-${p.id}`);
+      if (atEl && p.last_sync_at) atEl.textContent = p.last_sync_at;
+
+      const statusEl = document.getElementById(`lastSyncStatus-${p.id}`);
+      if (statusEl && p.last_sync_status) statusEl.textContent = p.last_sync_status;
+
+      const timerEl = document.getElementById(`nextSyncTimer-${p.id}`);
+      if (timerEl) {
+        if (!p.auto_sync_enabled) {
+          timerEl.textContent = 'Next: —';
+        } else if (p.seconds_left !== null) {
+          const mins = Math.floor(p.seconds_left / 60);
+          const secs = p.seconds_left % 60;
+          timerEl.textContent = `Next: in ${mins}m ${secs}s (${p.next_sync_at})`;
+        } else {
+          timerEl.textContent = `Next: ${p.next_sync_at || 'Due now'}`;
+        }
+      }
+    });
+  })
+  .catch(err => console.debug('Status heartbeat:', err));
+}
+
+// Start periodic heartbeat every 20 seconds while page is visible
+setInterval(() => {
+  if (!document.hidden) refreshAllPagesStatus();
+}, 20000);
+
+// Initial status check
+refreshAllPagesStatus();
 </script>
 {% endblock %}

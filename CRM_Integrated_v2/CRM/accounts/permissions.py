@@ -10,9 +10,12 @@ _ROLE_DASHBOARD_URL_NAMES = {
     UserRole.ADMIN: 'admin_dashboard',
     UserRole.SALES_HEAD: 'manager_dashboard',
     UserRole.BRANCH_HEAD: 'branch_head_dashboard',
+    UserRole.BRANCH_ADMIN: 'admin_enrolled_students',
     UserRole.COUNSELOR: 'counselor_dashboard',
     UserRole.TELECALLER: 'telecaller_dashboard',
     UserRole.RECEPTIONIST: 'receptionist_dashboard',
+    UserRole.ACCOUNTANT: 'accountant_dashboard',
+    UserRole.FINANCE_HEAD: 'finance_dashboard',
 }
 
 def role_required(*allowed_roles):
@@ -31,15 +34,21 @@ def role_required(*allowed_roles):
             messages.error(request, "Access denied: You do not have permission to access this resource.")
             if request.user.is_superuser or request.user.role in (UserRole.ADMIN, UserRole.SUPERADMIN):
                 return redirect('admin_dashboard')
-            return redirect(_ROLE_DASHBOARD_URL_NAMES.get(request.user.role, 'login'))
+            return redirect(_ROLE_DASHBOARD_URL_NAMES.get(request.user.role, 'root'))
         return _wrapped_view
     return decorator
 
 def admin_required(view_func):
     return role_required(UserRole.ADMIN, UserRole.SUPERADMIN)(view_func)
 
+def lead_allocation_setup_required(view_func):
+    return role_required(UserRole.ADMIN, UserRole.SUPERADMIN, UserRole.SALES_HEAD, UserRole.BRANCH_HEAD)(view_func)
+
 def sales_head_required(view_func):
     return role_required(UserRole.SALES_HEAD)(view_func)
+
+def branch_admin_required(view_func):
+    return role_required(UserRole.BRANCH_ADMIN)(view_func)
 
 def branch_head_required(view_func):
     return role_required(UserRole.BRANCH_HEAD)(view_func)
@@ -53,6 +62,12 @@ def telecaller_required(view_func):
 def receptionist_required(view_func):
     return role_required(UserRole.RECEPTIONIST)(view_func)
 
+def accountant_required(view_func):
+    return role_required(UserRole.ACCOUNTANT, UserRole.ADMIN, UserRole.SUPERADMIN)(view_func)
+
+def finance_head_required(view_func):
+    return role_required(UserRole.FINANCE_HEAD, UserRole.ADMIN, UserRole.SUPERADMIN)(view_func)
+
 def get_accessible_branch_ids(user):
     """Branch ids this user can see/operate within, under the hierarchy."""
     if not user.is_authenticated:
@@ -62,6 +77,11 @@ def get_accessible_branch_ids(user):
         return list(Branch.objects.values_list('id', flat=True))
     if user.role == UserRole.SALES_HEAD:
         return list(user.branch_access.values_list('branch_id', flat=True))
+    if user.role in (UserRole.ACCOUNTANT, UserRole.FINANCE_HEAD):
+        if user.branch_id:
+            return [user.branch_id]
+        from branches.models import Branch
+        return list(Branch.objects.values_list('id', flat=True))
     if user.branch_id:
         return [user.branch_id]
     return []
@@ -73,9 +93,18 @@ def can_access_lead(user, lead):
     if user.is_admin_user:
         return True
     if user.role == UserRole.SALES_HEAD:
+        if lead.assigned_sales_head_id == user.id:
+            return True
         return lead.branch_id in get_accessible_branch_ids(user)
-    if user.role in (UserRole.BRANCH_HEAD, UserRole.COUNSELOR, UserRole.RECEPTIONIST):
-        return lead.branch_id == user.branch_id
+    if user.role == UserRole.COUNSELOR:
+        from leads.models import LeadOwnerType
+        if lead.assigned_counselor_id:
+            return lead.assigned_counselor_id == user.id and lead.current_owner_type != LeadOwnerType.TELECALLER
+        if lead.assigned_telecaller and getattr(lead.assigned_telecaller, 'counselor_id', None) == user.id:
+            return True
+        return False
+    if user.role in (UserRole.BRANCH_HEAD, UserRole.BRANCH_ADMIN, UserRole.RECEPTIONIST, UserRole.ACCOUNTANT, UserRole.FINANCE_HEAD):
+        return not user.branch_id or lead.branch_id == user.branch_id
     if user.is_telecaller_user:
         return lead.assigned_telecaller_id == user.id
     return False
@@ -103,6 +132,8 @@ def can_edit_lead(user, lead):
     if user.is_admin_user:
         return True
     if user.role == UserRole.SALES_HEAD:
+        if lead.assigned_sales_head_id == user.id:
+            return True
         return lead.branch_id in get_accessible_branch_ids(user)
     if user.role in (UserRole.BRANCH_HEAD, UserRole.COUNSELOR):
         return lead.branch_id == user.branch_id
@@ -197,8 +228,14 @@ def can_view_branch(user, branch):
 
 
 def can_manage_user(user, target_user):
-    """Can `user` administer (edit/deactivate/etc.) `target_user`?"""
+    """Can `user` administer (edit/deactivate/reset password/etc.) `target_user`?"""
     if not user.is_authenticated:
+        return False
+    # Superadmin accounts receive strict protection: only a Superadmin can manage them
+    if getattr(target_user, 'is_superuser', False) and not getattr(user, 'is_superuser', False):
+        return False
+    # Admin accounts can only be managed by a Superadmin (or self for profile updates)
+    if getattr(target_user, 'role', None) == UserRole.ADMIN and not getattr(user, 'is_superuser', False) and user.id != target_user.id:
         return False
     if user.is_admin_user:
         return True
@@ -207,7 +244,7 @@ def can_manage_user(user, target_user):
             target_user.role in (UserRole.BRANCH_HEAD, UserRole.COUNSELOR, UserRole.TELECALLER, UserRole.RECEPTIONIST)
             and target_user.branch_id in get_accessible_branch_ids(user)
         )
-    if user.role == UserRole.BRANCH_HEAD:
+    if user.role in (UserRole.BRANCH_HEAD, UserRole.BRANCH_ADMIN):
         return target_user.role in (UserRole.COUNSELOR, UserRole.TELECALLER, UserRole.RECEPTIONIST) and target_user.branch_id == user.branch_id
     return False
 
@@ -219,8 +256,8 @@ def can_create_user(user, target_role, branch):
     if user.is_admin_user:
         return True
     if user.role == UserRole.SALES_HEAD:
-        return target_role == UserRole.BRANCH_HEAD and branch is not None and branch.id in get_accessible_branch_ids(user)
-    if user.role == UserRole.BRANCH_HEAD:
+        return target_role in (UserRole.BRANCH_HEAD, UserRole.BRANCH_ADMIN) and branch is not None and branch.id in get_accessible_branch_ids(user)
+    if user.role in (UserRole.BRANCH_HEAD, UserRole.BRANCH_ADMIN):
         return target_role in (UserRole.COUNSELOR, UserRole.TELECALLER, UserRole.RECEPTIONIST) and branch is not None and branch.id == user.branch_id
     if user.role == UserRole.COUNSELOR:
         return target_role == UserRole.TELECALLER and branch is not None and branch.id == user.branch_id

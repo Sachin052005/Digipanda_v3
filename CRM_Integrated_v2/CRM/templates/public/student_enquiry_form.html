@@ -1,0 +1,823 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0F4C81">
+  <title>Student Enquiry Form – Training & Placement | DigipandaCRM</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'images/digipanda_symbol.png' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --dp-blue: #0F4C81;
+      --dp-blue-light: #E8F1F8;
+      --dp-blue-border: #CBDDE9;
+      --dp-green: #22C55E;
+      --dp-green-dark: #16A34A;
+      --dp-green-light: #DCFCE7;
+      --dp-mint: #D1FAE5;
+      --dp-mint-text: #065F46;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --text-light: #94A3B8;
+      --bg-canvas: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-color: #E2E8F0;
+      --input-border: #CBD5E1;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 18px;
+      --shadow-card: 0 10px 30px -5px rgba(15, 23, 42, 0.05), 0 4px 10px -2px rgba(15, 23, 42, 0.02);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-canvas);
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(34, 197, 94, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(15, 76, 129, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 85% 15%, rgba(34, 197, 94, 0.05) 0%, transparent 35%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      line-height: 1.45;
+      padding: 30px 14px 60px;
+      min-height: 100vh;
+    }
+
+    .form-wrapper {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    /* Main Card */
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      padding: 36px 36px 40px;
+      position: relative;
+    }
+
+    /* Form Header */
+    .form-header {
+      position: relative;
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+    }
+
+    .header-top-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .brand-logo-img {
+      height: 52px;
+      max-width: 230px;
+      object-fit: contain;
+    }
+
+    .enquiry-no-box {
+      position: absolute;
+      right: 0;
+      top: 0;
+      text-align: right;
+    }
+
+    .enquiry-no-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .enquiry-no-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--dp-blue);
+      background: var(--dp-blue-light);
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .form-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--dp-blue);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .header-datetime-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .datetime-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .datetime-item input {
+      height: 34px;
+      padding: 4px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.825rem;
+      color: var(--text-main);
+      background: #FAFAFA;
+      font-family: inherit;
+    }
+
+    /* Section Banners */
+    .section-banner {
+      background: var(--dp-green-light);
+      color: var(--dp-mint-text);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      margin: 22px 0 14px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-pill-tag {
+      display: inline-block;
+      background: var(--dp-green-light);
+      color: var(--dp-mint-text);
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      margin: 18px 0 10px 0;
+      border: 1px solid rgba(6, 95, 70, 0.15);
+    }
+
+    /* Grid & Form Rows */
+    .form-row {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .row-2col {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .row-3col {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .required-star {
+      color: #EF4444;
+      font-weight: bold;
+    }
+
+    /* Input Controls */
+    .form-control, .form-select {
+      height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      color: var(--text-main);
+      background: #FFFFFF;
+      transition: all 0.2s ease-in-out;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .form-control::placeholder {
+      color: var(--text-light);
+      font-size: 0.825rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--dp-green);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+    }
+
+    /* Checkbox & Radio Groups */
+    .choice-group-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      min-height: 40px;
+    }
+
+    .choice-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.825rem;
+      color: var(--text-main);
+      user-select: none;
+    }
+
+    .choice-item input[type="radio"],
+    .choice-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--dp-green);
+      cursor: pointer;
+    }
+
+    /* Professional Status Grid */
+    .prof-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 18px;
+    }
+
+    .prof-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .prof-item label {
+      font-size: 0.79rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* Goals & Experience Checkbox Lists */
+    .stacked-choices {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 8px 0;
+    }
+
+    .stacked-choice-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.835rem;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .stacked-choice-row input[type="checkbox"],
+    .stacked-choice-row input[type="radio"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--dp-green);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .inline-other-input {
+      flex: 1;
+      height: 34px;
+      padding: 4px 10px;
+      border: 1px solid var(--input-border);
+      border-radius: var(--radius-sm);
+      font-size: 0.825rem;
+      font-family: inherit;
+    }
+
+    /* Submit Section */
+    .submit-wrap {
+      text-align: center;
+      margin-top: 28px;
+      padding-top: 18px;
+    }
+
+    .btn-submit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--dp-green);
+      color: #FFFFFF;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 12px 36px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
+      min-width: 220px;
+    }
+
+    .btn-submit:hover {
+      background: var(--dp-green-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(34, 197, 94, 0.45);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    .btn-submit svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+    }
+
+    /* Error Alert */
+    .alert-error {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      color: #991B1B;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.84rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      body {
+        padding: 14px 8px 40px;
+      }
+      .form-card {
+        padding: 22px 18px;
+        border-radius: 14px;
+      }
+      .row-2col, .row-3col, .prof-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .header-top-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .enquiry-no-box {
+        position: static;
+        text-align: center;
+        margin-top: 6px;
+      }
+      .header-datetime-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .btn-submit {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="form-wrapper">
+  <div class="form-card">
+    
+    <!-- Top Header -->
+    <header class="form-header">
+      <div class="header-top-row">
+        <img src="{% static 'images/digipanda_logo.png' %}" alt="DigipandaCRM" class="brand-logo-img">
+        <div class="enquiry-no-box">
+          <div class="enquiry-no-label">Equality / Enquiry Form No</div>
+          <div class="enquiry-no-badge">{{ token_preview|default:"WI-HQ-001" }}</div>
+        </div>
+      </div>
+
+      <h1 class="form-title">STUDENT ENQUIRY FORM – TRAINING &amp; PLACEMENT</h1>
+
+      <div class="header-datetime-row">
+        <div class="datetime-item">
+          <span>DATE:</span>
+          <input type="date" name="enquiry_date" id="enquiry_date" form="studentEnquiryForm">
+        </div>
+        <div class="datetime-item">
+          <span>TIME:</span>
+          <input type="time" name="enquiry_time" id="enquiry_time" form="studentEnquiryForm">
+        </div>
+      </div>
+    </header>
+
+    {% if error %}
+    <div class="alert-error">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <form method="POST" id="studentEnquiryForm" novalidate>
+      {% csrf_token %}
+      
+      {% if branch %}
+      <input type="hidden" name="branch_id" value="{{ branch.id }}">
+      {% endif %}
+
+      <!-- SECTION 1: STUDENT INFORMATION -->
+      <div class="section-banner">STUDENT INFORMATION</div>
+
+      <div class="form-row row-2col">
+        <div class="form-group">
+          <label class="form-label" for="full_name">Name <span class="required-star">*</span></label>
+          <input type="text" name="name" id="full_name" class="form-control" placeholder="Enter your full name" value="{{ form_data.name|default:'' }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="dob">Date Of Birth</label>
+          <input type="date" name="dob" id="dob" class="form-control" value="{{ form_data.dob|default:'' }}">
+        </div>
+      </div>
+
+      <div class="form-row row-2col">
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone Number <span class="required-star">*</span></label>
+          <input type="tel" name="phone" id="phone" class="form-control" placeholder="Enter 10-digit mobile number" value="{{ form_data.phone|default:'' }}" required maxlength="15">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" name="email" id="email" class="form-control" placeholder="Enter email address" value="{{ form_data.email|default:'' }}">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" for="home_address">Home Address</label>
+        <input type="text" name="home_address" id="home_address" class="form-control" placeholder="Enter your home address" value="{{ form_data.home_address|default:'' }}">
+      </div>
+
+      <div class="form-row row-3col">
+        <div class="form-group">
+          <label class="form-label" for="city">City</label>
+          <input type="text" name="city" id="city" class="form-control" placeholder="Enter city" value="{{ form_data.city|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="state">State</label>
+          <input type="text" name="state" id="state" class="form-control" placeholder="Enter state" value="{{ form_data.state|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="zip_code">Zip Code</label>
+          <input type="text" name="zip_code" id="zip_code" class="form-control" placeholder="Enter zip code" value="{{ form_data.zip_code|default:'' }}">
+        </div>
+      </div>
+
+      <div class="form-row row-2col" style="align-items: center; margin-top: 6px;">
+        <div class="form-group">
+          <label class="form-label">Gender:</label>
+          <div class="choice-group-row">
+            <label class="choice-item">
+              <input type="radio" name="gender" value="Male" {% if form_data.gender == 'Male' %}checked{% endif %}>
+              <span>Male</span>
+            </label>
+            <label class="choice-item">
+              <input type="radio" name="gender" value="Female" {% if form_data.gender == 'Female' %}checked{% endif %}>
+              <span>Female</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="preferred_contact">Preferred Contact Method:</label>
+          <select name="preferred_contact" id="preferred_contact" class="form-select">
+            <option value="">Select option</option>
+            <option value="Phone" {% if form_data.preferred_contact == 'Phone' %}selected{% endif %}>Phone</option>
+            <option value="WhatsApp" {% if form_data.preferred_contact == 'WhatsApp' %}selected{% endif %}>WhatsApp</option>
+            <option value="Email" {% if form_data.preferred_contact == 'Email' %}selected{% endif %}>Email</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- SECTION 2: EDUCATION QUALIFICATIONS -->
+      <div class="section-banner">EDUCATION QUALIFICATIONS</div>
+
+      <div class="form-row row-2col" style="align-items: center;">
+        <div class="form-group">
+          <label class="form-label">Experience Status:</label>
+          <div class="choice-group-row">
+            <label class="choice-item">
+              <input type="radio" name="experience_type" value="Fresher" {% if form_data.experience_type != 'Experienced' %}checked{% endif %}>
+              <span>Fresher</span>
+            </label>
+            <label class="choice-item">
+              <input type="radio" name="experience_type" value="Experienced" {% if form_data.experience_type == 'Experienced' %}checked{% endif %}>
+              <span>Experienced</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="years_of_experience">Years of Experience:</label>
+          <input type="text" name="years_of_experience" id="years_of_experience" class="form-control" placeholder="Enter years of experience" value="{{ form_data.years_of_experience|default:'' }}">
+        </div>
+      </div>
+
+      <div class="form-row row-2col">
+        <div class="form-group">
+          <label class="form-label" for="ug_qualification">UG:</label>
+          <input type="text" name="ug_qualification" id="ug_qualification" class="form-control" placeholder="Enter UG details (e.g. B.Tech, B.Sc)" value="{{ form_data.ug_qualification|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ug_passed_out_year">Passed Out Year:</label>
+          <input type="text" name="ug_passed_out_year" id="ug_passed_out_year" class="form-control" placeholder="Enter passed out year" value="{{ form_data.ug_passed_out_year|default:'' }}">
+        </div>
+      </div>
+
+      <div class="form-row row-2col">
+        <div class="form-group">
+          <label class="form-label" for="pg_qualification">PG:</label>
+          <input type="text" name="pg_qualification" id="pg_qualification" class="form-control" placeholder="Enter PG details" value="{{ form_data.pg_qualification|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="pg_passed_out_year">Passed Out Year:</label>
+          <input type="text" name="pg_passed_out_year" id="pg_passed_out_year" class="form-control" placeholder="Enter passed out year" value="{{ form_data.pg_passed_out_year|default:'' }}">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label">Backlogs:</label>
+        <div class="choice-group-row">
+          <label class="choice-item">
+            <input type="radio" name="backlogs" value="Yes" {% if form_data.backlogs == 'Yes' %}checked{% endif %}>
+            <span>Yes</span>
+          </label>
+          <label class="choice-item">
+            <input type="radio" name="backlogs" value="No" {% if form_data.backlogs == 'No' or not form_data.backlogs %}checked{% endif %}>
+            <span>No</span>
+          </label>
+          <label class="choice-item">
+            <input type="radio" name="backlogs" value="Cleared Later" {% if form_data.backlogs == 'Cleared Later' %}checked{% endif %}>
+            <span>Cleared Later</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" for="highest_education">Highest Education:</label>
+        <input type="text" name="highest_education" id="highest_education" class="form-control" placeholder="Enter highest education" value="{{ form_data.highest_education|default:'' }}">
+      </div>
+
+      <!-- SECTION 3: CURRENT PROFESSIONAL STATUS -->
+      <div class="section-banner">WHAT IS YOUR CURRENT PROFESSIONAL STATUS?</div>
+
+      <div class="prof-grid">
+        <div class="prof-item">
+          <label for="status_fresher">Student / Fresher:</label>
+          <select name="status_student_fresher" id="status_fresher" class="form-select">
+            <option value="">Select option</option>
+            <option value="Final Year Student" {% if form_data.status_student_fresher == 'Final Year Student' %}selected{% endif %}>Final Year Student</option>
+            <option value="Graduate Fresher" {% if form_data.status_student_fresher == 'Graduate Fresher' %}selected{% endif %}>Graduate Fresher</option>
+            <option value="Pursuing Degree" {% if form_data.status_student_fresher == 'Pursuing Degree' %}selected{% endif %}>Pursuing Degree</option>
+          </select>
+        </div>
+
+        <div class="prof-item">
+          <label for="status_non_it">Non-IT Professional:</label>
+          <select name="status_non_it" id="status_non_it" class="form-select">
+            <option value="">Select option</option>
+            <option value="Sales / Marketing" {% if form_data.status_non_it == 'Sales / Marketing' %}selected{% endif %}>Sales / Marketing</option>
+            <option value="Operations / Admin" {% if form_data.status_non_it == 'Operations / Admin' %}selected{% endif %}>Operations / Admin</option>
+            <option value="Banking / Finance" {% if form_data.status_non_it == 'Banking / Finance' %}selected{% endif %}>Banking / Finance</option>
+            <option value="Other Non-IT" {% if form_data.status_non_it == 'Other Non-IT' %}selected{% endif %}>Other Non-IT</option>
+          </select>
+        </div>
+
+        <div class="prof-item">
+          <label for="status_bpo">Working in BPO / Customer Support:</label>
+          <select name="status_bpo" id="status_bpo" class="form-select">
+            <option value="">Select option</option>
+            <option value="Voice Process" {% if form_data.status_bpo == 'Voice Process' %}selected{% endif %}>Voice Process</option>
+            <option value="Non-Voice / Chat Support" {% if form_data.status_bpo == 'Non-Voice / Chat Support' %}selected{% endif %}>Non-Voice / Chat Support</option>
+            <option value="Technical Support" {% if form_data.status_bpo == 'Technical Support' %}selected{% endif %}>Technical Support</option>
+          </select>
+        </div>
+
+        <div class="prof-item">
+          <label for="status_freelancer">Freelancer:</label>
+          <select name="status_freelancer" id="status_freelancer" class="form-select">
+            <option value="">Select option</option>
+            <option value="Part-time Freelancer" {% if form_data.status_freelancer == 'Part-time Freelancer' %}selected{% endif %}>Part-time Freelancer</option>
+            <option value="Full-time Freelancer" {% if form_data.status_freelancer == 'Full-time Freelancer' %}selected{% endif %}>Full-time Freelancer</option>
+            <option value="Aspiring Freelancer" {% if form_data.status_freelancer == 'Aspiring Freelancer' %}selected{% endif %}>Aspiring Freelancer</option>
+          </select>
+        </div>
+
+        <div class="prof-item">
+          <label for="status_it">IT Professional:</label>
+          <select name="status_it" id="status_it" class="form-select">
+            <option value="">Select option</option>
+            <option value="Software Developer" {% if form_data.status_it == 'Software Developer' %}selected{% endif %}>Software Developer</option>
+            <option value="QA / Tester" {% if form_data.status_it == 'QA / Tester' %}selected{% endif %}>QA / Tester</option>
+            <option value="System Admin / DevOps" {% if form_data.status_it == 'System Admin / DevOps' %}selected{% endif %}>System Admin / DevOps</option>
+            <option value="Other IT Role" {% if form_data.status_it == 'Other IT Role' %}selected{% endif %}>Other IT Role</option>
+          </select>
+        </div>
+
+        <div class="prof-item">
+          <label for="status_business">Business Owner / Entrepreneur:</label>
+          <select name="status_business" id="status_business" class="form-select">
+            <option value="">Select option</option>
+            <option value="Retail / Local Business" {% if form_data.status_business == 'Retail / Local Business' %}selected{% endif %}>Retail / Local Business</option>
+            <option value="E-Commerce / Online Store" {% if form_data.status_business == 'E-Commerce / Online Store' %}selected{% endif %}>E-Commerce / Online Store</option>
+            <option value="Services / Agency" {% if form_data.status_business == 'Services / Agency' %}selected{% endif %}>Services / Agency</option>
+            <option value="Startup Founder" {% if form_data.status_business == 'Startup Founder' %}selected{% endif %}>Startup Founder</option>
+          </select>
+        </div>
+
+        <div class="prof-item">
+          <label for="status_career_break">Currently on a Career Break:</label>
+          <select name="status_career_break" id="status_career_break" class="form-select">
+            <option value="">Select option</option>
+            <option value="Less than 1 Year" {% if form_data.status_career_break == 'Less than 1 Year' %}selected{% endif %}>Less than 1 Year</option>
+            <option value="1 to 3 Years" {% if form_data.status_career_break == '1 to 3 Years' %}selected{% endif %}>1 to 3 Years</option>
+            <option value="More than 3 Years" {% if form_data.status_career_break == 'More than 3 Years' %}selected{% endif %}>More than 3 Years</option>
+          </select>
+        </div>
+
+        <div class="prof-item">
+          <label for="status_others">Others:</label>
+          <input type="text" name="status_others" id="status_others" class="form-control" placeholder="Enter details" value="{{ form_data.status_others|default:'' }}">
+        </div>
+      </div>
+
+      <!-- SECTION 4: CAREER GOALS -->
+      <div class="section-banner">WHAT ARE YOUR CAREER GOALS?</div>
+
+      <div class="stacked-choices">
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="career_goals" value="I want to switch to a Digital Marketing career" {% if 'switch to a Digital Marketing career' in form_data.career_goals_str %}checked{% endif %}>
+          <span>I want to switch to a Digital Marketing career</span>
+        </label>
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="career_goals" value="I want to get a job in Digital Marketing" {% if 'get a job in Digital Marketing' in form_data.career_goals_str %}checked{% endif %}>
+          <span>I want to get a job in Digital Marketing</span>
+        </label>
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="career_goals" value="I want to become a Digital Marketing freelancer" {% if 'freelancer' in form_data.career_goals_str %}checked{% endif %}>
+          <span>I want to become a Digital Marketing freelancer</span>
+        </label>
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="career_goals" value="I want to promote my own business" {% if 'promote my own business' in form_data.career_goals_str %}checked{% endif %}>
+          <span>I want to promote my own business</span>
+        </label>
+        <div class="stacked-choice-row">
+          <label class="choice-item" style="gap: 8px;">
+            <input type="checkbox" name="career_goals" value="Other" id="goal_other_cb" {% if form_data.goal_other_text %}checked{% endif %}>
+            <span>Other:</span>
+          </label>
+          <input type="text" name="goal_other_text" class="inline-other-input" placeholder="Enter details" value="{{ form_data.goal_other_text|default:'' }}">
+        </div>
+      </div>
+
+      <!-- SECTION 5: PRIOR EXPERIENCE -->
+      <div class="section-banner">DO YOU HAVE ANY PRIOR EXPERIENCE IN DIGITAL MARKETING?</div>
+
+      <div class="stacked-choices">
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="dm_experience" value="No experience – I am a beginner" {% if 'No experience' in form_data.dm_experience_str or not form_data.dm_experience %}checked{% endif %}>
+          <span>No experience – I am a beginner</span>
+        </label>
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="dm_experience" value="I have some practical experience" {% if 'some practical experience' in form_data.dm_experience_str %}checked{% endif %}>
+          <span>I have some practical experience</span>
+        </label>
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="dm_experience" value="I have basic knowledge through self-learning" {% if 'self-learning' in form_data.dm_experience_str %}checked{% endif %}>
+          <span>I have basic knowledge through self-learning</span>
+        </label>
+        <label class="stacked-choice-row">
+          <input type="checkbox" name="dm_experience" value="I am already working in Digital Marketing" {% if 'already working' in form_data.dm_experience_str %}checked{% endif %}>
+          <span>I am already working in Digital Marketing</span>
+        </label>
+      </div>
+
+      <!-- SECTION 6: INTERESTED COURSE -->
+      <div class="section-banner">INTERESTED COURSE</div>
+
+      <div class="choice-group-row" style="margin-top: 6px;">
+        <label class="choice-item">
+          <input type="checkbox" name="interested_course" value="Advanced" {% if 'Advanced' in form_data.interested_course_str or not form_data.interested_course %}checked{% endif %}>
+          <span style="font-weight: 600;">Advanced</span>
+        </label>
+        <label class="choice-item">
+          <input type="checkbox" name="interested_course" value="Premium" {% if 'Premium' in form_data.interested_course_str %}checked{% endif %}>
+          <span style="font-weight: 600;">Premium</span>
+        </label>
+      </div>
+
+      <!-- SECTION 7: STUDENT REFERENCE -->
+      <div style="margin-top: 14px;">
+        <span class="section-pill-tag">Student Reference</span>
+      </div>
+
+      <div class="form-row row-2col">
+        <div class="form-group">
+          <label class="form-label" for="ref_1">Number 1:</label>
+          <input type="text" name="student_reference_1" id="ref_1" class="form-control" placeholder="Enter reference number" value="{{ form_data.student_reference_1|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ref_2">Number 2:</label>
+          <input type="text" name="student_reference_2" id="ref_2" class="form-control" placeholder="Enter reference number" value="{{ form_data.student_reference_2|default:'' }}">
+        </div>
+      </div>
+
+      <!-- SUBMIT ACTION -->
+      <div class="submit-wrap">
+        <button type="submit" class="btn-submit" id="submitEnquiryBtn">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          <span>Submit Enquiry</span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  // Set current date and time by default if not set
+  document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('enquiry_date');
+    const timeInput = document.getElementById('enquiry_time');
+    
+    const now = new Date();
+    if (dateInput && !dateInput.value) {
+      dateInput.value = now.toISOString().split('T')[0];
+    }
+    if (timeInput && !timeInput.value) {
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      timeInput.value = `${hours}:${minutes}`;
+    }
+
+    // Auto-check "Other" checkbox if text is typed into the input
+    const otherText = document.querySelector('input[name="goal_other_text"]');
+    const otherCb = document.getElementById('goal_other_cb');
+    if (otherText && otherCb) {
+      otherText.addEventListener('input', function() {
+        if (this.value.trim().length > 0) {
+          otherCb.checked = true;
+        }
+      });
+    }
+
+    // Prevent duplicate button submission
+    const form = document.getElementById('studentEnquiryForm');
+    const submitBtn = document.getElementById('submitEnquiryBtn');
+    if (form && submitBtn) {
+      form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.7';
+        submitBtn.innerHTML = '<span>Submitting Enquiry...</span>';
+      });
+    }
+  });
+</script>
+
+</body>
+</html>

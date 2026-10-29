@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Enroll Student - TECHPANDA CRM{% endblock %}
+{% block title %}Enroll Student - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
@@ -19,31 +19,31 @@
   <div class="tp-form-grid-2col" style="gap: 24px; align-items: start;">
     
     <!-- LEFT CARD: Student & Academic Details -->
-    <div class="crm-card" style="background: #fff; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); padding: 24px;">
-      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 18px; color: var(--navy-dark, #0f172a); border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+    <div class="crm-card tp-card" style="padding: 24px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 18px; color: var(--tp-text-primary); border-bottom: 1px solid var(--tp-surface-border-subtle); padding-bottom: 10px;">
         1. Student & Academic Profile
       </h3>
 
       <div style="margin-bottom: 16px;">
-        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Student Full Name *</label>
-        <input type="text" name="student_name" value="{{ enrollment.student_name|default:lead.name }}" required class="form-control" style="width: 100%;">
+        <label class="tp-label">Student Full Name *</label>
+        <input type="text" name="student_name" value="{{ enrollment.student_name|default:lead.name }}" required class="form-control tp-input" style="width: 100%;">
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; margin-bottom: 16px;">
         <div>
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Phone Number *</label>
-          <input type="text" name="student_phone" value="{{ enrollment.student_phone|default:lead.phone }}" required class="form-control" style="width: 100%;">
+          <label class="tp-label">Phone Number *</label>
+          <input type="text" name="student_phone" value="{{ enrollment.student_phone|default:lead.phone }}" required class="form-control tp-input" style="width: 100%;">
         </div>
         <div>
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Email Address</label>
-          <input type="email" name="student_email" value="{{ enrollment.student_email|default:lead.email }}" class="form-control" style="width: 100%;">
+          <label class="tp-label">Email Address</label>
+          <input type="email" name="student_email" value="{{ enrollment.student_email|default:lead.email }}" class="form-control tp-input" style="width: 100%;">
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 14px; margin-bottom: 16px;">
         <div>
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Enrolling Course / Program</label>
-          <select name="product_id" class="form-control" style="width: 100%;">
+          <label class="tp-label">Enrolling Course / Program</label>
+          <select name="product_id" class="form-select tp-select" style="width: 100%;">
             <option value="">-- Select Course --</option>
             {% for p in products %}
             <option value="{{ p.id }}" {% if enrollment.product_id == p.id or lead.product_id == p.id %}selected{% endif %}>{{ p.name }}</option>
@@ -51,8 +51,8 @@
           </select>
         </div>
         <div>
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Branch Center</label>
-          <select name="branch_id" class="form-control" style="width: 100%;">
+          <label class="tp-label">Branch Center</label>
+          <select name="branch_id" class="form-select tp-select" style="width: 100%;">
             <option value="">-- Select Branch --</option>
             {% for b in branches %}
             <option value="{{ b.id }}" {% if enrollment.branch_id == b.id or lead.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>
@@ -62,30 +62,30 @@
       </div>
 
       <div style="margin-bottom: 16px;">
-        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Assigned Counselor</label>
-        <input type="text" readonly value="{% if lead.assigned_counselor %}{{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}{% else %}Unassigned{% endif %}" class="form-control" style="width: 100%; background: #f8fafc; color: var(--text-muted);">
+        <label class="tp-label">Assigned Counselor</label>
+        <input type="text" readonly value="{% if lead.assigned_counselor %}{{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}{% else %}Unassigned{% endif %}" class="form-control tp-input" style="width: 100%; opacity: 0.85;">
       </div>
 
       <div style="margin-bottom: 16px;">
-        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Counselor Remarks / Special Terms</label>
-        <textarea name="notes" rows="3" class="form-control" placeholder="Any agreed fee waivers, discount approvals, or notes" style="width: 100%;">{{ enrollment.notes|default:'' }}</textarea>
+        <label class="tp-label">Counselor Remarks / Special Terms</label>
+        <textarea name="notes" rows="3" class="form-control tp-input" placeholder="Any agreed fee waivers, discount approvals, or notes" style="width: 100%;">{{ enrollment.notes|default:'' }}</textarea>
       </div>
     </div>
 
     <!-- RIGHT CARD: Course Fee & GST Calculation -->
-    <div class="crm-card" style="background: #fff; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); padding: 24px;">
-      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 18px; color: var(--navy-dark, #0f172a); border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+    <div class="crm-card tp-card" style="padding: 24px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 18px; color: var(--tp-text-primary); border-bottom: 1px solid var(--tp-surface-border-subtle); padding-bottom: 10px;">
         2. Fee Structure & GST Accounting
       </h3>
 
       <div style="margin-bottom: 18px;">
-        <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Agreed Course Fee (₹) *</label>
-        <input type="number" step="0.01" name="base_course_fee" id="id_base_course_fee" value="{% if enrollment and enrollment.base_course_fee %}{{ enrollment.base_course_fee }}{% elif lead.product and lead.product.price %}{{ lead.product.price }}{% else %}25000.00{% endif %}" required class="form-control" style="width: 100%; font-size: 1.2rem; font-weight: 700;">
+        <label class="tp-label">Agreed Course Fee (₹) *</label>
+        <input type="number" step="0.01" name="base_course_fee" id="id_base_course_fee" value="{% if enrollment and enrollment.base_course_fee %}{{ enrollment.base_course_fee }}{% elif lead.product and lead.product.price %}{{ lead.product.price }}{% else %}25000.00{% endif %}" required class="form-control tp-input" style="width: 100%; font-size: 1.2rem; font-weight: 700;">
       </div>
 
       <!-- MANDATORY GST TREATMENT (INCLUSIVE vs EXCLUSIVE) -->
-      <div style="margin-bottom: 18px; padding: 14px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--navy-dark); margin-bottom: 8px;">
+      <div style="margin-bottom: 18px; padding: 14px 16px; background: var(--tp-surface-bg); border-radius: var(--tp-radius-md); border: 1px solid var(--tp-surface-border);">
+        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--tp-text-primary); margin-bottom: 8px;">
           GST Treatment (Mandatory) *
         </label>
         <div style="display: flex; gap: 24px; flex-wrap: wrap;">
@@ -103,27 +103,27 @@
       <input type="hidden" name="tax_rate" id="id_tax_rate" value="{{ enrollment.tax_rate|default:default_gst_rate|default:'18.00' }}">
 
       <!-- LIVE GST BREAKDOWN DISPLAY -->
-      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 20px; margin-bottom: 22px;">
-        <div style="font-size: 0.8rem; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;">
+      <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--tp-radius-md); padding: 16px 20px; margin-bottom: 22px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #10b981; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between;">
           <span>Financial Breakdown (Pure Decimal Verified)</span>
-          <span style="font-size: 0.75rem; color: #15803d; font-weight: 600;" id="breakdownBadge">Live Sync Active</span>
+          <span style="font-size: 0.75rem; color: #10b981; font-weight: 600;" id="breakdownBadge">Live Sync Active</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 4px;">
-          <span style="color: var(--text-muted);">Taxable Fee (Subtotal):</span>
-          <span id="previewTaxable" style="font-weight: 600;">₹0.00</span>
+          <span style="color: var(--tp-text-muted);">Taxable Fee (Subtotal):</span>
+          <span id="previewTaxable" style="font-weight: 600; font-variant-numeric: tabular-nums;">₹0.00</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 6px;">
-          <span style="color: var(--text-muted);">GST Amount (<span id="previewTaxRate">{{ enrollment.tax_rate|default:default_gst_rate|default:'18' }}%</span>):</span>
-          <span id="previewTax" style="font-weight: 600;">₹0.00</span>
+          <span style="color: var(--tp-text-muted);">GST Amount (<span id="previewTaxRate">{{ enrollment.tax_rate|default:default_gst_rate|default:'18' }}%</span>):</span>
+          <span id="previewTax" style="font-weight: 600; font-variant-numeric: tabular-nums;">₹0.00</span>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 1.1rem; border-top: 1px solid #bbf7d0; padding-top: 8px; margin-top: 6px;">
-          <span style="font-weight: 700; color: #166534;">Total Payable:</span>
-          <span id="previewTotal" style="font-weight: 800; color: #166534;">₹0.00</span>
+        <div style="display: flex; justify-content: space-between; font-size: 1.1rem; border-top: 1px solid rgba(16, 185, 129, 0.25); padding-top: 8px; margin-top: 6px;">
+          <span style="font-weight: 700; color: #10b981;">Total Payable:</span>
+          <span id="previewTotal" style="font-weight: 800; color: #10b981; font-variant-numeric: tabular-nums;">₹0.00</span>
         </div>
       </div>
 
       <!-- PAYMENT PLAN -->
-      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 14px; color: var(--navy-dark, #0f172a); border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 0; margin-bottom: 14px; color: var(--tp-text-primary); border-bottom: 1px solid var(--tp-surface-border-subtle); padding-bottom: 10px;">
         3. Payment Plan & Scheduling
       </h3>
 
@@ -141,11 +141,11 @@
       </div>
 
       <!-- INSTALLMENT SETTINGS (Revealed if Split Payment) -->
-      <div id="splitPaymentSettings" style="display: none; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px;">
+      <div id="splitPaymentSettings" style="display: none; background: var(--tp-surface-bg); padding: 16px; border-radius: var(--tp-radius-md); border: 1px solid var(--tp-surface-border); margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 14px; margin-bottom: 12px;">
           <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Number of Installments</label>
-            <select name="installment_count" id="id_installment_count" class="form-control" style="width: 100%;">
+            <label class="tp-label">Number of Installments</label>
+            <select name="installment_count" id="id_installment_count" class="form-select tp-select" style="width: 100%;">
               <option value="2" {% if enrollment and enrollment.installment_count == 2 %}selected{% endif %}>2 Installments</option>
               <option value="3" {% if enrollment and enrollment.installment_count == 3 %}selected{% endif %}>3 Installments</option>
               <option value="4" {% if enrollment and enrollment.installment_count == 4 %}selected{% endif %}>4 Installments</option>
@@ -153,22 +153,22 @@
             </select>
           </div>
           <div>
-            <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">First Installment Date</label>
-            <input type="date" name="first_installment_date" id="id_first_date" class="form-control" style="width: 100%;">
+            <label class="tp-label">First Installment Date</label>
+            <input type="date" name="first_installment_date" id="id_first_date" class="form-control tp-input" style="width: 100%;">
           </div>
         </div>
-        <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 12px;">
+        <span style="font-size: 0.75rem; color: var(--tp-text-muted); display: block; margin-bottom: 12px;">
           Equal installments are calculated. Any fractional rounding cents/paise are automatically absorbed by the final installment.
         </span>
 
         <!-- LIVE INSTALLMENT SCHEDULE PREVIEW -->
-        <div id="installmentSchedulePreview" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+        <div id="installmentSchedulePreview" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--tp-surface-border);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 0.8rem; font-weight: 700; color: var(--navy-dark); text-transform: uppercase;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-primary); text-transform: uppercase;">
               Projected Installment Schedule
             </span>
-            <span style="font-size: 0.75rem; color: #166534; font-weight: 600;">
-              Total Scheduled: <span id="previewScheduledTotal">₹0.00</span>
+            <span style="font-size: 0.75rem; color: #10b981; font-weight: 600;">
+              Total Scheduled: <span id="previewScheduledTotal" style="font-variant-numeric: tabular-nums;">₹0.00</span>
             </span>
           </div>
           <div id="installmentCardsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
@@ -178,8 +178,8 @@
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-        <a href="{% if request.user.is_admin_user %}{% url 'admin_lead_detail' lead.id %}{% elif request.user.is_sales_head_user %}{% url 'manager_lead_detail' lead.id %}{% elif request.user.is_branch_head_user %}{% url 'branch_head_lead_detail' lead.id %}{% else %}{% url 'counselor_lead_detail' lead.id %}{% endif %}" class="btn btn-secondary">Cancel</a>
-        <button type="submit" class="btn btn-primary" style="padding: 10px 24px; font-weight: 600;">
+        <a href="{% if request.user.is_admin_user %}{% url 'admin_lead_detail' lead.id %}{% elif request.user.is_sales_head_user %}{% url 'manager_lead_detail' lead.id %}{% elif request.user.is_branch_head_user %}{% url 'branch_head_lead_detail' lead.id %}{% else %}{% url 'counselor_lead_detail' lead.id %}{% endif %}" class="btn btn-secondary tp-btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary tp-btn-primary" style="padding: 10px 24px; font-weight: 600;">
           Confirm Enrollment & Activate Schedule
         </button>
       </div>

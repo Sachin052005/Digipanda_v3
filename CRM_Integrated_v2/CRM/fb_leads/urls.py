@@ -14,5 +14,8 @@ urlpatterns = [
     path("accounts/<int:account_id>/disconnect/", views.fb_account_disconnect, name="fb_account_disconnect"),
     path("pages/<int:page_id>/branch/", views.fb_page_update_branch, name="fb_page_update_branch"),
     path("pages/<int:page_id>/toggle-webhook/", views.fb_page_toggle_webhook, name="fb_page_toggle_webhook"),
+    path("pages/<int:page_id>/toggle-autosync/", views.fb_page_toggle_autosync, name="fb_page_toggle_autosync"),
+    path("pages/<int:page_id>/interval/", views.fb_page_update_interval, name="fb_page_update_interval"),
     path("pages/<int:page_id>/sync/", views.fb_page_sync, name="fb_page_sync"),
+    path("api/autosync-status/", views.api_autosync_status, name="fb_api_autosync_status"),
 ]

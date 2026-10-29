@@ -1,5 +1,13 @@
 from django.contrib import admin
-from .models import BusinessAccount, Conversation, Message
+from .models import (
+    BusinessAccount,
+    Conversation,
+    Message,
+    AutomationFlow,
+    AutomationFlowVersion,
+    UserFlowSession,
+    AutomationExecution
+)
 
 
 @admin.register(BusinessAccount)
@@ -83,3 +91,36 @@ class MessageAdmin(admin.ModelAdmin):
             return f"[{obj.message_type.upper()}: {obj.media_file.name}]"
         return '-'
     message_preview.short_description = 'Message Content'
+
+
+@admin.register(AutomationFlow)
+class AutomationFlowAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'version', 'status', 'trigger_type', 'is_active', 'published_at', 'updated_at')
+    list_display_links = ('id', 'name')
+    list_filter = ('status', 'trigger_type', 'is_active')
+    search_fields = ('name', 'trigger_keywords')
+
+
+@admin.register(AutomationFlowVersion)
+class AutomationFlowVersionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'flow', 'version_number', 'status', 'created_by', 'published_at', 'created_at')
+    list_display_links = ('id', 'flow')
+    list_filter = ('status', 'version_number')
+    search_fields = ('flow__name', 'change_summary')
+
+
+@admin.register(UserFlowSession)
+class UserFlowSessionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'conversation', 'flow', 'flow_version', 'current_node_id', 'status', 'waiting_for_input', 'started_at', 'resume_at')
+    list_display_links = ('id', 'conversation')
+    list_filter = ('status', 'waiting_for_input')
+    search_fields = ('conversation__customer_name', 'conversation__phone_number', 'current_node_id')
+
+
+@admin.register(AutomationExecution)
+class AutomationExecutionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'flow', 'flow_version', 'node_id', 'event_type', 'created_at')
+    list_display_links = ('id', 'event_type')
+    list_filter = ('event_type', 'flow_version')
+    search_fields = ('node_id', 'error')
+

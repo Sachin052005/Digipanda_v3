@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Set Up Password & Activate Account - TECHPANDA CRM{% endblock %}
+{% block title %}Set Up Password & Activate Account - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;">
@@ -28,8 +28,8 @@
         <strong style="font-size: 0.9rem; color: #0f172a;">{{ target_user.get_full_name|default:target_user.username }}</strong>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 0.85rem; color: #64748b;">Login ID:</span>
-        <code style="font-size: 0.95rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;">{{ target_user.username }}</code>
+        <span style="font-size: 0.85rem; color: #64748b;">Email Address:</span>
+        <code style="font-size: 0.95rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;">{{ target_user.email }}</code>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
         <span style="font-size: 0.85rem; color: #64748b;">Role:</span>

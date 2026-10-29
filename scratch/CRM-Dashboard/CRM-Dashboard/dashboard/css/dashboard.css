@@ -32,7 +32,7 @@
   /* Channel Accent Colors */
   --c-whatsapp: #16a34a;
   --c-meta-form: #0284c7;
-  --c-google-call: #059669;
+  --c-google-call: #3e042c;
   --c-google-ad: #eab308;
   --c-google-seo: #9333ea;
   --c-instagram: #db2777;
@@ -407,7 +407,7 @@ body {
 .th-total { background-color: #f0f9ff !important; color: #0284c7; }
 .th-whatsapp { background-color: #f0fdf4 !important; color: #16a34a; }
 .th-meta-form { background-color: #f0f9ff !important; color: #0284c7; }
-.th-google-call { background-color: #f0fdf4 !important; color: #16a34a; }
+.th-google-call { background-color: #f0fdf4 !important; color: #3d0543; }
 .th-google-ad { background-color: #fefce8 !important; color: #ca8a04; }
 .th-google-seo { background-color: #faf5ff !important; color: #9333ea; }
 .th-instagram { background-color: #fdf2f8 !important; color: #db2777; }

@@ -1,9 +1,97 @@
 /**
  * TECHPANDA CRM - Enhanced Data Tables & Floating Bulk Actions Dock
- * Multi-select row tracking, optimistic UI updates, and atomic backend bulk operations.
+ * Multi-select row tracking, persistent cross-page selection via sessionStorage,
+ * optimistic UI updates, and atomic backend bulk operations.
  */
 (function () {
   'use strict';
+
+  var STORAGE_KEY = 'crm_bulk_selected_lead_ids';
+
+  var CRMSelectionManager = {
+    getStoredIds: function () {
+      try {
+        var raw = sessionStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map(function (id) { return parseInt(id, 10); }).filter(function (id) { return !isNaN(id); });
+        }
+      } catch (e) {
+        console.warn('Failed to parse selected lead IDs from sessionStorage', e);
+      }
+      return [];
+    },
+    saveStoredIds: function (ids) {
+      try {
+        var unique = [];
+        var seen = {};
+        for (var i = 0; i < ids.length; i++) {
+          var num = parseInt(ids[i], 10);
+          if (!isNaN(num) && !seen[num]) {
+            seen[num] = true;
+            unique.push(num);
+          }
+        }
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(unique));
+        return unique;
+      } catch (e) {
+        console.warn('Failed to save selected lead IDs to sessionStorage', e);
+        return ids;
+      }
+    },
+    addId: function (id) {
+      var ids = this.getStoredIds();
+      var num = parseInt(id, 10);
+      if (!isNaN(num) && ids.indexOf(num) === -1) {
+        ids.push(num);
+        this.saveStoredIds(ids);
+      }
+      return ids;
+    },
+    removeId: function (id) {
+      var ids = this.getStoredIds();
+      var num = parseInt(id, 10);
+      var filtered = ids.filter(function (item) { return item !== num; });
+      this.saveStoredIds(filtered);
+      return filtered;
+    },
+    addMultiple: function (newIds) {
+      var ids = this.getStoredIds();
+      for (var i = 0; i < newIds.length; i++) {
+        var num = parseInt(newIds[i], 10);
+        if (!isNaN(num) && ids.indexOf(num) === -1) {
+          ids.push(num);
+        }
+      }
+      this.saveStoredIds(ids);
+      return ids;
+    },
+    removeMultiple: function (delIds) {
+      var ids = this.getStoredIds();
+      var delMap = {};
+      for (var i = 0; i < delIds.length; i++) {
+        delMap[parseInt(delIds[i], 10)] = true;
+      }
+      var filtered = ids.filter(function (item) { return !delMap[item]; });
+      this.saveStoredIds(filtered);
+      return filtered;
+    },
+    clear: function () {
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch (e) {}
+    },
+    getCount: function () {
+      return this.getStoredIds().length;
+    }
+  };
+
+  // Expose globally
+  window.CRMSelectionManager = CRMSelectionManager;
+  window.getSelectedLeadIds = function () {
+    return CRMSelectionManager.getStoredIds();
+  };
 
   function getCookie(name) {
     var cookieValue = null;
@@ -55,31 +143,42 @@
     var applyStatusBtn = document.getElementById('btn-apply-bulk-status');
     var statusSelect = document.getElementById('bulk-status-select');
 
-    if (!rowCheckboxes.length) return;
+    if (!rowCheckboxes.length && !dock) return;
 
-    function getSelectedIds() {
-      var ids = [];
-      rowCheckboxes.forEach(function (cb) {
-        if (cb.checked) {
-          ids.push(parseInt(cb.value, 10));
-        }
-      });
-      return ids;
+    // Synchronize page checkboxes with sessionStorage
+    var storedIds = CRMSelectionManager.getStoredIds();
+    var storedSet = {};
+    for (var s = 0; s < storedIds.length; s++) {
+      storedSet[storedIds[s]] = true;
     }
 
+    rowCheckboxes.forEach(function (cb) {
+      var id = parseInt(cb.value, 10);
+      if (storedSet[id]) {
+        cb.checked = true;
+      }
+    });
+
     function updateDock() {
-      var ids = getSelectedIds();
+      var currentStored = CRMSelectionManager.getStoredIds();
+      var totalCount = currentStored.length;
+
+      var checkedOnPage = 0;
+      rowCheckboxes.forEach(function (cb) {
+        if (cb.checked) checkedOnPage++;
+      });
+
       if (countEl) {
         if (window.selectAllMatchingFilters) {
           // Keep filtered count displayed
         } else {
-          countEl.textContent = ids.length;
+          countEl.textContent = totalCount;
         }
       }
 
       var banner = document.getElementById('select-all-matching-banner');
       if (banner) {
-        if (ids.length === rowCheckboxes.length && rowCheckboxes.length > 0) {
+        if (checkedOnPage === rowCheckboxes.length && rowCheckboxes.length > 0) {
           banner.style.display = 'block';
         } else {
           banner.style.display = 'none';
@@ -88,7 +187,7 @@
       }
 
       if (dock) {
-        if (ids.length > 0 || window.selectAllMatchingFilters) {
+        if (totalCount > 0 || window.selectAllMatchingFilters) {
           dock.style.display = 'flex';
         } else {
           dock.style.display = 'none';
@@ -96,23 +195,42 @@
       }
 
       if (selectAll) {
-        selectAll.checked = (ids.length === rowCheckboxes.length && rowCheckboxes.length > 0);
-        selectAll.indeterminate = (ids.length > 0 && ids.length < rowCheckboxes.length);
+        selectAll.checked = (checkedOnPage === rowCheckboxes.length && rowCheckboxes.length > 0);
+        selectAll.indeterminate = (checkedOnPage > 0 && checkedOnPage < rowCheckboxes.length);
       }
     }
+
+    // Initial dock update on page render
+    updateDock();
 
     if (selectAll) {
       selectAll.addEventListener('change', function () {
         var isChecked = selectAll.checked;
+        var pageIds = [];
         rowCheckboxes.forEach(function (cb) {
           cb.checked = isChecked;
+          var num = parseInt(cb.value, 10);
+          if (!isNaN(num)) pageIds.push(num);
         });
+        if (isChecked) {
+          CRMSelectionManager.addMultiple(pageIds);
+        } else {
+          CRMSelectionManager.removeMultiple(pageIds);
+        }
         updateDock();
       });
     }
 
     rowCheckboxes.forEach(function (cb) {
-      cb.addEventListener('change', updateDock);
+      cb.addEventListener('change', function () {
+        var id = parseInt(cb.value, 10);
+        if (cb.checked) {
+          CRMSelectionManager.addId(id);
+        } else {
+          CRMSelectionManager.removeId(id);
+        }
+        updateDock();
+      });
     });
 
     if (clearBtn) {
@@ -124,6 +242,8 @@
           selectAll.checked = false;
           selectAll.indeterminate = false;
         }
+        CRMSelectionManager.clear();
+        if (window.toggleSelectAllMatching) window.toggleSelectAllMatching(false);
         updateDock();
       });
     }
@@ -136,7 +256,7 @@
           return;
         }
 
-        var ids = getSelectedIds();
+        var ids = CRMSelectionManager.getStoredIds();
         if (ids.length === 0) {
           alert('No leads selected.');
           return;

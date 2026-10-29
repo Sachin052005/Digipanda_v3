@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ lead.name }} - Lead Details - TECHPANDA CRM{% endblock %}
+{% block title %}{{ lead.name }} - Lead Details - DigipandaCRM{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/lead-details-modern.css' %}?v=20261012_lead_detail">
+<link rel="stylesheet" href="{% static 'css/lead-details-modern.css' %}?v=20261015_aura">
 {% endblock %}
 
 {% block content %}
@@ -18,6 +18,10 @@
     </div>
 
     <div class="lead-nav-controls">
+      <button type="button" class="lead-nav-btn" onclick="openLeadSwitcherDrawer()" title="Open Quick In-Call Lead Switcher" style="cursor: pointer; font-weight: 600;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        <span>Leads List</span>
+      </button>
       <span class="lead-record-counter">{{ nav.current_index }} of {{ nav.total_count }}</span>
       {% if nav.prev_lead_id %}
         <a href="{% url detail_url_name nav.prev_lead_id %}" class="lead-nav-btn" title="Previous Lead">
@@ -66,20 +70,26 @@
             <span id="leadStatusLabel">{{ lead.status }}</span>
             <span class="pill-chevron">▼</span>
             <select class="lead-status-select-hidden" id="leadStatusSelect" onchange="changeLeadStatusAjax(this.value)">
-              {% for code, label in lead_status_choices %}
-              <option value="{{ code }}" {% if lead.status == code %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
+              {% if status_options %}
+                {% for opt in status_options %}
+                <option value="{{ opt.value }}" {% if lead.status == opt.value %}selected{% endif %}>{{ opt.label }}</option>
+                {% endfor %}
+              {% else %}
+                {% for code, label in lead_status_choices %}
+                <option value="{{ code }}" {% if lead.status == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              {% endif %}
             </select>
           </div>
         </div>
 
-        <!-- 5-Star Rating Control -->
-        <div class="lead-star-rating" id="leadStarRating" title="Click to set lead priority rating">
-          <span class="star filled" data-rating="1">★</span>
-          <span class="star filled" data-rating="2">★</span>
-          <span class="star filled" data-rating="3">★</span>
-          <span class="star" data-rating="4">★</span>
-          <span class="star" data-rating="5">★</span>
+        <!-- 5-Star Rating Control (TeleCRM In-Call Priority) -->
+        <div class="lead-star-rating" id="leadStarRating" title="Click to set lead priority rating (1 to 5 stars)" data-current-rating="{{ lead.rating|default:0 }}">
+          <span class="star {% if lead.rating and lead.rating >= 1 %}filled{% endif %}" data-rating="1">★</span>
+          <span class="star {% if lead.rating and lead.rating >= 2 %}filled{% endif %}" data-rating="2">★</span>
+          <span class="star {% if lead.rating and lead.rating >= 3 %}filled{% endif %}" data-rating="3">★</span>
+          <span class="star {% if lead.rating and lead.rating >= 4 %}filled{% endif %}" data-rating="4">★</span>
+          <span class="star {% if lead.rating and lead.rating >= 5 %}filled{% endif %}" data-rating="5">★</span>
         </div>
       </div>
     </div>
@@ -183,13 +193,57 @@
     </div>
   </header>
 
+  <!-- Modern Tab Navigation (Details, Activity Timeline, Recordings & Media) -->
+  <div class="ldm-tabs-nav" role="tablist">
+    <button type="button" class="ldm-tab-btn active" data-tab-target="#tab-details" role="tab" aria-selected="true">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span>Overview &amp; Fields</span>
+    </button>
+    <button type="button" class="ldm-tab-btn" data-tab-target="#tab-timeline" role="tab" aria-selected="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+      <span>Activity Timeline</span>
+      <span class="ldm-tab-badge">{% if timeline_count is not None %}{{ timeline_count }}{% else %}{{ calls|length }}{% endif %}</span>
+    </button>
+    <button type="button" class="ldm-tab-btn" data-tab-target="#tab-documents" role="tab" aria-selected="false">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+      <span>Recordings &amp; Media</span>
+      {% if call_recordings %}
+      <span class="ldm-tab-badge">{{ call_recordings|length }}</span>
+      {% endif %}
+    </button>
+  </div>
+
   <!-- Lead Details Body (Two-Column Balanced Grid) -->
   <div class="lead-details-body">
-    <div class="lead-fields-grid">
+    <!-- TAB 1: OVERVIEW & FIELDS -->
+    <div id="tab-details" class="ldm-tab-pane active" role="tabpanel">
+      {% if smart_pitch %}
+      <div class="ldm-precall-pitch-card" style="background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(99,102,241,0.04) 100%); border: 1px solid rgba(59,130,246,0.25); border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+            ⚡
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #2563eb; margin-bottom: 2px;">
+              Smart Pre-Call Pitch · Auto-Detected Lead Context
+            </div>
+            <div style="font-size: 0.88rem; color: #1e293b; font-weight: 500;">
+              {{ smart_pitch|safe }}
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <span style="font-size: 0.72rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: rgba(37,99,235,0.12); color: #1d4ed8;">⚡ Intake Auto-Filled</span>
+        </div>
+      </div>
+      {% endif %}
+      <div class="lead-fields-grid">
 
       <!-- COLUMN 1 (LEFT COLUMN) -->
       <div class="lead-col">
+        <!-- Primary In-Call Qualification Fields -->
         {% for f in col1_fields %}
+        {% if f.is_primary %}
         <div class="lead-field-item {% if f.is_empty %}is-empty-field{% endif %} {% if f.is_editable %}is-editable{% else %}is-readonly{% endif %}"
              data-key="{{ f.key }}"
              data-control="{{ f.control_type }}"
@@ -207,7 +261,12 @@
             {% else %}
               <span class="field-icon">#</span>
             {% endif %}
-            <span>{{ f.label }}</span>
+                        <span>{{ f.label }}</span>
+            {% if f.origin and f.origin != 'Manual' %}
+              <span class="badge-autofill badge-autofill-{{ f.origin|slugify }}" title="Auto-filled from {{ f.origin }} intake answers" style="font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-left: 5px;">
+                {% if f.origin == 'Facebook' %}⚡ FB{% elif f.origin == 'WhatsApp' %}🤖 WA{% elif f.origin == 'Google Sheets' %}📄 Sheet{% else %}⚡ {{ f.origin }}{% endif %}
+              </span>
+            {% endif %}
             {% if f.badge %}
               <span class="lead-phone-sim-badge">{{ f.badge }}</span>
             {% endif %}
@@ -271,12 +330,109 @@
           </div>
           {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
+
+        <!-- Secondary Fields (Toggled by "Show more ▾ / Show less ▴") -->
+        <div class="lead-secondary-fields col1-secondary" style="display: none; margin-top: 20px;">
+          {% for f in col1_fields %}
+          {% if not f.is_primary %}
+          <div class="lead-field-item {% if f.is_empty %}is-empty-field{% endif %} {% if f.is_editable %}is-editable{% else %}is-readonly{% endif %}"
+               data-key="{{ f.key }}"
+               data-control="{{ f.control_type }}"
+               data-editable="{{ f.is_editable|yesno:'1,0' }}"
+               data-raw="{{ f.raw_value|escape }}">
+            <div class="lead-field-label">
+              {% if f.type == 'text' %}
+                <span class="field-icon">T</span>
+              {% elif f.type == 'select' %}
+                <span class="field-icon icon-select">▾</span>
+              {% elif f.type == 'phone' %}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              {% elif f.type == 'date' %}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              {% else %}
+                <span class="field-icon">#</span>
+              {% endif %}
+                          <span>{{ f.label }}</span>
+            {% if f.origin and f.origin != 'Manual' %}
+              <span class="badge-autofill badge-autofill-{{ f.origin|slugify }}" title="Auto-filled from {{ f.origin }} intake answers" style="font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-left: 5px;">
+                {% if f.origin == 'Facebook' %}⚡ FB{% elif f.origin == 'WhatsApp' %}🤖 WA{% elif f.origin == 'Google Sheets' %}📄 Sheet{% else %}⚡ {{ f.origin }}{% endif %}
+              </span>
+            {% endif %}
+              {% if f.badge %}
+                <span class="lead-phone-sim-badge">{{ f.badge }}</span>
+              {% endif %}
+              {% if not f.is_editable %}
+                <span class="field-readonly-lock" title="{{ f.read_only_reason }}">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </span>
+              {% endif %}
+            </div>
+
+            <!-- Static Display Area -->
+            <div class="lead-field-value {% if f.is_empty %}text-empty{% endif %}" id="display-{{ f.key }}" {% if f.is_editable %}title="Click to edit {{ f.label }}" onclick="activateFieldEdit('{{ f.key }}')"{% else %}title="{{ f.read_only_reason }}"{% endif %}>
+              <span class="lead-field-text" id="text-{{ f.key }}">
+                {% if f.type == 'phone' and not f.is_empty %}
+                  <span class="lead-phone-flag">{{ f.flag }}</span>
+                  <span>{{ f.value }}</span>
+                {% else %}
+                  <span>{{ f.value }}</span>
+                {% endif %}
+              </span>
+              {% if f.is_editable %}
+                <span class="lead-field-edit-btn" title="Edit {{ f.label }}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </span>
+              {% endif %}
+              <span class="lead-field-status inline-status-badge" id="status-badge-{{ f.key }}"></span>
+              {% if f.info_tooltip %}
+                <span class="field-info-icon" title="{{ f.info_tooltip }}">i</span>
+              {% endif %}
+            </div>
+
+            <!-- Inline Editor -->
+            {% if f.is_editable %}
+            <div class="lead-inline-editor" id="editor-{{ f.key }}" style="display: none;">
+              <div class="lead-inline-input-wrap">
+                {% if f.control_type == 'select' %}
+                  <select class="lead-inline-input form-select" id="input-{{ f.key }}">
+                    <option value="">-- Select {{ f.label }} --</option>
+                    {% for opt in f.options %}
+                    <option value="{{ opt.value }}" {% if opt.value == f.raw_value or opt.label == f.raw_value or opt.value == f.value or opt.label == f.value %}selected{% endif %}>{{ opt.label }}</option>
+                    {% endfor %}
+                  </select>
+                {% elif f.control_type == 'number' %}
+                  <input type="number" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" min="1950" max="2050" placeholder="{{ f.label }}...">
+                {% elif f.control_type == 'datetime' %}
+                  <input type="datetime-local" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+                {% elif f.control_type == 'date' %}
+                  <input type="date" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+                {% elif f.control_type == 'phone' %}
+                  <input type="tel" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="10-digit mobile number">
+                {% elif f.control_type == 'email' %}
+                  <input type="email" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="email@example.com">
+                {% else %}
+                  <input type="text" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="Enter {{ f.label }}...">
+                {% endif %}
+              </div>
+              <div class="lead-inline-status-wrap">
+                <span class="lead-field-status" id="status-{{ f.key }}"></span>
+              </div>
+              <div class="lead-inline-error" id="error-{{ f.key }}" style="display: none;"></div>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
       </div>
 
       <!-- COLUMN 2 (RIGHT COLUMN) -->
       <div class="lead-col">
+        <!-- Primary In-Call Qualification Fields -->
         {% for f in col2_fields %}
+        {% if f.is_primary %}
         <div class="lead-field-item {% if f.is_empty %}is-empty-field{% endif %} {% if f.is_editable %}is-editable{% else %}is-readonly{% endif %}"
              data-key="{{ f.key }}"
              data-control="{{ f.control_type }}"
@@ -294,7 +450,12 @@
             {% else %}
               <span class="field-icon">#</span>
             {% endif %}
-            <span>{{ f.label }}</span>
+                        <span>{{ f.label }}</span>
+            {% if f.origin and f.origin != 'Manual' %}
+              <span class="badge-autofill badge-autofill-{{ f.origin|slugify }}" title="Auto-filled from {{ f.origin }} intake answers" style="font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-left: 5px;">
+                {% if f.origin == 'Facebook' %}⚡ FB{% elif f.origin == 'WhatsApp' %}🤖 WA{% elif f.origin == 'Google Sheets' %}📄 Sheet{% else %}⚡ {{ f.origin }}{% endif %}
+              </span>
+            {% endif %}
             {% if not f.is_editable %}
               <span class="field-readonly-lock" title="{{ f.read_only_reason }}">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -350,9 +511,104 @@
           </div>
           {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
+
+        <!-- Secondary Fields (Toggled by "Show more ▾ / Show less ▴") -->
+        <div class="lead-secondary-fields col2-secondary" style="display: none; margin-top: 20px;">
+          {% for f in col2_fields %}
+          {% if not f.is_primary %}
+          <div class="lead-field-item {% if f.is_empty %}is-empty-field{% endif %} {% if f.is_editable %}is-editable{% else %}is-readonly{% endif %}"
+               data-key="{{ f.key }}"
+               data-control="{{ f.control_type }}"
+               data-editable="{{ f.is_editable|yesno:'1,0' }}"
+               data-raw="{{ f.raw_value|escape }}">
+            <div class="lead-field-label">
+              {% if f.type == 'text' %}
+                <span class="field-icon">T</span>
+              {% elif f.type == 'select' %}
+                <span class="field-icon icon-select">▾</span>
+              {% elif f.type == 'number' %}
+                <span class="field-icon">#</span>
+              {% elif f.type == 'date' %}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              {% else %}
+                <span class="field-icon">#</span>
+              {% endif %}
+                          <span>{{ f.label }}</span>
+            {% if f.origin and f.origin != 'Manual' %}
+              <span class="badge-autofill badge-autofill-{{ f.origin|slugify }}" title="Auto-filled from {{ f.origin }} intake answers" style="font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-left: 5px;">
+                {% if f.origin == 'Facebook' %}⚡ FB{% elif f.origin == 'WhatsApp' %}🤖 WA{% elif f.origin == 'Google Sheets' %}📄 Sheet{% else %}⚡ {{ f.origin }}{% endif %}
+              </span>
+            {% endif %}
+              {% if not f.is_editable %}
+                <span class="field-readonly-lock" title="{{ f.read_only_reason }}">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </span>
+              {% endif %}
+            </div>
+
+            <!-- Static Display Area -->
+            <div class="lead-field-value {% if f.is_empty %}text-empty{% endif %}" id="display-{{ f.key }}" {% if f.is_editable %}title="Click to edit {{ f.label }}" onclick="activateFieldEdit('{{ f.key }}')"{% else %}title="{{ f.read_only_reason }}"{% endif %}>
+              <span class="lead-field-text" id="text-{{ f.key }}">
+                <span>{{ f.value }}</span>
+              </span>
+              {% if f.is_editable %}
+                <span class="lead-field-edit-btn" title="Edit {{ f.label }}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                </span>
+              {% endif %}
+              <span class="lead-field-status inline-status-badge" id="status-badge-{{ f.key }}"></span>
+              {% if f.info_tooltip %}
+                <span class="field-info-icon" title="{{ f.info_tooltip }}">i</span>
+              {% endif %}
+            </div>
+
+            <!-- Inline Editor -->
+            {% if f.is_editable %}
+            <div class="lead-inline-editor" id="editor-{{ f.key }}" style="display: none;">
+              <div class="lead-inline-input-wrap">
+                {% if f.control_type == 'select' %}
+                  <select class="lead-inline-input form-select" id="input-{{ f.key }}">
+                    <option value="">-- Select {{ f.label }} --</option>
+                    {% for opt in f.options %}
+                    <option value="{{ opt.value }}" {% if opt.value == f.raw_value or opt.label == f.raw_value or opt.value == f.value or opt.label == f.value %}selected{% endif %}>{{ opt.label }}</option>
+                    {% endfor %}
+                  </select>
+                {% elif f.control_type == 'number' %}
+                  <input type="number" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" min="0" max="1000" placeholder="{{ f.label }}...">
+                {% elif f.control_type == 'datetime' %}
+                  <input type="datetime-local" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+                {% elif f.control_type == 'date' %}
+                  <input type="date" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}">
+                {% elif f.control_type == 'phone' %}
+                  <input type="tel" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="10-digit mobile number">
+                {% elif f.control_type == 'email' %}
+                  <input type="email" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="email@example.com">
+                {% else %}
+                  <input type="text" class="lead-inline-input form-control" id="input-{{ f.key }}" value="{{ f.raw_value }}" placeholder="Enter {{ f.label }}...">
+                {% endif %}
+              </div>
+              <div class="lead-inline-status-wrap">
+                <span class="lead-field-status" id="status-{{ f.key }}"></span>
+              </div>
+              <div class="lead-inline-error" id="error-{{ f.key }}" style="display: none;"></div>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
       </div>
 
+    </div>
+
+    <!-- TeleCRM In-Call Workspace "Show more ▾ / Show less ▴" Toggle -->
+    <div class="lead-more-fields-divider">
+      <button type="button" class="lead-toggle-more-btn" id="btnToggleMoreFields" onclick="toggleMoreFields()">
+        <span id="moreToggleLabel">Show more</span>
+        <span class="toggle-chevron" id="moreToggleChevron">▾</span>
+      </button>
     </div>
 
     <!-- Hide / Show Empty Fields Toggle Divider -->
@@ -430,119 +686,277 @@
         </div>
       </form>
     </section>
+    </div><!-- End #tab-details -->
 
     <!-- ========================================================================= -->
-    <!-- CALL HISTORY SECTION -->
+    <!-- TAB 2: GLASSMORPHIC ACTIVITY TIMELINE                                     -->
     <!-- ========================================================================= -->
-    <div style="margin-top: 32px;" id="leadCallHistorySection">
-      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--ld-text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-        <span style="display: flex; align-items: center; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-          Call History ({{ calls|length }})
-        </span>
-      </h3>
-      {% if calls %}
-      <div class="table-responsive" style="border: 1px solid var(--ld-border-subtle); border-radius: 8px; overflow: hidden; background: #fff;">
-        <table class="crm-table" style="font-size: 0.85rem; width: 100%;">
-          <thead>
-            <tr>
-              <th>Date &amp; Time</th>
-              <th>Telecaller</th>
-              <th>Direction / Status</th>
-              <th>Duration</th>
-              <th>Outcome</th>
-              <th>Notes</th>
-              <th style="min-width: 140px;">Audio Recording</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for c in calls %}
-            <tr>
-              <td style="white-space: nowrap;">{{ c.call_started_at|date:"d M Y, h:i A" }}</td>
-              <td><strong>{{ c.caller.get_full_name|default:c.caller.username|default:"-" }}</strong></td>
-              <td>
-                <span class="badge" style="background: {% if c.call_status == 'Missed' or c.call_status == 'RNR' %}#fee2e2; color: #991b1b;{% else %}#e0f2fe; color: #0369a1;{% endif %} font-size: 0.75rem;">
-                  {{ c.call_direction|default:"Outgoing"|title }} &bull; {{ c.call_status|default:"Completed" }}
+    <div id="tab-timeline" class="ldm-tab-pane" role="tabpanel">
+      <div class="ldm-timeline-container">
+        
+        <div class="ldm-timeline">
+          <!-- Calls in Timeline -->
+          {% for c in calls %}
+          <div class="ldm-timeline-item">
+            <div class="ldm-timeline-node node-call" title="Phone Call">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            </div>
+            <div class="ldm-timeline-card">
+              <div class="ldm-timeline-header">
+                <span class="ldm-timeline-title">
+                  <span>📞 Call {{ c.call_direction|default:"Outgoing"|title }}</span>
+                  <span class="badge" style="{% if c.call_status == 'Missed' or c.call_status == 'RNR' %}background: #fee2e2; color: #991b1b;{% else %}background: #e0f2fe; color: #0369a1;{% endif %} font-size: 0.72rem;">
+                    {{ c.call_status|default:"Completed" }}
+                  </span>
+                  {% if c.formatted_duration %}
+                  <code style="font-size: 0.75rem;">{{ c.formatted_duration }}</code>
+                  {% endif %}
                 </span>
-              </td>
-              <td><code>{{ c.formatted_duration|default:"00:00" }}</code></td>
-              <td><span class="badge" style="background: #f1f5f9; color: #334155;">{{ c.call_outcome|default:c.call_status }}</span></td>
-              <td>{{ c.notes|default:"-" }}</td>
-              <td>
+                <span class="ldm-timeline-time">{{ c.call_started_at|date:"d M Y, h:i A" }}</span>
+              </div>
+              <div class="ldm-timeline-body">
+                <div><strong>By:</strong> {{ c.caller.get_full_name|default:c.caller.username|default:"Telecaller" }} &bull; <strong>Outcome:</strong> {{ c.call_outcome|default:c.call_status }}</div>
+                {% if c.notes %}
+                <div style="margin-top: 4px; color: var(--ld-text-main);">{{ c.notes }}</div>
+                {% endif %}
                 {% with rec=c.drive_recordings.first %}
                   {% if rec %}
-                    <audio controls preload="none" src="{% url 'drive_stream_recording' rec.id %}" style="height: 30px; width: 160px; vertical-align: middle;"></audio>
-                  {% else %}
-                    <span style="color: #94a3b8; font-size: 0.78rem;">No Recording</span>
+                  <div style="margin-top: 8px;">
+                    <audio controls preload="none" src="{% url 'drive_stream_recording' rec.id %}" style="height: 28px; width: 220px; vertical-align: middle;"></audio>
+                  </div>
                   {% endif %}
                 {% endwith %}
-              </td>
-            </tr>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          <!-- Stage / Status History in Timeline -->
+          {% for h in status_history %}
+          <div class="ldm-timeline-item">
+            <div class="ldm-timeline-node node-status" title="Status Change">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            </div>
+            <div class="ldm-timeline-card">
+              <div class="ldm-timeline-header">
+                <span class="ldm-timeline-title">
+                  <span>🔄 Pipeline Stage Updated</span>
+                  <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #7c3aed; font-size: 0.72rem;">{{ h.new_status }}</span>
+                </span>
+                <span class="ldm-timeline-time">{{ h.created_at|date:"d M Y, h:i A" }}</span>
+              </div>
+              <div class="ldm-timeline-body">
+                <span>Shifted from <strong>{{ h.old_status|default:"New" }}</strong> to <strong>{{ h.new_status }}</strong></span>
+                {% if h.changed_by %}
+                <span> by {{ h.changed_by.get_full_name|default:h.changed_by.username }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          <!-- Followups in Timeline -->
+          {% for f in followups %}
+          <div class="ldm-timeline-item">
+            <div class="ldm-timeline-node node-followup" title="Follow-up">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            </div>
+            <div class="ldm-timeline-card">
+              <div class="ldm-timeline-header">
+                <span class="ldm-timeline-title">
+                  <span>⏰ Scheduled Follow-Up</span>
+                  <span class="badge" style="background: rgba(236, 72, 153, 0.12); color: #db2777; font-size: 0.72rem;">{{ f.status|default:"Pending" }}</span>
+                </span>
+                <span class="ldm-timeline-time">{{ f.created_at|date:"d M Y, h:i A" }}</span>
+              </div>
+              <div class="ldm-timeline-body">
+                <div>Due: <strong>{{ f.follow_up_date|date:"d M Y" }}{% if f.follow_up_time %} at {{ f.follow_up_time }}{% endif %}</strong></div>
+                {% if f.remarks %}<div>Notes: {{ f.remarks }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          <!-- Payment Milestones in Timeline if Enrolled -->
+          {% if lead.enrollment %}
+            {% for p in lead.enrollment.payments.all %}
+            <div class="ldm-timeline-item">
+              <div class="ldm-timeline-node node-payment" title="Payment Record">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </div>
+              <div class="ldm-timeline-card">
+                <div class="ldm-timeline-header">
+                  <span class="ldm-timeline-title">
+                    <span>💰 Payment Received (₹{{ p.amount }})</span>
+                    <span class="badge" style="{% if p.status == 'VERIFIED' %}background: #dcfce7; color: #166534;{% elif p.status == 'REJECTED' %}background: #fee2e2; color: #991b1b;{% else %}background: #fef3c7; color: #92400e;{% endif %} font-size: 0.72rem;">
+                      {{ p.status }}
+                    </span>
+                  </span>
+                  <span class="ldm-timeline-time">{{ p.payment_date|date:"d M Y, h:i A" }}</span>
+                </div>
+                <div class="ldm-timeline-body">
+                  <div><strong>Receipt:</strong> <code>{{ p.receipt_number }}</code> &bull; <strong>Method:</strong> {{ p.payment_method }}</div>
+                  {% if p.transaction_reference %}<div><strong>Ref / UTR:</strong> {{ p.transaction_reference }}</div>{% endif %}
+                  {% if p.payment_proof %}
+                  <div style="margin-top: 6px;">
+                    <a href="{{ p.payment_proof.url }}" target="_blank" class="btn btn-sm btn-secondary" style="font-size: 0.72rem; padding: 2px 8px;">View Receipt Proof</a>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
             {% endfor %}
-          </tbody>
-        </table>
+          {% endif %}
+
+          {% if not calls and not status_history and not followups %}
+          <div style="background: var(--ld-bg-card); border: 1px dashed var(--ld-border-subtle); padding: 32px; text-align: center; border-radius: 8px; color: var(--ld-text-muted); font-size: 0.88rem;">
+            No activity recorded yet for this lead. Make calls or update the lead status to generate a live activity timeline.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Detailed Full Call History Table -->
+        <div style="margin-top: 36px;" id="leadCallHistorySection">
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--ld-text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              Full Call Log ({{ calls|length }})
+            </span>
+          </h3>
+          {% if calls %}
+          <div class="table-responsive" style="border: 1px solid var(--ld-border-subtle); border-radius: 8px; overflow: hidden; background: var(--ld-bg-card);">
+            <table class="crm-table" style="font-size: 0.85rem; width: 100%;">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>Telecaller</th>
+                  <th>Direction / Status</th>
+                  <th>Duration</th>
+                  <th>Outcome</th>
+                  <th>Notes</th>
+                  <th style="min-width: 140px;">Audio Recording</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in calls %}
+                <tr>
+                  <td style="white-space: nowrap;">{{ c.call_started_at|date:"d M Y, h:i A" }}</td>
+                  <td><strong>{{ c.caller.get_full_name|default:c.caller.username|default:"-" }}</strong></td>
+                  <td>
+                    <span class="badge" style="background: {% if c.call_status == 'Missed' or c.call_status == 'RNR' %}#fee2e2; color: #991b1b;{% else %}#e0f2fe; color: #0369a1;{% endif %} font-size: 0.75rem;">
+                      {{ c.call_direction|default:"Outgoing"|title }} &bull; {{ c.call_status|default:"Completed" }}
+                    </span>
+                  </td>
+                  <td><code>{{ c.formatted_duration|default:"00:00" }}</code></td>
+                  <td><span class="badge" style="background: #f1f5f9; color: #334155;">{{ c.call_outcome|default:c.call_status }}</span></td>
+                  <td>{{ c.notes|default:"-" }}</td>
+                  <td>
+                    {% with rec=c.drive_recordings.first %}
+                      {% if rec %}
+                        <audio controls preload="none" src="{% url 'drive_stream_recording' rec.id %}" style="height: 30px; width: 160px; vertical-align: middle;"></audio>
+                      {% else %}
+                        <span style="color: #94a3b8; font-size: 0.78rem;">No Recording</span>
+                      {% endif %}
+                    {% endwith %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+
       </div>
-      {% else %}
-      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; color: #64748b; font-size: 0.875rem;">
-        No call attempts recorded for this lead yet. Use the call dialer above to log incoming or outgoing calls.
-      </div>
-      {% endif %}
-    </div>
+    </div><!-- End #tab-timeline -->
 
     <!-- ========================================================================= -->
-    <!-- CALL RECORDINGS SECTION -->
+    <!-- TAB 3: RECORDINGS & MEDIA                                                 -->
     <!-- ========================================================================= -->
-    <div style="margin-top: 32px;" id="leadCallRecordingsSection">
-      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--ld-text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-        <span style="display: flex; align-items: center; gap: 8px;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>
-          Call Recordings ({{ call_recordings|length }})
-        </span>
-      </h3>
-      {% if call_recordings %}
-      <div class="table-responsive" style="border: 1px solid var(--ld-border-subtle); border-radius: 8px; overflow: hidden; background: #fff;">
-        <table class="crm-table" style="font-size: 0.85rem; width: 100%;">
-          <thead>
-            <tr>
-              <th>Recording Date</th>
-              <th>Telecaller</th>
-              <th>Duration</th>
-              <th>Audio Player</th>
-              <th>Match Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in call_recordings %}
-            <tr>
-              <td style="white-space: nowrap;">{{ r.recording_date|default:r.created_at|date:"d M Y, h:i A" }}</td>
-              <td><strong>{{ r.telecaller.get_full_name|default:r.telecaller.username|default:"Telecaller" }}</strong></td>
-              <td><code>{{ r.duration|default:"-" }}</code></td>
-              <td style="min-width: 200px;">
-                <audio controls preload="none" src="{% url 'drive_stream_recording' r.id %}" style="height: 32px; width: 220px; vertical-align: middle;">
-                  Your browser does not support audio playback.
-                </audio>
-              </td>
-              <td>
-                <span class="badge" style="{% if r.match_status == 'MATCHED' %}background: #dcfce7; color: #166534;{% else %}background: #f1f5f9; color: #475569;{% endif %} font-size: 0.75rem;">
-                  {{ r.get_match_status_display|default:r.match_status }}
-                </span>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div id="tab-documents" class="ldm-tab-pane" role="tabpanel">
+      <div style="padding: 24px;">
+        
+        <!-- Call Recordings Section -->
+        <div id="leadCallRecordingsSection">
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--ld-text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>
+              Call Audio Recordings ({{ call_recordings|length }})
+            </span>
+          </h3>
+          {% if call_recordings %}
+          <div class="table-responsive" style="border: 1px solid var(--ld-border-subtle); border-radius: 8px; overflow: hidden; background: var(--ld-bg-card);">
+            <table class="crm-table" style="font-size: 0.85rem; width: 100%;">
+              <thead>
+                <tr>
+                  <th>Recording Date</th>
+                  <th>Telecaller</th>
+                  <th>Duration</th>
+                  <th>Audio Player</th>
+                  <th>Match Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in call_recordings %}
+                <tr>
+                  <td style="white-space: nowrap;">{{ r.recording_date|default:r.created_at|date:"d M Y, h:i A" }}</td>
+                  <td><strong>{{ r.telecaller.get_full_name|default:r.telecaller.username|default:"Telecaller" }}</strong></td>
+                  <td><code>{{ r.duration|default:"-" }}</code></td>
+                  <td style="min-width: 200px;">
+                    <audio controls preload="none" src="{% url 'drive_stream_recording' r.id %}" style="height: 32px; width: 220px; vertical-align: middle;">
+                      Your browser does not support audio playback.
+                    </audio>
+                  </td>
+                  <td>
+                    <span class="badge" style="{% if r.match_status == 'MATCHED' %}background: #dcfce7; color: #166534;{% else %}background: #f1f5f9; color: #475569;{% endif %} font-size: 0.75rem;">
+                      {{ r.get_match_status_display|default:r.match_status }}
+                    </span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div style="background: var(--ld-bg-card); border: 1px dashed var(--ld-border-subtle); padding: 20px; text-align: center; border-radius: 8px; color: var(--ld-text-muted); font-size: 0.875rem;">
+            No call audio recordings linked to this lead. Recordings uploaded via the CRM Call Sync App or Drive will be listed here automatically.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- WHATSAPP, FACEBOOK LEAD ADS & GOOGLE ADS CARDS -->
+        {% include 'calls/partials/lead_recordings_card.html' %}
+
       </div>
-      {% else %}
-      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px; color: #64748b; font-size: 0.875rem;">
-        No call audio recordings linked to this lead. Recordings uploaded via the CRM Call Sync App or Drive will be listed here automatically.
-      </div>
-      {% endif %}
-    </div>
+    </div><!-- End #tab-documents -->
 
   </div>
 </div>
 
 <script>
+// Tab Switching Handler with Slide-Fade Transition
+document.addEventListener('DOMContentLoaded', function() {
+  const tabBtns = document.querySelectorAll('.ldm-tab-btn');
+  tabBtns.forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = this.getAttribute('data-tab-target');
+      if (!target) return;
+      tabBtns.forEach(function(b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.ldm-tab-pane').forEach(function(pane) {
+        pane.classList.remove('active');
+      });
+      this.classList.add('active');
+      this.setAttribute('aria-selected', 'true');
+      const activePane = document.querySelector(target);
+      if (activePane) activePane.classList.add('active');
+    });
+  });
+});
+
 // Toggle Empty Fields Handler
 function toggleEmptyFields() {
   const container = document.getElementById('leadDetailContainer');
@@ -595,23 +1009,97 @@ function changeLeadStatusAjax(newStatus) {
   });
 }
 
-// 5-Star Rating Control
+// TeleCRM In-Call Workspace: Toggle Secondary Fields
+function toggleMoreFields() {
+  const col1Sec = document.querySelector('.col1-secondary');
+  const col2Sec = document.querySelector('.col2-secondary');
+  const label = document.getElementById('moreToggleLabel');
+  const chevron = document.getElementById('moreToggleChevron');
+  
+  if (!col1Sec || !col2Sec) return;
+  const isHidden = col1Sec.style.display === 'none';
+  
+  if (isHidden) {
+    col1Sec.style.display = 'flex';
+    col2Sec.style.display = 'flex';
+    if (label) label.textContent = 'Show less';
+    if (chevron) chevron.textContent = '▲';
+  } else {
+    col1Sec.style.display = 'none';
+    col2Sec.style.display = 'none';
+    if (label) label.textContent = 'Show more';
+    if (chevron) chevron.textContent = '▾';
+  }
+}
+
+// 5-Star Priority Rating Control with Instant AJAX Persistence
 document.addEventListener('DOMContentLoaded', function() {
+  const starContainer = document.getElementById('leadStarRating');
   const stars = document.querySelectorAll('#leadStarRating .star');
-  stars.forEach(star => {
-    star.addEventListener('click', function() {
-      const rating = parseInt(this.getAttribute('data-rating') || '0', 10);
+  if (starContainer && stars.length) {
+    stars.forEach(star => {
+      // Click handler with backend persistence
+      star.addEventListener('click', function() {
+        const rating = parseInt(this.getAttribute('data-rating') || '0', 10);
+        starContainer.setAttribute('data-current-rating', rating);
+        stars.forEach(s => {
+          const r = parseInt(s.getAttribute('data-rating') || '0', 10);
+          if (r <= rating) {
+            s.classList.add('filled');
+          } else {
+            s.classList.remove('filled');
+          }
+        });
+        
+        fetch(`/leads/api/{{ lead.pk }}/update-field/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({ field: 'rating', value: rating })
+        })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            showToast(`Priority updated to ${rating} star${rating > 1 ? 's' : ''}`, 'success');
+          } else {
+            showToast(d.error || 'Failed to update priority', 'error');
+          }
+        })
+        .catch(() => {
+          showToast('Network error while saving priority', 'error');
+        });
+      });
+
+      // Hover preview effect
+      star.addEventListener('mouseenter', function() {
+        const rating = parseInt(this.getAttribute('data-rating') || '0', 10);
+        stars.forEach(s => {
+          const r = parseInt(s.getAttribute('data-rating') || '0', 10);
+          if (r <= rating) {
+            s.style.color = '#f59e0b';
+          } else {
+            s.style.color = '#cbd5e1';
+          }
+        });
+      });
+    });
+
+    starContainer.addEventListener('mouseleave', function() {
+      const currentRating = parseInt(starContainer.getAttribute('data-current-rating') || '0', 10);
       stars.forEach(s => {
         const r = parseInt(s.getAttribute('data-rating') || '0', 10);
-        if (r <= rating) {
+        s.style.color = '';
+        if (r <= currentRating) {
           s.classList.add('filled');
         } else {
           s.classList.remove('filled');
         }
       });
-      showToast('Lead priority set to ' + rating + ' stars', 'info');
     });
-  });
+  }
 
   // Check URL query parameters for auto-focused call completion
   const urlParams = new URLSearchParams(window.location.search);
@@ -635,6 +1123,87 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize auto-save on field changes, inputs, and blur
   initLeadFieldAutoSave();
 });
+
+// In-Call Lead Switcher Drawer Handlers
+let switcherSearchTimeout = null;
+function openLeadSwitcherDrawer() {
+  const drawer = document.getElementById('leadSwitcherDrawer');
+  const overlay = document.getElementById('leadSwitcherOverlay');
+  if (drawer && overlay) {
+    drawer.classList.add('active');
+    overlay.style.display = 'block';
+    const input = document.getElementById('leadSwitcherSearch');
+    if (input) {
+      setTimeout(() => input.focus(), 150);
+      if (!input.value.trim()) {
+        handleLeadSwitcherSearch('');
+      }
+    }
+  }
+}
+
+function closeLeadSwitcherDrawer() {
+  const drawer = document.getElementById('leadSwitcherDrawer');
+  const overlay = document.getElementById('leadSwitcherOverlay');
+  if (drawer) drawer.classList.remove('active');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function handleLeadSwitcherSearch(query) {
+  clearTimeout(switcherSearchTimeout);
+  switcherSearchTimeout = setTimeout(() => {
+    const listEl = document.getElementById('leadSwitcherList');
+    if (!listEl) return;
+    
+    fetch(`/api/quick-search/?q=${encodeURIComponent(query || '')}`)
+      .then(r => r.json())
+      .then(data => {
+        const results = data.results || [];
+        if (!results.length) {
+          listEl.innerHTML = `<div style="padding: 24px; text-align: center; color: var(--ld-text-muted); font-size: 0.85rem;">No matching leads found</div>`;
+          return;
+        }
+        const currentId = {{ lead.pk }};
+        listEl.innerHTML = results.map(item => `
+          <a href="${item.url || '#'}" class="lead-switcher-card ${item.id === currentId ? 'current' : ''}">
+            <div class="lead-switcher-card-name">
+              <span>${item.name || 'Unnamed Lead'}</span>
+              ${item.id === currentId ? '<span style="font-size: 0.7rem; color: #4f46e5; font-weight: 700;">CURRENT</span>' : ''}
+            </div>
+            <div class="lead-switcher-card-phone">${item.phone || '-'}</div>
+            <div style="display: flex; gap: 6px; align-items: center; margin-top: 2px;">
+              <span class="lead-switcher-card-status">${item.status || 'Active'}</span>
+              ${item.branch ? `<span style="font-size: 0.72rem; color: var(--ld-text-muted);">${item.branch}</span>` : ''}
+            </div>
+          </a>
+        `).join('');
+      })
+      .catch(() => {
+        listEl.innerHTML = `<div style="padding: 20px; text-align: center; color: #ef4444; font-size: 0.85rem;">Error loading leads</div>`;
+      });
+  }, 250);
+}
+
+// Lead-IQ Modal Handlers
+function openLeadIQModal() {
+  const modal = document.getElementById('leadIQModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeLeadIQModal() {
+  const modal = document.getElementById('leadIQModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// Quick SMS Trigger
+function triggerQuickSms() {
+  const cleanPhone = getNormalizedWhatsAppPhone();
+  if (cleanPhone) {
+    window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent("Hello {{ lead.name }}, thank you for your interest in DIGIPANDA courses! Let us know if you have any questions.")}`;
+  } else {
+    showToast('No valid phone number for SMS', 'error');
+  }
+}
 
 function focusCallNotesSection(callId, duration) {
   const section = document.getElementById('callNotesSection');
@@ -1182,17 +1751,58 @@ function saveNameEdit() {
 // TELECALLER WHATSAPP MESSAGING (REQ 15)
 // ==========================================
 const waTemplates = {
-  welcome: "Hello {{ lead.name }}, welcome to TECHPANDA! Thank you for inquiring about our programs. How can we assist you with your career goals today?",
-  followup: "Hi {{ lead.name }}, following up on our previous conversation regarding your course inquiry at TECHPANDA. Are you available for a brief discussion today?",
-  course_details: "Hello {{ lead.name }}, here are the comprehensive details for our training & placement programs at TECHPANDA. We offer industry-standard curriculum and hands-on projects.",
+  welcome: "Hello {{ lead.name }}, welcome to DIGIPANDA! Thank you for inquiring about our programs. How can we assist you with your career goals today?",
+  followup: "Hi {{ lead.name }}, following up on our previous conversation regarding your course inquiry at DIGIPANDA. Are you available for a brief discussion today?",
+  course_details: "Hello {{ lead.name }}, here are the comprehensive details for our training & placement programs at DIGIPANDA. We offer industry-standard curriculum and hands-on projects.",
   brochure: "Hi {{ lead.name }}, please find our latest course catalog and syllabus overview. Feel free to reply here if you have any questions!",
   custom: ""
 };
+
+function setWaDispatchMode(mode) {
+  try {
+    localStorage.setItem('tp_wa_dispatch_mode', mode);
+  } catch (e) {}
+
+  const btnApp = document.getElementById('btn-wa-mode-app');
+  const btnWeb = document.getElementById('btn-wa-mode-web');
+  const label = document.getElementById('btnSendWaLabel');
+
+  if (mode === 'app') {
+    if (btnApp) {
+      btnApp.style.background = '#25D366';
+      btnApp.style.color = '#fff';
+      btnApp.style.boxShadow = '0 1px 3px rgba(37,211,102,0.35)';
+    }
+    if (btnWeb) {
+      btnWeb.style.background = 'transparent';
+      btnWeb.style.color = '#475569';
+      btnWeb.style.boxShadow = 'none';
+    }
+    if (label) label.textContent = 'Open WhatsApp App & Send';
+  } else {
+    if (btnWeb) {
+      btnWeb.style.background = '#0284c7';
+      btnWeb.style.color = '#fff';
+      btnWeb.style.boxShadow = '0 1px 3px rgba(2,132,199,0.35)';
+    }
+    if (btnApp) {
+      btnApp.style.background = 'transparent';
+      btnApp.style.color = '#475569';
+      btnApp.style.boxShadow = 'none';
+    }
+    if (label) label.textContent = 'Open WhatsApp Web & Send';
+  }
+}
 
 function openWhatsAppModal() {
   const modal = document.getElementById('telecallerWhatsAppModal');
   if (modal) modal.style.display = 'flex';
   selectWaTemplate('welcome');
+  let savedMode = 'app';
+  try {
+    savedMode = localStorage.getItem('tp_wa_dispatch_mode') || 'app';
+  } catch (e) {}
+  setWaDispatchMode(savedMode);
 }
 
 function closeWhatsAppModal() {
@@ -1251,19 +1861,36 @@ function sendTelecallerWhatsApp() {
     return;
   }
 
+  let mode = 'app';
+  try {
+    mode = localStorage.getItem('tp_wa_dispatch_mode') || 'app';
+  } catch (e) {}
+
   // Prevent multiple clicks while redirecting
   if (sendBtn) {
     sendBtn.disabled = true;
     sendBtn.innerHTML = `<span>Opening WhatsApp...</span>`;
   }
 
-  // Construct standard click-to-chat URL with properly encoded message
-  const waUrl = 'https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(text);
+  const encodedText = encodeURIComponent(text);
 
-  // Directly open WhatsApp in a new tab with prefilled recipient and message
-  const waWindow = window.open(waUrl, '_blank', 'noopener,noreferrer');
-  if (!waWindow) {
-    window.location.href = waUrl;
+  if (mode === 'app') {
+    // Direct WhatsApp Desktop / Native App protocol (Zero intermediate splash page)
+    const appUrl = 'whatsapp://send?phone=' + cleanPhone + '&text=' + encodedText;
+    const clicker = document.createElement('a');
+    clicker.href = appUrl;
+    document.body.appendChild(clicker);
+    clicker.click();
+    document.body.removeChild(clicker);
+    showToast('Directly opening WhatsApp application...', 'success');
+  } else {
+    // Direct WhatsApp Web URL (Bypasses wa.me and api.whatsapp.com landing splash page)
+    const webUrl = 'https://web.whatsapp.com/send?phone=' + cleanPhone + '&text=' + encodedText;
+    const waWindow = window.open(webUrl, '_blank', 'noopener,noreferrer');
+    if (!waWindow) {
+      window.location.href = webUrl;
+    }
+    showToast('Opening WhatsApp Web tab directly...', 'success');
   }
 
   // Log communication asynchronously in CRM conversation history & activity log
@@ -1285,15 +1912,15 @@ function sendTelecallerWhatsApp() {
   })
   .catch(err => console.warn('Background WhatsApp logging:', err));
 
-  showToast('WhatsApp opened in a new tab. Please click Send inside WhatsApp.', 'success');
   closeWhatsAppModal();
 
   setTimeout(() => {
     if (sendBtn) {
       sendBtn.disabled = false;
+      const currentMode = localStorage.getItem('tp_wa_dispatch_mode') || 'app';
       sendBtn.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
-        <span>Open WhatsApp &amp; Send</span>
+        <span id="btnSendWaLabel">${currentMode === 'app' ? 'Open WhatsApp App &amp; Send' : 'Open WhatsApp Web &amp; Send'}</span>
       `;
     }
   }, 1000);
@@ -1329,7 +1956,7 @@ function closeWhatsAppVoiceModal() {
 
 <!-- TELECALLER WHATSAPP COMPOSER MODAL (REQ 15) -->
 <div id="telecallerWhatsAppModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
-  <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 560px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
+  <div class="modal-dialog" style="background: var(--bg-card, #fff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; width: 100%; max-width: 560px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
     <div style="padding: 16px 20px; background: #25D366; color: #fff; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
@@ -1339,13 +1966,30 @@ function closeWhatsAppVoiceModal() {
     </div>
 
     <div style="padding: 20px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.85rem; color: #64748b;">
-        <div>Recipient: <strong style="color: #0f172a;">{{ lead.name }}</strong> ({{ lead.phone }})</div>
-        <span class="badge" style="background: #e2e8f0; color: #334155;">{{ lead.branch.name|default:"General" }}</span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.85rem; color: var(--text-muted, #64748b);">
+        <div>Recipient: <strong style="color: var(--text-main, #0f172a);">{{ lead.name }}</strong> ({{ lead.phone }})</div>
+        <span class="badge" style="background: var(--bg-card-hover, #e2e8f0); color: var(--text-main, #334155);">{{ lead.branch.name|default:"General" }}</span>
+      </div>
+
+      <!-- Smart Destination Segmented Selector (Direct Desktop App vs WhatsApp Web) -->
+      <div style="margin-bottom: 14px; background: var(--bg-card-hover, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 0.76rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted, #475569); letter-spacing: 0.5px;">Dispatch Destination:</span>
+        </div>
+        <div style="display: inline-flex; gap: 4px; background: var(--border-color, #e2e8f0); padding: 3px; border-radius: 7px;">
+          <button type="button" id="btn-wa-mode-app" onclick="setWaDispatchMode('app')" title="Directly launch WhatsApp Desktop / Mobile App (Zero intermediate splash page)" style="border: none; border-radius: 5px; padding: 5px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>WhatsApp App</span>
+          </button>
+          <button type="button" id="btn-wa-mode-web" onclick="setWaDispatchMode('web')" title="Open directly in WhatsApp Web tab (Zero intermediate splash page)" style="border: none; border-radius: 5px; padding: 5px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <span>WhatsApp Web</span>
+          </button>
+        </div>
       </div>
 
       <div style="margin-bottom: 12px;">
-        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #475569; display: block; margin-bottom: 6px;">Select Template</label>
+        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted, #475569); display: block; margin-bottom: 6px;">Select Template</label>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button type="button" id="btn-tpl-welcome" class="btn btn-secondary wa-tpl-btn active" style="font-size: 0.75rem; padding: 4px 8px;" onclick="selectWaTemplate('welcome')">Welcome</button>
           <button type="button" id="btn-tpl-followup" class="btn btn-secondary wa-tpl-btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="selectWaTemplate('followup')">Follow-up</button>
@@ -1356,15 +2000,15 @@ function closeWhatsAppVoiceModal() {
       </div>
 
       <div style="margin-bottom: 16px;">
-        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #475569; display: block; margin-bottom: 6px;">Message Content</label>
-        <textarea id="whatsappMessageBody" class="form-control" rows="5" style="width: 100%; font-size: 0.9rem; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted, #475569); display: block; margin-bottom: 6px;">Message Content</label>
+        <textarea id="whatsappMessageBody" class="form-control" rows="5" style="width: 100%; font-size: 0.9rem; padding: 10px;"></textarea>
       </div>
 
       <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap;">
         <button type="button" class="btn btn-secondary" onclick="closeWhatsAppModal()">Cancel</button>
         <button type="button" id="btnSendWa" class="btn btn-primary" style="background: #25D366; border-color: #25D366; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(37,211,102,0.25);" onclick="sendTelecallerWhatsApp()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
-          <span>Open WhatsApp &amp; Send</span>
+          <span id="btnSendWaLabel">Open WhatsApp &amp; Send</span>
         </button>
       </div>
     </div>
@@ -1373,7 +2017,7 @@ function closeWhatsAppVoiceModal() {
 
 <!-- WHATSAPP VOICE CALLING CAPABILITY MODAL (REQ 3) -->
 <div id="whatsappVoiceModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
-  <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 520px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
+  <div class="modal-dialog" style="background: var(--bg-card, #fff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; width: 100%; max-width: 520px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
     <div style="padding: 16px 20px; background: #0f172a; color: #fff; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 10px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
@@ -1388,8 +2032,8 @@ function closeWhatsAppVoiceModal() {
         <div id="waVoiceStatusText" style="font-size: 0.95rem;">Checking status...</div>
       </div>
 
-      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.825rem; color: #475569;">
-        <strong style="color: #0f172a; display: block; margin-bottom: 4px;">Meta WhatsApp Calling Architecture Prerequisites:</strong>
+      <div style="background: var(--bg-card-hover, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.825rem; color: var(--text-muted, #475569);">
+        <strong style="color: var(--text-main, #0f172a); display: block; margin-bottom: 4px;">Meta WhatsApp Calling Architecture Prerequisites:</strong>
         <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
           <li>Meta Business App "WhatsApp Business Calling" permission</li>
           <li>Registered WABA phone number with 2-way Voice enabled</li>
@@ -1404,7 +2048,12 @@ function closeWhatsAppVoiceModal() {
           Direct Phone Dial
         </a>
         {% if whatsapp_phone %}
-        <a href="https://wa.me/{{ whatsapp_phone }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.85rem; color: #16a34a;">
+        <a href="whatsapp://send?phone={{ whatsapp_phone }}" class="btn btn-secondary" style="font-size: 0.85rem; color: #16a34a; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" title="Directly open WhatsApp Desktop or Mobile App">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          Open in WhatsApp App
+        </a>
+        <a href="https://web.whatsapp.com/send?phone={{ whatsapp_phone }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size: 0.85rem; color: #0284c7; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;" title="Directly open WhatsApp Web tab (no splash page)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
           Open WhatsApp Web
         </a>
         {% endif %}
@@ -1413,4 +2062,57 @@ function closeWhatsAppVoiceModal() {
     </div>
   </div>
 </div>
+
+<!-- LEFT QUICK IN-CALL LEAD SWITCHER DRAWER -->
+<div class="lead-switcher-overlay" id="leadSwitcherOverlay" onclick="closeLeadSwitcherDrawer()"></div>
+<aside class="lead-switcher-drawer" id="leadSwitcherDrawer">
+  <div class="lead-switcher-header">
+    <h3 class="lead-switcher-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      <span>Switch Lead (In-Call)</span>
+    </h3>
+    <button type="button" class="lead-switcher-close" onclick="closeLeadSwitcherDrawer()">&times;</button>
+  </div>
+  <div class="lead-switcher-search-box">
+    <input type="text" class="lead-switcher-input" id="leadSwitcherSearch" placeholder="🔍 Search name, phone, email..." oninput="handleLeadSwitcherSearch(this.value)">
+  </div>
+  <div class="lead-switcher-list" id="leadSwitcherList">
+    <div style="padding: 20px; text-align: center; color: var(--ld-text-muted); font-size: 0.85rem;">
+      Type above to instantly switch between active leads.
+    </div>
+  </div>
+</aside>
+
+<!-- LEAD-IQ AI QUALIFICATION INSIGHTS MODAL -->
+<div id="leadIQModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div class="modal-dialog" style="background: var(--bg-card, #fff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; width: 100%; max-width: 520px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
+    <div style="padding: 16px 20px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #fff; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.3rem;">🧠</span>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff;">Lead-IQ™ In-Call Intelligence</h3>
+      </div>
+      <button type="button" onclick="closeLeadIQModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <div style="padding: 20px;">
+      <div style="margin-bottom: 16px; padding: 12px 14px; background: rgba(79, 70, 229, 0.08); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: 8px;">
+        <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #4f46e5; margin-bottom: 4px;">Smart Conversion Probability</div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">{% if lead.rating %}{{ lead.rating }}0%{% else %}75%{% endif %}</span>
+          <span style="font-size: 0.85rem; color: #059669; font-weight: 600;">High Engagement Profile</span>
+        </div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <strong style="display: block; font-size: 0.85rem; margin-bottom: 8px;">Recommended In-Call Script / Next Action:</strong>
+        <div style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; background: var(--ld-border); padding: 12px; border-radius: 8px;">
+          "Candidate graduated in <strong>{{ val_passed_out|default:'recent year' }}</strong> with background in <strong>{{ val_degree|default:'relevant field' }}</strong>. Inquire about current career transition and suggest enrolling in <strong>{{ val_courses|default:'technical tracks' }}</strong> with hands-on placement support."
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeLeadIQModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 {% endblock %}

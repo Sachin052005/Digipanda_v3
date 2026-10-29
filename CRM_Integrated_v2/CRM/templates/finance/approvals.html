@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Approvals - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <div class="tp-page-header" style="margin-bottom: 22px;">
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--tp-text-primary); margin: 0;">Approvals</h1>
+    <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Approve expenses recorded by the Branch Head, and release the incentive and payroll payouts the Branch Head requests. Approve to count them; deny to void.
+    </p>
+  </div>
+
+  <!-- Category Tabs & Status Mode Controls -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <a href="?tab=income&status={{ status_mode }}" class="btn btn-sm {% if active_tab == 'income' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px;">
+        Income
+        {% if counts.income_count > 0 %}
+        <span class="badge" style="background: #dc2626; color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 10px;">{{ counts.income_count }}</span>
+        {% endif %}
+      </a>
+      <a href="?tab=expenses&status={{ status_mode }}" class="btn btn-sm {% if active_tab == 'expenses' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px;">
+        Expenses
+        {% if counts.expense_count > 0 %}
+        <span class="badge" style="background: #dc2626; color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 10px;">{{ counts.expense_count }}</span>
+        {% endif %}
+      </a>
+      <a href="?tab=other_income&status={{ status_mode }}" class="btn btn-sm {% if active_tab == 'other_income' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-weight: 700; border-radius: 8px;">
+        Other Income
+      </a>
+      <a href="?tab=incentives&status={{ status_mode }}" class="btn btn-sm {% if active_tab == 'incentives' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px;">
+        Incentive Approvals
+        {% if counts.incentive_count > 0 %}
+        <span class="badge" style="background: #dc2626; color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 10px;">{{ counts.incentive_count }}</span>
+        {% endif %}
+      </a>
+      <a href="?tab=payroll&status={{ status_mode }}" class="btn btn-sm {% if active_tab == 'payroll' %}btn-primary{% else %}btn-secondary{% endif %}" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-radius: 8px;">
+        Payroll
+        {% if counts.payroll_count > 0 %}
+        <span class="badge" style="background: #dc2626; color: #fff; font-size: 0.7rem; padding: 1px 6px; border-radius: 10px;">{{ counts.payroll_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- Active / Completed Toggle -->
+    <div style="display: flex; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 3px;">
+      <a href="?tab={{ active_tab }}&status=active" style="padding: 4px 12px; font-size: 0.8rem; font-weight: 700; text-decoration: none; border-radius: 6px; {% if status_mode == 'active' %}background: #059669; color: #fff;{% else %}color: var(--tp-text-muted);{% endif %}">
+        Active
+      </a>
+      <a href="?tab={{ active_tab }}&status=completed" style="padding: 4px 12px; font-size: 0.8rem; font-weight: 700; text-decoration: none; border-radius: 6px; {% if status_mode == 'completed' %}background: var(--tp-primary-600); color: #fff;{% else %}color: var(--tp-text-muted);{% endif %}">
+        Completed
+      </a>
+    </div>
+  </div>
+
+  <!-- Content for Active Tab -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    {% if active_tab == 'income' %}
+      {% if income_items %}
+      <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+              <th style="padding: 10px 12px;">Date / Receipt</th>
+              <th style="padding: 10px 12px;">Student & Course</th>
+              <th style="padding: 10px 12px; text-align: right;">Amount</th>
+              <th style="padding: 10px 12px;">Method & Ref</th>
+              <th style="padding: 10px 12px;">Recorded By</th>
+              <th style="padding: 10px 12px;">Proof</th>
+              <th style="padding: 10px 12px; text-align: center;">Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pmt in income_items %}
+            <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+              <td style="padding: 12px;">
+                <div style="font-weight: 700;">{{ pmt.payment_date|date:"d M Y, h:i A" }}</div>
+                <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Receipt #{{ pmt.receipt_number }}</div>
+              </td>
+              <td style="padding: 12px;">
+                <div style="font-weight: 700;">{{ pmt.enrollment.student_name }}</div>
+                <div style="font-size: 0.75rem; color: var(--tp-text-muted);">{{ pmt.enrollment.product.name|default:"Course" }}</div>
+              </td>
+              <td style="padding: 12px; text-align: right; color: #059669; font-weight: 800; font-size: 0.96rem;">
+                ₹{{ pmt.amount|floatformat:2 }}
+              </td>
+              <td style="padding: 12px;">
+                <span class="badge" style="background: rgba(0,0,0,0.06); font-size: 0.75rem;">{{ pmt.payment_method }}</span>
+                {% if pmt.transaction_reference %}
+                <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 2px;">{{ pmt.transaction_reference }}</div>
+                {% endif %}
+              </td>
+              <td style="padding: 12px; font-size: 0.8rem;">
+                {% if pmt.recorded_by %}{{ pmt.recorded_by.get_full_name|default:pmt.recorded_by.username }}{% else %}System{% endif %}
+              </td>
+              <td style="padding: 12px;">
+                {% if pmt.payment_proof %}
+                <a href="{{ pmt.payment_proof.url }}" target="_blank" class="btn btn-sm btn-secondary" style="font-size: 0.72rem; padding: 2px 7px;">
+                  View Proof &nearr;
+                </a>
+                {% else %}
+                <span style="font-size: 0.74rem; color: var(--tp-text-muted);">None (Cash)</span>
+                {% endif %}
+              </td>
+              <td style="padding: 12px; text-align: center;">
+                {% if status_mode == 'active' %}
+                <div style="display: inline-flex; gap: 8px;">
+                  <form method="POST" action="{% url 'finance_approve_payment_action' pmt.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary" style="background: #059669; font-size: 0.78rem; padding: 4px 10px;">
+                      Approve
+                    </button>
+                  </form>
+                  <form method="POST" action="{% url 'finance_reject_payment_action' pmt.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger" style="background: #dc2626; font-size: 0.78rem; padding: 4px 10px;" onclick="return confirm('Are you sure you want to reject this payment?');">
+                      Deny
+                    </button>
+                  </form>
+                </div>
+                {% else %}
+                <span class="badge" style="{% if pmt.status == 'APPROVED' %}background: rgba(16, 185, 129, 0.15); color: #059669;{% else %}background: rgba(220, 38, 38, 0.15); color: #dc2626;{% endif %} font-size: 0.75rem;">
+                  {{ pmt.status }}
+                </span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="text-align: center; padding: 48px 20px;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #059669; margin-bottom: 14px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 6px 0;">You're all caught up</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 0;">Income shows up here the moment a collector records one.</p>
+      </div>
+      {% endif %}
+
+    {% elif active_tab == 'expenses' %}
+      {% if expense_items %}
+      <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+              <th style="padding: 10px 12px;">Category & Vendor</th>
+              <th style="padding: 10px 12px; text-align: right;">Amount</th>
+              <th style="padding: 10px 12px;">Recorded By</th>
+              <th style="padding: 10px 12px;">Date</th>
+              <th style="padding: 10px 12px;">Proof</th>
+              <th style="padding: 10px 12px; text-align: center;">Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for exp in expense_items %}
+            <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+              <td style="padding: 12px;">
+                <div style="font-weight: 700;">{{ exp.category }} — {{ exp.sub_category }}</div>
+                <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Paid To: {{ exp.paid_to }} · {{ exp.description }}</div>
+              </td>
+              <td style="padding: 12px; text-align: right; color: #dc2626; font-weight: 800; font-size: 0.96rem;">
+                ₹{{ exp.amount|floatformat:2 }}
+              </td>
+              <td style="padding: 12px; font-size: 0.8rem;">
+                {{ exp.paid_by.get_full_name|default:exp.paid_by.username|default:exp.paid_by_name|default:"Staff" }}
+              </td>
+              <td style="padding: 12px; font-size: 0.8rem;">{{ exp.expense_date }}</td>
+              <td style="padding: 12px;">
+                {% if exp.proof %}
+                <a href="{{ exp.proof.url }}" target="_blank" class="btn btn-sm btn-secondary" style="font-size: 0.72rem; padding: 2px 7px;">
+                  View Receipt &nearr;
+                </a>
+                {% else %}
+                <span style="font-size: 0.74rem; color: var(--tp-text-muted);">No proof</span>
+                {% endif %}
+              </td>
+              <td style="padding: 12px; text-align: center;">
+                {% if status_mode == 'active' %}
+                <div style="display: inline-flex; gap: 8px;">
+                  <form method="POST" action="{% url 'finance_approve_expense_action' exp.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary" style="background: #059669; font-size: 0.78rem; padding: 4px 10px;">
+                      Approve
+                    </button>
+                  </form>
+                  <form method="POST" action="{% url 'finance_reject_expense_action' exp.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger" style="background: #dc2626; font-size: 0.78rem; padding: 4px 10px;">
+                      Deny
+                    </button>
+                  </form>
+                </div>
+                {% else %}
+                <span class="badge" style="{% if exp.status == 'APPROVED' %}background: rgba(16, 185, 129, 0.15); color: #059669;{% else %}background: rgba(220, 38, 38, 0.15); color: #dc2626;{% endif %} font-size: 0.75rem;">
+                  {{ exp.status }}
+                </span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="text-align: center; padding: 48px 20px;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #059669; margin-bottom: 14px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 6px 0;">No Pending Expenses</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 0;">All expense claims for your branch have been evaluated.</p>
+      </div>
+      {% endif %}
+
+    {% elif active_tab == 'payroll' %}
+      {% if payroll_items %}
+      <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+              <th style="padding: 10px 12px;">Run #</th>
+              <th style="padding: 10px 12px;">Period</th>
+              <th style="padding: 10px 12px; text-align: right;">Gross</th>
+              <th style="padding: 10px 12px; text-align: right;">Deductions</th>
+              <th style="padding: 10px 12px; text-align: right;">Net Payout</th>
+              <th style="padding: 10px 12px; text-align: center;">Decision</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for run in payroll_items %}
+            <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+              <td style="padding: 12px; font-weight: 700;">{{ run.run_number }}</td>
+              <td style="padding: 12px;">{{ run.month }}/{{ run.year }}</td>
+              <td style="padding: 12px; text-align: right;">₹{{ run.total_gross|floatformat:2 }}</td>
+              <td style="padding: 12px; text-align: right; color: #dc2626;">₹{{ run.total_deductions|floatformat:2 }}</td>
+              <td style="padding: 12px; text-align: right; font-weight: 800; color: #059669;">₹{{ run.total_net|floatformat:2 }}</td>
+              <td style="padding: 12px; text-align: center;">
+                {% if status_mode == 'active' %}
+                <form method="POST" action="{% url 'finance_approve_payroll_action' run.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-primary" style="background: #059669; font-size: 0.78rem; padding: 4px 10px;">
+                    Approve Run
+                  </button>
+                </form>
+                {% else %}
+                <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-size: 0.75rem;">{{ run.status }}</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div style="text-align: center; padding: 48px 20px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 6px 0;">No Pending Payroll Runs</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 0;">Generate a new run under HR & Payroll to review.</p>
+      </div>
+      {% endif %}
+
+    {% else %}
+      <div style="text-align: center; padding: 48px 20px;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #059669; margin-bottom: 14px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 6px 0;">You're all caught up</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 0;">No pending approval requests in this category.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

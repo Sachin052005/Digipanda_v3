@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Branch Heads - TECHPANDA CRM{% endblock %}
+{% block title %}Branch Heads - DigipandaCRM{% endblock %}
 
 {% block content %}
 <!-- Progressive Hierarchy Breadcrumbs -->
@@ -84,7 +84,7 @@
         {% for bh in page_obj %}
         <tr>
           <td>
-            <strong><a href="{% url 'branch_head_counselors' bh.id %}" style="color: var(--primary); text-decoration: none; font-size: 0.95rem;">{{ bh.get_full_name|default:bh.username }}</a></strong>
+            <strong><a href="{% url 'admin_branch_head_detail' bh.id %}" style="color: var(--primary); text-decoration: none; font-size: 0.95rem;">{{ bh.get_full_name|default:bh.username }}</a></strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ bh.username }}</div>
           </td>
           <td>{{ bh.email|default:"-" }}</td>

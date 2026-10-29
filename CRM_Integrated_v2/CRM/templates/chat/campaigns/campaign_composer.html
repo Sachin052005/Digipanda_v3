@@ -1,301 +1,1164 @@
 {% extends 'base.html' %}
+
 {% load static %}
-{% block title %}Create WhatsApp Campaign - TECHPANDA CRM{% endblock %}
+
+{% block title %}Create WhatsApp Campaign - DigipandaCRM{% endblock %}
+
+
 
 {% block content %}
+
 <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+
   <div class="page-title-group">
+
     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+
       <a href="{% url 'whatsapp_campaigns_list' %}" style="color: var(--tp-primary-600); text-decoration: none; font-size: 0.85rem; font-weight: 700;">&larr; WhatsApp Campaigns</a>
+
       <span style="color: var(--tp-text-muted);">/</span>
+
       <span style="font-size: 0.85rem; color: var(--tp-text-muted); font-weight: 600;">Composer</span>
+
     </div>
+
     <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0 0 4px 0;">New Bulk WhatsApp Campaign</h1>
+
     <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 0;">Configure sender channel, audience criteria, pre-approved templates, and message personalization</p>
+
   </div>
+
   <div class="page-actions" style="display: flex; gap: 10px; align-items: center;">
+
     <a href="{% url 'whatsapp_campaigns_list' %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm">Cancel</a>
+
   </div>
+
 </div>
 
+
+
 <form id="campaignComposerForm" method="POST" style="display: flex; flex-direction: column; gap: 24px;">
+
   {% csrf_token %}
+
   <input type="hidden" name="lead_ids" value="{{ lead_ids_str }}">
 
+
+
   <!-- SECTION A: CAMPAIGN INFORMATION -->
+
   <div class="tp-card" style="padding: 24px;">
+
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--tp-surface-border); padding-bottom: 12px;">
+
       <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--tp-primary-600); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">1</div>
+
       <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Campaign Information</h3>
+
     </div>
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
+
       <div>
+
         <label class="tp-label">Campaign Name *</label>
+
         <input type="text" name="name" class="form-control tp-input" placeholder="e.g. Oct 2026 Batch - Python Full Stack Outreach" value="Campaign - {% now 'd M Y H:i' %}" required>
+
       </div>
+
       <div>
+
         <label class="tp-label">Created By</label>
+
         <input type="text" class="form-control tp-input" value="{{ request.user.get_full_name|default:request.user.username }} ({{ request.user.role }})" readonly style="background: var(--tp-surface-muted);">
+
       </div>
+
       <div>
+
         <label class="tp-label">Selected Recipient Pool</label>
+
         <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+
           <span class="badge tp-badge" style="background: var(--tp-primary-50); color: var(--tp-primary-700); font-size: 0.95rem; font-weight: 800; padding: 6px 14px; border: 1px solid var(--tp-primary-200);">
+
             {{ lead_count }} Leads Selected
+
           </span>
+
           {% if has_filters %}
+
           <span style="font-size: 0.8rem; color: var(--tp-text-muted);">(Filtered Query)</span>
+
           {% endif %}
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- SECTION B: SENDER SELECTION -->
+
   <div class="tp-card" style="padding: 24px;">
+
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--tp-surface-border); padding-bottom: 12px;">
+
       <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--tp-primary-600); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">2</div>
+
       <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Authorized WhatsApp Sender Selection</h3>
+
     </div>
+
     <p style="font-size: 0.88rem; color: var(--tp-text-muted); margin-bottom: 16px;">
+
       Select how messages should be routed. In Mode 1, each lead receives a message from their assigned telecaller's authorized number. In Mode 2, all messages originate from a single chosen number.
+
     </p>
 
+
+
     <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+
       <label style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-md); cursor: pointer; background: var(--tp-surface-card);">
+
         <input type="radio" name="sender_mode" value="selected_sender" checked onchange="toggleSenderMode(this.value)" style="margin-top: 4px;">
+
         <div>
+
           <strong style="color: var(--tp-text-primary); font-size: 0.95rem;">Mode 2: One Selected Business / Telecaller Number (Recommended)</strong>
+
           <div style="font-size: 0.83rem; color: var(--tp-text-muted); margin-top: 2px;">
+
             Dispatches all eligible campaign messages through one authorized Meta WhatsApp number.
+
           </div>
+
         </div>
+
       </label>
+
+
 
       <label style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-md); cursor: pointer; background: var(--tp-surface-card);">
+
         <input type="radio" name="sender_mode" value="assigned_telecaller" onchange="toggleSenderMode(this.value)" style="margin-top: 4px;">
+
         <div>
+
           <strong style="color: var(--tp-text-primary); font-size: 0.95rem;">Mode 1: Assigned Telecaller's Connected WhatsApp Number</strong>
+
           <div style="font-size: 0.83rem; color: var(--tp-text-muted); margin-top: 2px;">
+
             Dynamically routes each lead's message through the WhatsApp number registered to their assigned telecaller. Leads whose telecaller has no configured sender will be flagged and skipped.
+
           </div>
+
         </div>
+
       </label>
+
     </div>
 
-    <div id="singleSenderWrap" style="background: #f8fafc; padding: 16px; border-radius: var(--tp-radius-md); border: 1px solid var(--tp-surface-border);">
-      <label class="tp-label">Choose Authorized Sender *</label>
-      <select name="selected_sender" id="senderSelect" class="form-select tp-select" style="max-width: 500px;">
-        {% for s in senders %}
-        <option value="{{ s.id }}">
-          {{ s.name }} ({{ s.display_phone_number }}) - Limit: {{ s.daily_limit }}/day [{{ s.quality_rating }}]
-        </option>
-        {% empty %}
-        <option value="">No registered senders configured</option>
-        {% endfor %}
-      </select>
-      <div style="font-size: 0.78rem; color: var(--tp-text-muted); margin-top: 6px;">
-        Only authorized, verified Meta Cloud API numbers with active status are permitted.
+
+
+    <div id="singleSenderWrap" style="background: var(--tp-surface-card, #f8fafc); padding: 18px; border-radius: var(--tp-radius-md); border: 1px solid var(--tp-surface-border);">
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+
+        <label class="tp-label" style="margin: 0; font-weight: 700;">Choose Authorized Sender *</label>
+
+        <button type="button" class="btn btn-outline-primary tp-btn-sm" onclick="openAddSenderModal()" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 4px 10px; border-radius: 6px;">
+
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+
+          + Add Campaign Number
+
+        </button>
+
       </div>
+
+      <select name="selected_sender" id="senderSelect" class="form-select tp-select" style="max-width: 500px;">
+
+        {% for s in senders %}
+
+        <option value="{{ s.id }}">
+
+          {{ s.name }} ({{ s.display_phone_number }}) - Limit: {{ s.daily_limit }}/day [{{ s.quality_rating }}]
+
+        </option>
+
+        {% empty %}
+
+        <option value="">No registered senders configured</option>
+
+        {% endfor %}
+
+      </select>
+
+      <div style="font-size: 0.78rem; color: var(--tp-text-muted); margin-top: 6px;">
+
+        Only authorized, verified Meta Cloud API numbers with active status are permitted.
+
+      </div>
+
     </div>
+
   </div>
+
+
 
   <!-- SECTION C: RECIPIENT PREVIEW & COMPLIANCE -->
+
   <div class="tp-card" style="padding: 24px;">
+
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--tp-surface-border); padding-bottom: 12px;">
+
       <div style="display: flex; align-items: center; gap: 10px;">
+
         <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--tp-primary-600); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">3</div>
+
         <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Recipient Preview & Policy Compliance</h3>
+
       </div>
+
       <div style="display: flex; gap: 8px;">
+
         <span class="badge tp-badge" style="background: #ecfdf5; color: #065f46; font-weight: 700; border: 1px solid #a7f3d0; padding: 6px 12px;">
+
           ✓ Opted-out Leads Auto-Excluded
+
         </span>
+
         <span class="badge tp-badge" style="background: #eff6ff; color: #1e40af; font-weight: 700; border: 1px solid #bfdbfe; padding: 6px 12px;">
+
           ✓ Missing/Invalid Phone Auto-Skipped
+
         </span>
+
       </div>
+
     </div>
+
+
 
     <div style="background: #eff6ff; border-left: 4px solid var(--tp-primary-600); padding: 12px 16px; border-radius: 0 8px 8px 0; margin-bottom: 16px; font-size: 0.88rem; color: #1e3a8a;">
+
       <strong>Large Cohort Guarantee:</strong> Selections exceeding 4,000 recipients are buffered and processed in rate-limited background batches (50 leads per cycle) with idempotency locks.
+
     </div>
+
+
 
     <div style="font-size: 0.88rem; color: var(--tp-text-secondary);">
+
       Audience cohort of <strong>{{ lead_count }} leads</strong> will be normalized and checked against consent registries prior to transmission.
+
     </div>
+
   </div>
+
+
 
   <!-- SECTION D: MESSAGE COMPOSER & PREVIEW -->
+
   <div class="tp-card" style="padding: 24px;">
+
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px; border-bottom: 1px solid var(--tp-surface-border); padding-bottom: 12px;">
+
       <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--tp-primary-600); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem;">4</div>
+
       <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Message Composer & Live Preview</h3>
+
     </div>
+
+
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+
       <!-- Controls -->
+
       <div>
+
         <div style="margin-bottom: 16px;">
-          <label class="tp-label">Approved Meta WhatsApp Template *</label>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+
+            <label class="tp-label" style="margin: 0; font-weight: 700;">Approved Meta WhatsApp Template *</label>
+
+            <button type="button" class="btn btn-outline-primary tp-btn-sm" onclick="openAddTemplateModal()" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 4px 10px; border-radius: 6px;">
+
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+
+              + Register Meta Template
+
+            </button>
+
+          </div>
+
           <select name="template" id="templateSelect" class="form-select tp-select" onchange="onTemplateChange(this)" required>
+
             {% for t in templates %}
+
             <option value="{{ t.id }}" data-body="{{ t.body_text|escape }}" data-header="{{ t.header_type }}" data-footer="{{ t.footer_text|escape }}">
+
               {{ t.display_title|default:t.name }} [{{ t.language }}]
+
             </option>
+
             {% empty %}
+
             <option value="">No active templates found</option>
+
             {% endfor %}
+
           </select>
+
           <div style="font-size: 0.78rem; color: var(--tp-text-muted); margin-top: 4px;">
+
             Business-initiated conversations outside the 24h window require pre-approved Meta templates.
+
           </div>
+
         </div>
 
+
+
         <div style="margin-bottom: 16px;">
+
           <label class="tp-label">Supported Placeholders</label>
+
           <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+
             <span class="badge tp-badge" style="background: #f1f5f9; color: #0f172a; font-family: monospace;">&#123;&#123;lead_name&#125;&#125;</span>
+
             <span class="badge tp-badge" style="background: #f1f5f9; color: #0f172a; font-family: monospace;">&#123;&#123;phone&#125;&#125;</span>
+
             <span class="badge tp-badge" style="background: #f1f5f9; color: #0f172a; font-family: monospace;">&#123;&#123;branch&#125;&#125;</span>
+
             <span class="badge tp-badge" style="background: #f1f5f9; color: #0f172a; font-family: monospace;">&#123;&#123;course&#125;&#125;</span>
+
             <span class="badge tp-badge" style="background: #f1f5f9; color: #0f172a; font-family: monospace;">&#123;&#123;assigned_telecaller&#125;&#125;</span>
+
             <span class="badge tp-badge" style="background: #f1f5f9; color: #0f172a; font-family: monospace;">&#123;&#123;created_on&#125;&#125;</span>
+
           </div>
+
         </div>
 
+
+
         <div style="margin-bottom: 16px;">
+
           <label class="tp-label">Optional Media URL (Image, PDF brochure)</label>
+
           <input type="url" name="media_url" class="form-control tp-input" placeholder="https://example.com/brochure.pdf">
+
         </div>
+
       </div>
+
+
 
       <!-- Live Mock Phone Preview -->
+
       <div>
+
         <label class="tp-label">Live WhatsApp Chat Bubble Preview</label>
+
         <div style="background: #efeae2; border: 1px solid #d1d5db; border-radius: 16px; padding: 20px; min-height: 220px; display: flex; flex-direction: column; justify-content: flex-end; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+
           <!-- Outbound Message Bubble -->
+
           <div style="align-self: flex-end; max-width: 85%; background: #d9fdd3; border-radius: 10px 0 10px 10px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.15); position: relative;">
+
             <div id="previewHeader" style="font-weight: 700; font-size: 0.85rem; color: #0f172a; margin-bottom: 6px; display: none;"></div>
+
             <div id="previewBodyText" style="font-size: 0.88rem; color: #111827; line-height: 1.4; white-space: pre-wrap;">
+
               Select a template to view personalized preview...
+
             </div>
+
             <div id="previewFooter" style="font-size: 0.75rem; color: #64748b; margin-top: 8px;"></div>
+
             <div style="text-align: right; font-size: 0.68rem; color: #64748b; margin-top: 4px;">
+
               {% now 'H:i' %} <span style="color: #38bdf8;">✓✓</span>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- SECTION E: CAMPAIGN CONTROLS & SUBMISSION -->
+
   <div class="tp-card" style="padding: 24px;">
+
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+
       <div>
+
         <h4 style="font-size: 1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">Final Dispatch Confirmation</h4>
+
         <p style="font-size: 0.85rem; color: var(--tp-text-muted); margin: 0;">
+
           Rate limited to 60 messages/minute. Provider responses are tracked in real-time.
+
         </p>
+
       </div>
+
       <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+
         <button type="submit" name="action_type" value="save_draft" class="btn btn-secondary tp-btn-secondary">
+
           Save as Draft
+
         </button>
+
         <button type="button" class="btn btn-primary tp-btn-primary" onclick="openConfirmationModal()" style="padding: 9px 24px; font-weight: 700; box-shadow: var(--tp-shadow-md);">
+
           🚀 Send Campaign Now
+
         </button>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Confirmation Modal -->
+
   <div id="confirmModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+
     <div style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
+
       <div style="padding: 20px 24px; border-bottom: 1px solid var(--tp-surface-border); display: flex; justify-content: space-between; align-items: center;">
+
         <h4 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--tp-text-primary);">Confirm Bulk Dispatch</h4>
+
         <button type="button" onclick="closeConfirmationModal()" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--tp-text-muted);">&times;</button>
+
       </div>
+
       <div style="padding: 24px; font-size: 0.9rem; color: var(--tp-text-secondary); line-height: 1.5;">
+
         <p style="margin-top: 0;">Are you sure you want to trigger this bulk campaign?</p>
+
         <ul style="padding-left: 20px; margin-bottom: 20px;">
+
           <li>Total recipients: <strong>{{ lead_count }} leads</strong></li>
+
           <li>Opted-out leads will be automatically skipped</li>
+
           <li>Sending starts immediately in the background</li>
+
         </ul>
+
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
+
           <button type="button" class="btn btn-secondary tp-btn-secondary" onclick="closeConfirmationModal()">Cancel</button>
+
           <button type="button" id="confirmSubmitBtn" class="btn btn-primary tp-btn-primary" onclick="submitCampaignForm()">
+
             Yes, Dispatch Now
+
           </button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
+
+<!-- MODAL: ADD SEPARATE CAMPAIGN SENDER NUMBER -->
+
+<div id="addSenderModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
+
+  <div class="tp-card" style="max-width: 540px; width: 100%; padding: 24px; border-radius: 14px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25); background: var(--tp-surface-card, #ffffff); border: 1px solid var(--tp-surface-border);">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--tp-surface-border); padding-bottom: 12px;">
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center;">
+
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+
+        </div>
+
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Add Separate Campaign Number</h3>
+
+      </div>
+
+      <button type="button" onclick="closeAddSenderModal()" style="background: none; border: none; font-size: 1.4rem; color: var(--tp-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+
+    </div>
+
+
+
+    <div id="senderModalError" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 14px;"></div>
+
+
+
+    <form id="addSenderForm" onsubmit="submitAddSenderForm(event)">
+
+      <div style="margin-bottom: 14px;">
+
+        <label class="tp-label">Sender Channel Name *</label>
+
+        <input type="text" id="newSenderName" class="form-control tp-input" placeholder="e.g. Campaign Outbound Line 2" required>
+
+        <div style="font-size: 0.75rem; color: var(--tp-text-muted); margin-top: 3px;">Descriptive label for this sender in your CRM.</div>
+
+      </div>
+
+
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+
+        <div>
+
+          <label class="tp-label">Display Phone Number *</label>
+
+          <input type="text" id="newSenderPhone" class="form-control tp-input" placeholder="+91 84382 39448" required>
+
+        </div>
+
+        <div>
+
+          <label class="tp-label">Meta Phone Number ID *</label>
+
+          <input type="text" id="newSenderPhoneId" class="form-control tp-input" placeholder="e.g. 1294166677119820" required>
+
+        </div>
+
+      </div>
+
+
+
+      <div style="margin-bottom: 14px;">
+
+        <label class="tp-label">Meta WABA ID (Optional)</label>
+
+        <input type="text" id="newSenderWabaId" class="form-control tp-input" placeholder="e.g. 28997209329903245">
+
+        <div style="font-size: 0.75rem; color: var(--tp-text-muted); margin-top: 3px;">WhatsApp Business Account ID from Meta Business Manager.</div>
+
+      </div>
+
+
+
+      <div style="margin-bottom: 14px;">
+
+        <label class="tp-label">Custom Access Token (Optional)</label>
+
+        <input type="password" id="newSenderToken" class="form-control tp-input" placeholder="Leave blank to use default system token">
+
+        <div style="font-size: 0.75rem; color: var(--tp-text-muted); margin-top: 3px;">Only fill if this phone number uses a distinct System User token.</div>
+
+      </div>
+
+
+
+      <div style="margin-bottom: 20px;">
+
+        <label class="tp-label">Daily Messaging Limit</label>
+
+        <input type="number" id="newSenderLimit" class="form-control tp-input" value="1000" min="100" max="100000">
+
+      </div>
+
+
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+
+        <button type="button" onclick="closeAddSenderModal()" class="btn btn-secondary tp-btn-secondary tp-btn-sm">Cancel</button>
+
+        <button type="submit" id="saveSenderBtn" class="btn btn-primary tp-btn-primary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+
+          Save &amp; Select Number
+
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+
+<!-- MODAL: REGISTER APPROVED META TEMPLATE -->
+
+<div id="addTemplateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 10000; align-items: center; justify-content: center; padding: 16px;">
+
+  <div class="tp-card" style="max-width: 600px; width: 100%; padding: 24px; border-radius: 14px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25); background: var(--tp-surface-card, #ffffff); border: 1px solid var(--tp-surface-border); max-height: 90vh; overflow-y: auto;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--tp-surface-border); padding-bottom: 12px;">
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center;">
+
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+
+        </div>
+
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Register Approved Meta Template</h3>
+
+      </div>
+
+      <button type="button" onclick="closeAddTemplateModal()" style="background: none; border: none; font-size: 1.4rem; color: var(--tp-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+
+    </div>
+
+
+
+    <div id="templateModalError" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 14px;"></div>
+
+
+
+    <form id="addTemplateForm" onsubmit="submitAddTemplateForm(event)">
+
+      <div style="margin-bottom: 14px;">
+
+        <label class="tp-label">Meta Template Name (snake_case identifier) *</label>
+
+        <input type="text" id="newTemplateName" class="form-control tp-input" placeholder="e.g. festive_offer_2026 or hello_world" required pattern="[a-zA-Z0-9_]+" title="Letters, numbers and underscores only">
+
+        <div style="font-size: 0.75rem; color: var(--tp-text-muted); margin-top: 3px;">Must exactly match the template name approved in your Meta WhatsApp Manager.</div>
+
+      </div>
+
+
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+
+        <div>
+
+          <label class="tp-label">Display Title</label>
+
+          <input type="text" id="newTemplateTitle" class="form-control tp-input" placeholder="e.g. Festive Special Offer">
+
+        </div>
+
+        <div>
+
+          <label class="tp-label">Language Code *</label>
+
+          <select id="newTemplateLang" class="form-select tp-select">
+
+            <option value="en_US" selected>en_US (English US)</option>
+
+            <option value="en">en (English UK)</option>
+
+            <option value="hi">hi (Hindi)</option>
+
+            <option value="ta">ta (Tamil)</option>
+
+            <option value="te">te (Telugu)</option>
+
+            <option value="kn">kn (Kannada)</option>
+
+            <option value="ml">ml (Malayalam)</option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+
+      <div style="margin-bottom: 14px;">
+
+        <label class="tp-label">Category</label>
+
+        <select id="newTemplateCategory" class="form-select tp-select">
+
+          <option value="MARKETING" selected>Marketing</option>
+
+          <option value="UTILITY">Utility</option>
+
+          <option value="AUTHENTICATION">Authentication</option>
+
+        </select>
+
+      </div>
+
+
+
+      <div style="margin-bottom: 14px;">
+
+        <label class="tp-label">Template Body Text *</label>
+
+        <textarea id="newTemplateBody" class="form-control tp-input" rows="4" placeholder="Hi {{1}}, welcome to DIGIPANDA! Your advisor {{2}} is ready..." required></textarea>
+
+        <div style="font-size: 0.75rem; color: var(--tp-text-muted); margin-top: 3px;">Use {{1}}, {{2}} for dynamic parameters.</div>
+
+      </div>
+
+
+
+      <div style="margin-bottom: 20px;">
+
+        <label class="tp-label">Footer Text (Optional)</label>
+
+        <input type="text" id="newTemplateFooter" class="form-control tp-input" placeholder="e.g. Reply STOP to opt out">
+
+      </div>
+
+
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+
+        <button type="button" onclick="closeAddTemplateModal()" class="btn btn-secondary tp-btn-secondary tp-btn-sm">Cancel</button>
+
+        <button type="submit" id="saveTemplateBtn" class="btn btn-primary tp-btn-primary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+
+          Register &amp; Select Template
+
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+
 </form>
 
+
+
 <script>
+
 function toggleSenderMode(mode) {
+
   var singleWrap = document.getElementById('singleSenderWrap');
+
   if (mode === 'selected_sender') {
+
     singleWrap.style.display = 'block';
+
   } else {
+
     singleWrap.style.display = 'none';
+
   }
+
 }
+
+
 
 function onTemplateChange(sel) {
+
   var opt = sel.options[sel.selectedIndex];
+
   if (!opt) return;
+
   var body = opt.getAttribute('data-body') || '';
+
   var footer = opt.getAttribute('data-footer') || '';
 
+
+
   // Simulate personalized preview with sample student
+
   var previewText = body
+
     .replace(/\{\{1\}\}/g, 'Aarav Patel')
+
     .replace(/\{\{2\}\}/g, 'Data Science & AI')
+
     .replace(/\{\{3\}\}/g, 'Bangalore Central')
+
     .replace(/\{\{4\}\}/g, 'Priyadharshini')
+
     .replace(/\{\{lead_name\}\}/g, 'Aarav Patel')
+
     .replace(/\{\{course\}\}/g, 'Data Science & AI')
+
     .replace(/\{\{branch\}\}/g, 'Bangalore Central')
+
     .replace(/\{\{assigned_telecaller\}\}/g, 'Priyadharshini');
 
+
+
   document.getElementById('previewBodyText').textContent = previewText;
+
   var footerEl = document.getElementById('previewFooter');
+
   if (footer) {
+
     footerEl.textContent = footer;
+
     footerEl.style.display = 'block';
+
   } else {
+
     footerEl.style.display = 'none';
+
   }
+
 }
+
+
 
 function openConfirmationModal() {
+
   document.getElementById('confirmModal').style.display = 'flex';
+
 }
+
+
 
 function closeConfirmationModal() {
+
   document.getElementById('confirmModal').style.display = 'none';
+
 }
+
+
 
 function submitCampaignForm() {
+
   var btn = document.getElementById('confirmSubmitBtn');
+
   btn.disabled = true;
+
   btn.textContent = 'Dispatching...';
+
   var form = document.getElementById('campaignComposerForm');
+
   var input = document.createElement('input');
+
   input.type = 'hidden';
+
   input.name = 'action_type';
+
   input.value = 'send_now';
+
   form.appendChild(input);
+
   form.submit();
+
 }
 
+
+
 document.addEventListener('DOMContentLoaded', function() {
+
   var sel = document.getElementById('templateSelect');
+
   if (sel) onTemplateChange(sel);
+
 });
+
+
+
+function getCookie(name) {
+
+  var v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+
+  return v ? v[2] : null;
+
+}
+
+
+
+// SENDER MODAL HANDLERS
+
+function openAddSenderModal() {
+
+  document.getElementById('senderModalError').style.display = 'none';
+
+  document.getElementById('addSenderForm').reset();
+
+  document.getElementById('newSenderLimit').value = '1000';
+
+  document.getElementById('addSenderModal').style.display = 'flex';
+
+}
+
+
+
+function closeAddSenderModal() {
+
+  document.getElementById('addSenderModal').style.display = 'none';
+
+}
+
+
+
+function submitAddSenderForm(e) {
+
+  e.preventDefault();
+
+  var errBox = document.getElementById('senderModalError');
+
+  errBox.style.display = 'none';
+
+  var btn = document.getElementById('saveSenderBtn');
+
+  btn.disabled = true;
+
+  btn.textContent = 'Saving...';
+
+
+
+  var payload = {
+
+    name: document.getElementById('newSenderName').value.trim(),
+
+    phone_number: document.getElementById('newSenderPhone').value.trim(),
+
+    phone_number_id: document.getElementById('newSenderPhoneId').value.trim(),
+
+    business_account_id: document.getElementById('newSenderWabaId').value.trim(),
+
+    access_token: document.getElementById('newSenderToken').value.trim(),
+
+    daily_limit: parseInt(document.getElementById('newSenderLimit').value, 10) || 1000
+
+  };
+
+
+
+  fetch('/campaigns/api/senders/create/', {
+
+    method: 'POST',
+
+    headers: {
+
+      'Content-Type': 'application/json',
+
+      'X-CSRFToken': getCookie('csrftoken'),
+
+      'X-Requested-With': 'XMLHttpRequest'
+
+    },
+
+    body: JSON.stringify(payload)
+
+  })
+
+  .then(function(res) { return res.json(); })
+
+  .then(function(data) {
+
+    btn.disabled = false;
+
+    btn.textContent = 'Save & Select Number';
+
+    if (data.success && data.sender) {
+
+      var sel = document.getElementById('senderSelect');
+
+      var opt = document.createElement('option');
+
+      opt.value = data.sender.id;
+
+      opt.textContent = data.sender.name + ' (' + data.sender.display_phone_number + ') - Limit: ' + data.sender.daily_limit + '/day [' + data.sender.quality_rating + ']';
+
+      sel.appendChild(opt);
+
+      sel.value = data.sender.id;
+
+      closeAddSenderModal();
+
+      alert('✓ ' + data.message);
+
+    } else {
+
+      errBox.textContent = data.error || 'Failed to register WhatsApp sender.';
+
+      errBox.style.display = 'block';
+
+    }
+
+  })
+
+  .catch(function(err) {
+
+    btn.disabled = false;
+
+    btn.textContent = 'Save & Select Number';
+
+    errBox.textContent = 'Network error: ' + err.message;
+
+    errBox.style.display = 'block';
+
+  });
+
+}
+
+
+
+// TEMPLATE MODAL HANDLERS
+
+function openAddTemplateModal() {
+
+  document.getElementById('templateModalError').style.display = 'none';
+
+  document.getElementById('addTemplateForm').reset();
+
+  document.getElementById('addTemplateModal').style.display = 'flex';
+
+}
+
+
+
+function closeAddTemplateModal() {
+
+  document.getElementById('addTemplateModal').style.display = 'none';
+
+}
+
+
+
+function submitAddTemplateForm(e) {
+
+  e.preventDefault();
+
+  var errBox = document.getElementById('templateModalError');
+
+  errBox.style.display = 'none';
+
+  var btn = document.getElementById('saveTemplateBtn');
+
+  btn.disabled = true;
+
+  btn.textContent = 'Registering...';
+
+
+
+  var payload = {
+
+    name: document.getElementById('newTemplateName').value.trim(),
+
+    display_title: document.getElementById('newTemplateTitle').value.trim(),
+
+    language: document.getElementById('newTemplateLang').value,
+
+    category: document.getElementById('newTemplateCategory').value,
+
+    body_text: document.getElementById('newTemplateBody').value.trim(),
+
+    footer_text: document.getElementById('newTemplateFooter').value.trim()
+
+  };
+
+
+
+  fetch('/campaigns/api/templates/create/', {
+
+    method: 'POST',
+
+    headers: {
+
+      'Content-Type': 'application/json',
+
+      'X-CSRFToken': getCookie('csrftoken'),
+
+      'X-Requested-With': 'XMLHttpRequest'
+
+    },
+
+    body: JSON.stringify(payload)
+
+  })
+
+  .then(function(res) { return res.json(); })
+
+  .then(function(data) {
+
+    btn.disabled = false;
+
+    btn.textContent = 'Register & Select Template';
+
+    if (data.success && data.template) {
+
+      var sel = document.getElementById('templateSelect');
+
+      var opt = document.createElement('option');
+
+      opt.value = data.template.id;
+
+      opt.setAttribute('data-body', data.template.body_text);
+
+      opt.setAttribute('data-header', data.template.header_type || 'NONE');
+
+      opt.setAttribute('data-footer', data.template.footer_text || '');
+
+      opt.textContent = (data.template.display_title || data.template.name) + ' [' + data.template.language + ']';
+
+      sel.appendChild(opt);
+
+      sel.value = data.template.id;
+
+      onTemplateChange(sel);
+
+      closeAddTemplateModal();
+
+      alert('✓ ' + data.message);
+
+    } else {
+
+      errBox.textContent = data.error || 'Failed to register template.';
+
+      errBox.style.display = 'block';
+
+    }
+
+  })
+
+  .catch(function(err) {
+
+    btn.disabled = false;
+
+    btn.textContent = 'Register & Select Template';
+
+    errBox.textContent = 'Network error: ' + err.message;
+
+    errBox.style.display = 'block';
+
+  });
+
+}
+
+
+
 </script>
+
 {% endblock %}
+

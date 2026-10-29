@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Team Leads - TECHPANDA CRM{% endblock %}
+{% block title %}Team Leads - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -30,11 +30,37 @@
 </div>
 
 <div class="filter-card">
+  {% if branches %}
+  <!-- Quick Branch Filter Pill Strip -->
+  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color, #e2e8f0);">
+    <span style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted, #64748b); text-transform: uppercase; margin-right: 4px;">Branch:</span>
+    <a href="?{% for k, v in request.GET.items %}{% if k != 'branch' and k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}" class="badge tp-badge tp-branch-pill {% if not branch_filter %}active{% endif %}">
+      <span class="tp-branch-dot"></span> All Branches
+    </a>
+    {% for b in branches %}
+    <a href="?branch={{ b.id }}{% for k, v in request.GET.items %}{% if k != 'branch' and k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}" class="badge tp-badge tp-branch-pill {% if branch_filter == b.id|stringformat:'i' or branch_filter == b.name %}active{% endif %}">
+      <span class="tp-branch-dot"></span> {{ b.name }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <form method="GET" class="filter-form">
     <div class="filter-col" style="flex: 2;">
       <label>Search</label>
       <input type="text" name="search" class="form-control" placeholder="Search name, phone, email..." value="{{ search_query }}">
     </div>
+    {% if branches %}
+    <div class="filter-col">
+      <label>Branch</label>
+      <select name="branch" class="form-select tp-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" or branch_filter == b.name %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
     <div class="filter-col">
       <label>Telecaller</label>
       <select name="telecaller" class="form-select">

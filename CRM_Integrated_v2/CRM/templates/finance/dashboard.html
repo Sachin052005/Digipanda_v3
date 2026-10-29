@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Finance Dashboard - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <!-- Top Page Header -->
+  <div class="tp-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h1 style="font-size: 1.55rem; font-weight: 800; color: var(--tp-text-primary); margin: 0; letter-spacing: -0.02em;">Dashboard</h1>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">FINANCE</span>
+        {% if request.user.branch %}
+        <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-weight: 600; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px;">
+          {{ request.user.branch.name }}
+        </span>
+        {% endif %}
+      </div>
+      <p style="color: var(--tp-text-muted); font-size: 0.84rem; margin: 4px 0 0 0;">
+        Welcome back, <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> &bull; Showing: <strong>{{ period_label }}</strong>
+      </p>
+    </div>
+
+    <!-- Filter & Export Controls -->
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <form method="GET" style="display: flex; gap: 8px; align-items: center;">
+        {% if selected_branch_id %}
+        <input type="hidden" name="branch" value="{{ selected_branch_id }}">
+        {% endif %}
+        <select name="period" class="form-select tp-custom-select" onchange="this.form.submit()" style="padding: 6px 12px; font-size: 0.84rem; font-weight: 600; border-radius: 8px; height: 38px;">
+          <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
+          <option value="yesterday" {% if filter_type == 'yesterday' %}selected{% endif %}>Yesterday</option>
+          <option value="week" {% if filter_type == 'week' %}selected{% endif %}>This Week</option>
+          <option value="month" {% if filter_type == 'month' %}selected{% endif %}>This Month</option>
+          <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Time</option>
+        </select>
+      </form>
+
+      <a href="{% url 'finance_audit_export' %}?report=summary{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="btn btn-secondary" style="height: 38px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.84rem; font-weight: 600;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Overall Summary Report Export
+      </a>
+    </div>
+  </div>
+
+  <!-- Interactive Quick Actions Bar ("Button to Button" Experience) -->
+  <div class="tp-quick-actions-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px;">
+    <a href="{% url 'finance_expenses' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 0.84rem; height: 36px; padding: 0 14px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border: none; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>+ Record Expense</span>
+    </a>
+    <a href="{% url 'finance_approvals' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 0.84rem; height: 36px; padding: 0 14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      <span>Review Approvals</span>
+      {% if pending_approvals_count %}<span class="badge" style="background: #dc2626; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 9999px;">{{ pending_approvals_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'finance_pending_payments' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 0.84rem; height: 36px; padding: 0 14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+      <span>Pending Payments</span>
+    </a>
+    <a href="{% url 'finance_internal_transfers' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 0.84rem; height: 36px; padding: 0 14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+      <span>Internal Transfer</span>
+    </a>
+    <a href="{% url 'finance_payroll' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 0.84rem; height: 36px; padding: 0 14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+      <span>Payroll</span>
+    </a>
+  </div>
+
+  <!-- Audit Report Export Strip Card -->
+  <div class="card tp-card-glass" style="margin-bottom: 24px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-left: 4px solid var(--tp-primary-600);">
+    <div>
+      <div style="font-weight: 700; font-size: 0.88rem; color: var(--tp-text-primary);">Audit report export</div>
+      <div style="font-size: 0.78rem; color: var(--tp-text-muted);">Google-Sheet format (CSV or Excel)</div>
+    </div>
+    <form method="GET" action="{% url 'finance_audit_export' %}" style="display: flex; gap: 10px; align-items: center;">
+      <select name="report" class="form-select tp-custom-select" style="padding: 5px 12px; font-size: 0.82rem; height: 34px;">
+        <option value="course_revenue">Course Revenue</option>
+        <option value="collections">All Collections</option>
+        <option value="gst">GST Filing Tab</option>
+      </select>
+      <button type="submit" class="btn btn-secondary" style="height: 34px; padding: 4px 12px; font-size: 0.82rem; font-weight: 600;">
+        Export &darr;
+      </button>
+    </form>
+  </div>
+
+  <!-- Authoritative 8 KPI Cards Grid (All Interactive & Clickable) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 28px;">
+    <!-- 1. Total Collection -->
+    <a href="{% url 'finance_oversight' %}?type=collections" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Collection</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #059669; margin-top: 6px;">₹{{ metrics.total_collection|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">{{ metrics.pmt_count }} payments verified &rarr;</div>
+      </div>
+    </a>
+
+    <!-- 2. Total Expenses -->
+    <a href="{% url 'finance_expenses' %}" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Expenses</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #dc2626; margin-top: 6px;">₹{{ metrics.total_expenses|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">{{ metrics.exp_count }} expenses approved &rarr;</div>
+      </div>
+    </a>
+
+    <!-- 3. Balance -->
+    <a href="{% url 'finance_expenses' %}" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Balance</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--tp-text-primary); margin-top: 6px;">₹{{ metrics.balance|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">Collections - Expenses &rarr;</div>
+      </div>
+    </a>
+
+    <!-- 4. Total GST -->
+    <a href="{% url 'finance_expenses' %}?tab=gst" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total GST</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #d97706; margin-top: 6px;">₹{{ metrics.total_gst|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">18% GST tracked separately &rarr;</div>
+      </div>
+    </a>
+
+    <!-- 5. Balance After GST -->
+    <a href="{% url 'finance_expenses' %}" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Balance After GST</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--tp-primary-600); margin-top: 6px;">₹{{ metrics.balance_after_gst|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">Net operating reserve &rarr;</div>
+      </div>
+    </a>
+
+    <!-- 6. Total Training Collection -->
+    <a href="{% url 'finance_oversight' %}?type=collections" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Training Collection</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--tp-text-primary); margin-top: 6px;">₹{{ metrics.total_training|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">Base training fees &rarr;</div>
+      </div>
+    </a>
+
+    <!-- 7. Total Placement Collection -->
+    <a href="{% url 'finance_oversight' %}?type=collections" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Placement Collection</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--tp-text-primary); margin-top: 6px;">₹{{ metrics.total_placement|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">Placement track fees &rarr;</div>
+      </div>
+    </a>
+
+    <!-- 8. Other Income -->
+    <a href="{% url 'finance_approvals' %}?tab=other_income" style="text-decoration: none; color: inherit;">
+      <div class="card tp-kpi-card tp-hover-lift" style="padding: 18px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;">
+        <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Other Income</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: var(--tp-text-primary); margin-top: 6px;">₹{{ metrics.other_income|floatformat:2 }}</div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 4px;">Miscellaneous revenue &rarr;</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Section: Collection Owner Summary Table -->
+  <div class="card tp-card-glass" style="margin-bottom: 28px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Collection Owner Summary</h3>
+      <a href="{% url 'finance_audit_export' %}?report=owner_summary" class="btn btn-sm btn-secondary" style="font-size: 0.78rem;">
+        Export &darr;
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.76rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 14px;">Owner</th>
+            <th style="padding: 10px 14px; text-align: right;">Income</th>
+            <th style="padding: 10px 14px; text-align: right;">Expense</th>
+            <th style="padding: 10px 14px; text-align: right;">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in metrics.owners_data %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.86rem;">
+            <td style="padding: 12px 14px; font-weight: 600;">{{ row.owner }}</td>
+            <td style="padding: 12px 14px; text-align: right; color: #059669; font-weight: 600;">₹{{ row.income|floatformat:2 }}</td>
+            <td style="padding: 12px 14px; text-align: right; color: #dc2626; font-weight: 600;">₹{{ row.expense|floatformat:2 }}</td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 700;">₹{{ row.balance|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="padding: 24px; text-align: center; color: var(--tp-text-muted);">No owner records found for this period.</td>
+          </tr>
+          {% endfor %}
+          <tr style="background: rgba(0, 0, 0, 0.02); font-weight: 800; font-size: 0.88rem;">
+            <td style="padding: 12px 14px;">Total</td>
+            <td style="padding: 12px 14px; text-align: right; color: #059669;">₹{{ metrics.total_collection|floatformat:2 }}</td>
+            <td style="padding: 12px 14px; text-align: right; color: #dc2626;">₹{{ metrics.total_expenses|floatformat:2 }}</td>
+            <td style="padding: 12px 14px; text-align: right;">₹{{ metrics.balance|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section: Collection by Payment Type Table -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Collection by Payment Type</h3>
+      <a href="{% url 'finance_audit_export' %}?report=payment_methods" class="btn btn-sm btn-secondary" style="font-size: 0.78rem;">
+        Export &darr;
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.76rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 14px;">Payment Method</th>
+            <th style="padding: 10px 14px; text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in metrics.methods_data %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.86rem;">
+            <td style="padding: 12px 14px; font-weight: 600;">{{ m.method }}</td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 700;">₹{{ m.amount|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="2" style="padding: 24px; text-align: center; color: var(--tp-text-muted);">No collections recorded in this range.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.tp-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(16, 185, 129, 0.25) !important;
+}
+</style>
+{% endblock %}

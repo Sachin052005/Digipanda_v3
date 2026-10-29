@@ -78,22 +78,61 @@ def webhook(request):
 
 @login_required
 def lead_list(request):
-    """All Facebook leads with search, and the CRM lead each one became."""
+    """All Facebook leads with search, form/ad filters, and clickable KPIs."""
     if not _can_manage(request.user):
         raise PermissionDenied("Only Admin and Sales Head can view Facebook leads.")
     q = request.GET.get("q", "").strip()
+    selected_form = request.GET.get("form", "").strip()
+    selected_ad = request.GET.get("ad", "").strip()
+    crm_filter = request.GET.get("crm", "").strip()
+
+    available_forms = list(
+        FacebookLead.objects.exclude(form_name__isnull=True).exclude(form_name="")
+        .values_list("form_name", flat=True).distinct().order_by("form_name")
+    )
+    available_ads = list(
+        FacebookLead.objects.exclude(ad_name__isnull=True).exclude(ad_name="")
+        .values_list("ad_name", flat=True).distinct().order_by("ad_name")
+    )
+
     leads = FacebookLead.objects.select_related("lead", "lead__assigned_telecaller", "lead__branch")
+    base_qs = FacebookLead.objects.all()
+
+    if selected_form:
+        form_q = Q(form_name=selected_form) | Q(form_id=selected_form)
+        leads = leads.filter(form_q)
+        base_qs = base_qs.filter(form_q)
+
+    if selected_ad:
+        ad_q = Q(ad_name=selected_ad) | Q(ad_id=selected_ad)
+        leads = leads.filter(ad_q)
+        base_qs = base_qs.filter(ad_q)
+
     if q:
-        leads = leads.filter(
+        search_q = (
             Q(full_name__icontains=q) | Q(phone__icontains=q) | Q(email__icontains=q)
             | Q(form_name__icontains=q) | Q(ad_name__icontains=q) | Q(campaign_name__icontains=q)
         )
-    if request.GET.get("crm") == "error":
+        leads = leads.filter(search_q)
+        base_qs = base_qs.filter(search_q)
+
+    total_kpi = base_qs.count()
+    error_kpi = base_qs.filter(crm_result="error").count()
+
+    if crm_filter == "error":
         leads = leads.filter(crm_result="error")
+
     page = Paginator(leads, 25).get_page(request.GET.get("page"))
     return render(request, "fb_leads/leads.html", {
-        "page": page, "q": q, "total": FacebookLead.objects.count(),
-        "errors": FacebookLead.objects.filter(crm_result="error").count(),
+        "page": page,
+        "q": q,
+        "selected_form": selected_form,
+        "selected_ad": selected_ad,
+        "available_forms": available_forms,
+        "available_ads": available_ads,
+        "crm_filter": crm_filter,
+        "total": total_kpi,
+        "errors": error_kpi,
         "configured": bool(getattr(settings, "FB_PAGE_TOKEN", "") and getattr(settings, "FB_PAGE_ID", "")),
         "lead_url_name": "admin_lead_detail" if request.user.is_admin_user else "manager_lead_detail",
     })
@@ -117,6 +156,12 @@ def api_recent_leads(request):
             Q(full_name__icontains=q) | Q(phone__icontains=q) | Q(email__icontains=q)
             | Q(form_name__icontains=q) | Q(ad_name__icontains=q) | Q(campaign_name__icontains=q)
         )
+    selected_form = request.GET.get("form", "").strip()
+    selected_ad = request.GET.get("ad", "").strip()
+    if selected_form:
+        leads_qs = leads_qs.filter(Q(form_name=selected_form) | Q(form_id=selected_form))
+    if selected_ad:
+        leads_qs = leads_qs.filter(Q(ad_name=selected_ad) | Q(ad_id=selected_ad))
     if request.GET.get("crm") == "error":
         leads_qs = leads_qs.filter(crm_result="error")
 
@@ -208,6 +253,9 @@ def fb_accounts(request):
 
     from branches.models import Branch
     from .models import FacebookAccount, FacebookPage
+    from .scheduler import ensure_scheduler_running
+
+    ensure_scheduler_running()
 
     accounts = FacebookAccount.objects.prefetch_related("pages", "pages__branch").all()
     branches = Branch.objects.filter(status=Branch.Status.ACTIVE).order_by("name")
@@ -215,6 +263,7 @@ def fb_accounts(request):
     return render(request, "fb_leads/accounts.html", {
         "accounts": accounts,
         "branches": branches,
+        "interval_choices": FacebookPage.SYNC_INTERVAL_CHOICES,
         "env_configured": bool(getattr(settings, "FB_PAGE_TOKEN", "") and getattr(settings, "FB_PAGE_ID", "")),
         "app_id": getattr(settings, "FB_APP_ID", ""),
     })
@@ -353,23 +402,196 @@ def fb_page_toggle_webhook(request, page_id):
 @login_required
 @require_POST
 def fb_page_sync(request, page_id):
-    """Sync leads specifically for one Facebook Page."""
+    """Sync leads specifically for one Facebook Page (supports both HTTP form POST and AJAX)."""
     if not _can_manage(request.user):
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": "Permission denied"}, status=403)
         raise PermissionDenied("Only Admin and Sales Head can sync leads.")
 
     from .models import FacebookPage
-    from .facebook import sync_page_leads
+    from .scheduler import trigger_immediate_page_sync
 
     page = FacebookPage.objects.filter(id=page_id).first()
     if not page:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": "Facebook Page not found"}, status=404)
         messages.error(request, "Facebook Page not found.")
         return redirect("fb_leads:fb_accounts")
 
     try:
-        n = sync_page_leads(page.page_id)
-        messages.success(request, f"Sync complete for '{page.page_name}': {n} new lead(s) imported.")
+        n = trigger_immediate_page_sync(page.page_id)
+        page.refresh_from_db()
+        msg = f"Sync complete for '{page.page_name}': {n} new lead(s) imported."
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": True,
+                "message": msg,
+                "new_leads": n,
+                "last_sync_at": page.last_sync_at.strftime("%d %b, %H:%M") if page.last_sync_at else "Just now",
+                "last_sync_status": page.last_sync_status,
+                "next_sync_at": page.next_sync_at.strftime("%H:%M") if page.next_sync_at else "—",
+            })
+        messages.success(request, msg)
     except Exception as exc:
-        messages.error(request, f"Sync failed for '{page.page_name}': {exc}")
+        err_msg = f"Sync failed for '{page.page_name}': {exc}"
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": err_msg}, status=500)
+        messages.error(request, err_msg)
 
     return redirect("fb_leads:fb_accounts")
+
+
+@login_required
+@require_POST
+def fb_page_toggle_autosync(request, page_id):
+    """Enable or disable periodic background auto-sync for a Facebook Page."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from django.http import JsonResponse
+    from .models import FacebookPage
+    from .scheduler import ensure_scheduler_running
+
+    if not _can_manage(request.user):
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": "Permission denied"}, status=403)
+        raise PermissionDenied("Only Admin and Sales Head can toggle auto-sync.")
+
+    ensure_scheduler_running()
+
+    page = FacebookPage.objects.filter(id=page_id).first()
+    if not page:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": "Facebook Page not found"}, status=404)
+        messages.error(request, "Facebook Page not found.")
+        return redirect("fb_leads:fb_accounts")
+
+    page.auto_sync_enabled = not page.auto_sync_enabled
+    if page.auto_sync_enabled:
+        interval = page.sync_interval_minutes or 3
+        page.next_sync_at = timezone.now() + timedelta(minutes=interval)
+        page.last_sync_status = f"Auto-sync enabled (every {interval}m)"
+    else:
+        page.next_sync_at = None
+        page.last_sync_status = "Auto-sync paused"
+
+    page.save(update_fields=["auto_sync_enabled", "next_sync_at", "last_sync_status"])
+
+    status_text = "enabled" if page.auto_sync_enabled else "paused"
+    msg = f"Auto-sync {status_text} for '{page.page_name}'."
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({
+            "success": True,
+            "auto_sync_enabled": page.auto_sync_enabled,
+            "sync_interval_minutes": page.sync_interval_minutes,
+            "last_sync_status": page.last_sync_status,
+            "next_sync_at": page.next_sync_at.strftime("%H:%M") if page.next_sync_at else "Paused",
+            "message": msg,
+        })
+
+    messages.success(request, msg)
+    return redirect("fb_leads:fb_accounts")
+
+
+@login_required
+@require_POST
+def fb_page_update_interval(request, page_id):
+    """Update auto-sync frequency (minutes) for a Facebook Page."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from django.http import JsonResponse
+    from .models import FacebookPage
+    from .scheduler import ensure_scheduler_running
+
+    if not _can_manage(request.user):
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": "Permission denied"}, status=403)
+        raise PermissionDenied("Only Admin and Sales Head can change auto-sync interval.")
+
+    ensure_scheduler_running()
+
+    page = FacebookPage.objects.filter(id=page_id).first()
+    if not page:
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "error": "Facebook Page not found"}, status=404)
+        messages.error(request, "Facebook Page not found.")
+        return redirect("fb_leads:fb_accounts")
+
+    raw_val = request.POST.get("interval", "3")
+    try:
+        interval = int(raw_val)
+        if interval not in [1, 3, 5, 10, 15, 30, 60]:
+            interval = 3
+    except (ValueError, TypeError):
+        interval = 3
+
+    page.sync_interval_minutes = interval
+    if page.auto_sync_enabled:
+        page.next_sync_at = timezone.now() + timedelta(minutes=interval)
+        page.last_sync_status = f"Interval set to {interval}m"
+
+    page.save(update_fields=["sync_interval_minutes", "next_sync_at", "last_sync_status"])
+
+    msg = f"Updated sync interval to {interval} minute(s) for '{page.page_name}'."
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({
+            "success": True,
+            "sync_interval_minutes": page.sync_interval_minutes,
+            "last_sync_status": page.last_sync_status,
+            "next_sync_at": page.next_sync_at.strftime("%H:%M") if page.next_sync_at else "Paused",
+            "message": msg,
+        })
+
+    messages.success(request, msg)
+    return redirect("fb_leads:fb_accounts")
+
+
+@login_required
+def api_autosync_status(request):
+    """
+    Heartbeat and status endpoint for live dashboard updates.
+    Returns status of all connected pages and triggers cycle if any is due.
+    """
+    from django.http import JsonResponse
+    from django.utils import timezone
+    from .models import FacebookPage
+    from .scheduler import ensure_scheduler_running, run_auto_sync_cycle
+
+    if not _can_manage(request.user):
+        return JsonResponse({"success": False, "error": "Forbidden"}, status=403)
+
+    ensure_scheduler_running()
+    # Execute a cycle check (handles edge cases where thread was idle)
+    try:
+        run_auto_sync_cycle()
+    except Exception as exc:
+        log.warning("Heartbeat sync cycle check warning: %s", exc)
+
+    now = timezone.now()
+    pages_data = []
+    for p in FacebookPage.objects.filter(status="CONNECTED"):
+        seconds_left = None
+        if p.auto_sync_enabled and p.next_sync_at:
+            delta = (p.next_sync_at - now).total_seconds()
+            seconds_left = max(0, int(delta))
+
+        pages_data.append({
+            "id": p.id,
+            "page_id": p.page_id,
+            "page_name": p.page_name,
+            "auto_sync_enabled": p.auto_sync_enabled,
+            "sync_interval_minutes": p.sync_interval_minutes,
+            "last_sync_at": p.last_sync_at.strftime("%d %b, %H:%M") if p.last_sync_at else "Never synced",
+            "last_sync_status": p.last_sync_status,
+            "last_error": p.last_error,
+            "next_sync_at": p.next_sync_at.strftime("%H:%M") if p.next_sync_at else "—",
+            "seconds_left": seconds_left,
+        })
+
+    return JsonResponse({
+        "success": True,
+        "pages": pages_data,
+        "server_time": now.strftime("%H:%M:%S"),
+    })
+
 

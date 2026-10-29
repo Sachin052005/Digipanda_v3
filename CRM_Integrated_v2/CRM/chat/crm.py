@@ -71,18 +71,25 @@ def ensure_lead_for_conversation(conversation, conversation_created=False):
                 intake.auto_assign(existing, SOURCE)
         return existing, False
 
-    note = "Started a WhatsApp chat" + (f" on {biz.name}" if biz else "")
+    note = "Started a WhatsApp chat" + (f" on {biz.name} ({biz.phone_number})" if (biz and biz.phone_number) else (f" on {biz.name}" if biz else ""))
+    branch = _branch_for(conversation)
     try:
         return intake.intake_lead(
             phone=conversation.phone_number,
             source=SOURCE,
             channel_name=CHANNEL,
             name=conversation.customer_name,
-            branch=_branch_for(conversation),
+            branch=branch,
             note=note,
             provider_event_id=f"wa_conv_{conversation.id}_{intake.phone10(conversation.phone_number)}" if conversation_created else None,
             incoming_timestamp=conversation.last_message_time or timezone.now(),
-            data_payload={'conversation_id': conversation.id, 'customer_name': conversation.customer_name},
+            data_payload={
+                'conversation_id': conversation.id,
+                'customer_name': conversation.customer_name,
+                'whatsapp_phone': biz.phone_number if biz else '',
+                'business_account_name': biz.name if biz else '',
+                'branch_name': branch.name if branch else '',
+            },
         )
 
     except ValueError as exc:
@@ -125,16 +132,40 @@ def sync_answers(lead, collected_data):
             if '@' in value and not lead.email:
                 lead.email = value.lower()[:254]
                 fields.add('email')
-        elif k in COURSE_KEYS:
+        elif k in COURSE_KEYS or 'program' in k or 'course' in k:
             product = intake.resolve_product(value)
-            if product is not None and not lead.product_id:
-                lead.product = product
-                fields.add('product')
-        elif k in BRANCH_KEYS:
+            cf = dict(lead.custom_fields or {})
+            cf['latest_course_enquiry'] = product.name if product else value
+            cf['latest_course_enquiry_date'] = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+            cf[k] = value
+            lead.custom_fields = cf
+            fields.add('custom_fields')
+            if product is not None:
+                if not lead.product_id:
+                    lead.product = product
+                    fields.add('product')
+                elif lead.product_id != product.id:
+                    timeline.append(f"🔄 New Course Interest: {product.name} (Previous: {lead.product.name})")
+        elif k in BRANCH_KEYS or 'location' in k:
             branch = intake.resolve_branch(value)
-            if branch is not None and not lead.branch_id:
-                lead.branch = branch
-                fields.add('branch')
+            if branch is not None:
+                if not lead.branch_id:
+                    lead.branch = branch
+                    fields.add('branch')
+                elif lead.branch_id != branch.id:
+                    lead.secondary_branches.add(branch)
+                    cf = dict(lead.custom_fields or {})
+                    cf['latest_branch_enquiry'] = branch.name
+                    lead.custom_fields = cf
+                    fields.add('custom_fields')
+                    timeline.append(f"🏢 Preferred Branch: {branch.name} (Original: {lead.branch.name})")
+        else:
+            # Other structured qualification inputs (training mode, current status, timeframe)
+            cf = dict(lead.custom_fields or {})
+            cf[k] = value
+            lead.custom_fields = cf
+            fields.add('custom_fields')
+
         timeline.append(f"{_pretty(k)}: {value}")
 
     collected_data[SYNC_STATE_KEY] = synced
@@ -142,8 +173,32 @@ def sync_answers(lead, collected_data):
         lead.save(update_fields=sorted(fields) + ['updated_at'])
     if timeline:
         intake.add_note(lead, "WhatsApp answers — " + "; ".join(timeline))
+
+    # Reopen lead if previously closed/lost/unresponsive
+    if lead.status in [LeadStatus.LOST, LeadStatus.NOT_INTERESTED, LeadStatus.NOT_JOINED]:
+        intake.system_change_status(lead, LeadStatus.FOLLOW_UP, remarks="Reopened via WhatsApp re-enquiry with new answers")
+    
+    # Auto-fill structured qualification fields on Lead
+    try:
+        from leads.qualification import autofill_lead_qualification
+        autofill_lead_qualification(lead, collected_data, source='WhatsApp')
+    except Exception as exc:
+        log.warning("WhatsApp lead qualification autofill error: %s", exc)
+
     if 'branch' in fields and not lead.assigned_telecaller_id:
         intake.auto_assign(lead, SOURCE)
+
+    # Notify assigned staff about incoming information
+    if changed:
+        recipient = lead.assigned_telecaller or lead.assigned_sales_head or intake.branch_sales_head(lead.branch)
+        if recipient:
+            summary = "\n".join([f"• {_pretty(k)}: {v}" for k, v in list(changed.items())[:5]])
+            intake.notify(
+                recipient,
+                title=f"WhatsApp Lead Update ({lead.name or lead.phone})",
+                message=f"New responses collected via WhatsApp automation:\n{summary}",
+                kind="info"
+            )
     return changed
 
 
@@ -205,12 +260,30 @@ def _phones_tail(qs):
 
 
 def can_use_inbox(user):
-    return bool(user and user.is_authenticated and user.is_active)
+    """
+    WhatsApp Inbox access:
+    Restricted strictly to Admin, Superadmin, and Sales Head (Manager) roles only.
+    Telecallers, counselors, and other staff roles are disallowed.
+    """
+    if not (user and user.is_authenticated and user.is_active):
+        return False
+    if getattr(user, 'is_admin_user', False):
+        return True
+    return bool(user.role == UserRole.SALES_HEAD or getattr(user, 'is_sales_head_user', False))
 
 
 def can_manage_automation(user):
-    """Flow builder, WhatsApp numbers: Admin and Sales Head."""
-    return bool(user and user.is_authenticated and (user.is_admin_user or user.is_sales_head_user))
+    """
+    Flow builder, Automations, and WhatsApp numbers:
+    Accessible exclusively to Admin, Superadmin, and Sales Head (Manager).
+    """
+    if not (user and user.is_authenticated and user.is_active):
+        return False
+    return bool(
+        getattr(user, 'is_admin_user', False)
+        or getattr(user, 'is_sales_head_user', False)
+        or user.role == UserRole.SALES_HEAD
+    )
 
 
 def conversations_for_user(user, qs):

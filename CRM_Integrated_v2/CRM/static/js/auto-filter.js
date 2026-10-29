@@ -118,15 +118,7 @@
           } catch (e) {}
         }
 
-        // Visual loading indicator (subtle opacity transition on table or card)
-        var contentTarget = document.querySelector('.crm-card, .table-card, .table-responsive, table') || form;
-        if (contentTarget) {
-          contentTarget.style.opacity = '0.55';
-          contentTarget.style.pointerEvents = 'none';
-          contentTarget.style.transition = 'opacity 0.2s ease';
-        }
-
-        // Submit GET form
+        // Submit GET form directly without screen dimming flash
         form.submit();
       }
 

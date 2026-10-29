@@ -1,12 +1,12 @@
-TECHPANDA – Learning Today, Building Tomorrow
+DIGIPANDA – Learning Today, Building Tomorrow
 
-Welcome to TECHPANDA!
+Welcome to DIGIPANDA!
 Enrollment Confirmed — {{ course_name }}
 
 Hi {{ student_name }},
 
 Your enrollment is confirmed and you're all set to begin your learning journey with us.
-We are happy to confirm your enrollment in {{ course_name }} at TECHPANDA.
+We are happy to confirm your enrollment in {{ course_name }} at DIGIPANDA.
 
 STUDENT INFORMATION:
 - Name: {{ student_name }}
@@ -21,18 +21,18 @@ STUDENT INFORMATION:
 WHAT'S NEXT?
 1. Complete your profile (if not done already).
 2. Access your learning portal and course materials:
-   {{ portal_url|default:"https://learn.techpanda.in" }}
+   {{ portal_url|default:"https://learn.digipanda.in" }}
 3. Join your batch and start learning!
 
 NEED HELP?
 Our support team is always here to assist you:
 - Phone: +91 98765 43210
-- Email: support@techpanda.in
-- Website: https://www.techpanda.in
+- Email: support@digipanda.in
+- Website: https://www.digipanda.in
 
-Once again, welcome to TECHPANDA!
+Once again, welcome to DIGIPANDA!
 Let's build your future together.
 
 ---
-TECHPANDA | Learn | Build | Grow
-© 2026 TECHPANDA. All rights reserved.
+DIGIPANDA | Learn | Build | Grow
+© 2026 DIGIPANDA. All rights reserved.

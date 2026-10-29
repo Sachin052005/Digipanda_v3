@@ -1,244 +1,736 @@
 {% extends 'base.html' %}
-{% block title %}Reception & Walk-in Desk - TECHPANDA CRM{% endblock %}
+{% load static %}
+{% block title %}Reception & Walk-in Desk - DigipandaCRM{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --radar-glow: #6366f1;
+    --waiting-glow: #f43f5e;
+    --consult-glow: #f59e0b;
+    --complete-glow: #10b981;
+  }
+
+  /* Futuristic Command Bar */
+  .radar-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    border-radius: var(--radius-lg, 14px);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .radar-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1, #06b6d4, #10b981, #f43f5e);
+    background-size: 300% 100%;
+    animation: laserGlow 6s linear infinite;
+  }
+  @keyframes laserGlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .radar-beacon {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #a5b4fc;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .beacon-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 10px #10b981;
+    animation: beaconPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes beaconPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .radar-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: #ffffff;
+  }
+  .radar-sub {
+    font-size: 0.825rem;
+    color: #94a3b8;
+    margin: 4px 0 0;
+  }
+
+  /* Segmented Date Range Switch */
+  .date-segmented-bar {
+    display: inline-flex;
+    background: #0f172a;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    margin-bottom: 20px;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .date-seg-btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .date-seg-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .date-seg-btn.active {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  .date-count-pill {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .date-seg-btn.active .date-count-pill {
+    background: #ffffff;
+    color: #4338ca;
+  }
+
+  /* Futuristic KPI HUD Cards */
+  .hud-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .hud-kpi-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 12px);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    display: block;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  }
+  .hud-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px -3px rgba(15, 23, 42, 0.08);
+  }
+  .hud-kpi-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    bottom: 0;
+    background: #cbd5e1;
+    transition: background 0.2s;
+  }
+  .hud-kpi-card.kpi-total::after { background: #6366f1; }
+  .hud-kpi-card.kpi-waiting::after { background: #f43f5e; }
+  .hud-kpi-card.kpi-consult::after { background: #f59e0b; }
+  .hud-kpi-card.kpi-complete::after { background: #10b981; }
+
+  .hud-kpi-card.active-filter {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  }
+
+  .hud-kpi-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .hud-kpi-val {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 8px 0 4px;
+    color: var(--text-main, #0f172a);
+    letter-spacing: -0.03em;
+  }
+  .hud-kpi-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+  }
+
+  /* Futuristic Table View */
+  .cyber-table-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 14px);
+    overflow: hidden;
+    box-shadow: 0 4px 15px -2px rgba(15, 23, 42, 0.05);
+    margin-bottom: 24px;
+  }
+  .cyber-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .cyber-table th {
+    background: #f8fafc;
+    padding: 14px 18px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    border-bottom: 1.5px solid #e2e8f0;
+  }
+  .cyber-table td {
+    padding: 16px 18px;
+    font-size: 0.85rem;
+    color: var(--text-main, #1e293b);
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    transition: background 0.15s;
+  }
+  .cyber-table tbody tr:hover td {
+    background: #f8fafc;
+  }
+
+  /* Token Badge */
+  .token-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.825rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #38bdf8;
+    border: 1px solid #1e293b;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.1);
+  }
+
+  /* Visitor Cell */
+  .visitor-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .visitor-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+  }
+  .visitor-name {
+    font-weight: 700;
+    color: #0f172a;
+    text-decoration: none;
+    font-size: 0.92rem;
+    transition: color 0.15s;
+  }
+  .visitor-name:hover {
+    color: #4f46e5;
+  }
+  .visitor-id {
+    font-size: 0.725rem;
+    color: #64748b;
+  }
+
+  /* Comm Pills */
+  .comm-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .comm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #475569;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .comm-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+  }
+  .comm-btn.wa:hover {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #86efac;
+  }
+
+  /* Status Glowing Badges */
+  .status-badge-glow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .status-waiting {
+    background: #fef2f2;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
+  }
+  .status-waiting .glow-dot {
+    background: #e11d48;
+    box-shadow: 0 0 8px #e11d48;
+    animation: beaconPulse 1.2s infinite;
+  }
+  .status-consult {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  }
+  .status-consult .glow-dot {
+    background: #d97706;
+    box-shadow: 0 0 8px #d97706;
+  }
+  .status-completed {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+  }
+  .status-completed .glow-dot {
+    background: #059669;
+    box-shadow: 0 0 8px #059669;
+  }
+  .glow-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  /* Actions & Popper Dropdown */
+  .action-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  .cyber-popper-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.15);
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 160px;
+    z-index: 1000;
+    display: none;
+    animation: menuFade 0.15s ease-out;
+  }
+  @keyframes menuFade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .popper-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .popper-item:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-  <div class="page-title-group">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">RECEPTION & WALK-IN DESK</h1>
-      <span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.775rem; font-weight: 600; padding: 4px 8px;">
-        {{ total_walkins_today }} Visitor{{ total_walkins_today|pluralize }} Today
-      </span>
+<div style="max-width: 1500px; margin: 0 auto; padding: 12px 0;">
+
+  <!-- Futuristic Radar Command Header -->
+  <div class="radar-header">
+    <div>
+      <div class="radar-beacon">
+        <span class="beacon-dot"></span>
+        <span>LIVE RECEPTION RADAR</span>
+      </div>
+      <h1 class="radar-title">RECEPTION &amp; WALK-IN DESK</h1>
+      <p class="radar-sub">
+        Real-time front-desk reception log, visitor token tracking, and instantaneous counselor assignment.
+      </p>
     </div>
-    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
-      Real-time front-desk reception log, visitor token tracking, and instantaneous counselor assignment.
-    </p>
+
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      <a href="{% if selected_branch %}{% url 'public_student_enquiry_branch' selected_branch.id %}{% else %}{% url 'public_student_enquiry_form' %}{% endif %}" target="_blank" class="btn btn-secondary" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #ffffff;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>Open Enquiry Form</span>
+      </a>
+
+      {% if selected_branch %}
+      <a href="{% url 'branch_qr_standee' selected_branch.id %}" target="_blank" class="btn btn-secondary" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #ffffff;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <span>Print Standee</span>
+      </a>
+      {% endif %}
+
+      <button type="button" class="btn btn-primary" onclick="openNewVisitorModal()" style="background: #4f46e5; border-color: #6366f1; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>+ Log Walk-in Visitor</span>
+      </button>
+    </div>
   </div>
-  <div class="page-actions" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-    {% if request.user.is_admin_user %}
-    <a href="{% url 'admin_receptionists_list' %}" class="btn btn-secondary">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-      Receptionists
-    </a>
-    {% endif %}
-    <a href="{% url 'admin_leads_list' %}" class="btn btn-secondary">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      All Leads
-    </a>
-    <button type="button" class="btn btn-primary" onclick="openNewVisitorModal()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      + Log Walk-in Visitor
-    </button>
+
+  <!-- Segmented Date Scope Bar -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+    <div class="date-segmented-bar">
+      <a href="?date_filter=today{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="date-seg-btn {% if date_filter == 'today' %}active{% endif %}">
+        <span>Today's Visitors</span>
+        <span class="date-count-pill">{{ count_today }}</span>
+      </a>
+      <a href="?date_filter=yesterday{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="date-seg-btn {% if date_filter == 'yesterday' %}active{% endif %}">
+        <span>Yesterday</span>
+        <span class="date-count-pill">{{ count_yesterday }}</span>
+      </a>
+      <a href="?date_filter=week{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="date-seg-btn {% if date_filter == 'week' %}active{% endif %}">
+        <span>Last 7 Days</span>
+        <span class="date-count-pill">{{ count_week }}</span>
+      </a>
+      <a href="?date_filter=all{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="date-seg-btn {% if date_filter == 'all' %}active{% endif %}">
+        <span>All Time History</span>
+        <span class="date-count-pill">{{ count_all }}</span>
+      </a>
+    </div>
+
+    <div style="font-size: 0.825rem; color: var(--text-muted, #64748b);">
+      Active Scope: <strong>{% if date_filter == 'today' %}Today (Showing Only Today's Leads){% elif date_filter == 'yesterday' %}Yesterday{% elif date_filter == 'week' %}Last 7 Days{% else %}All Time Records{% endif %}</strong>
+    </div>
   </div>
-</div>
 
-<!-- KPI CARDS -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
-  <!-- Today's Walk-ins -->
-  <a href="?status_filter={% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if not status_filter %}#3b82f6{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Today's Arrivals</div>
-    <div style="font-size: 1.75rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ total_walkins_today }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Total visitors recorded today</div>
-  </a>
+  <!-- Synchronized KPI HUD Cards -->
+  <div class="hud-kpi-grid">
+    <a href="?date_filter={{ date_filter }}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="hud-kpi-card kpi-total {% if not status_filter %}active-filter{% endif %}">
+      <div class="hud-kpi-label">
+        <span>Total Visitors</span>
+        <span>📍</span>
+      </div>
+      <div class="hud-kpi-val" style="color: #4f46e5;">{{ active_range_total }}</div>
+      <div class="hud-kpi-sub">In selected timeframe</div>
+    </a>
 
-  <!-- Waiting in Lobby -->
-  <a href="?status_filter=Waiting{% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if status_filter == 'Waiting' %}#e11d48{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Waiting in Lobby</div>
-    <div style="font-size: 1.75rem; font-weight: 800; color: #e11d48; margin: 4px 0;">{{ waiting_count }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Awaiting counselor consultation</div>
-  </a>
+    <a href="?date_filter={{ date_filter }}&status_filter=Waiting{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="hud-kpi-card kpi-waiting {% if status_filter == 'Waiting' %}active-filter{% endif %}">
+      <div class="hud-kpi-label">
+        <span>Waiting in Lobby</span>
+        <span style="color:#e11d48;">●</span>
+      </div>
+      <div class="hud-kpi-val" style="color: #e11d48;">{{ waiting_count }}</div>
+      <div class="hud-kpi-sub">Awaiting consultation</div>
+    </a>
 
-  <!-- In Consultation -->
-  <a href="?status_filter=In Consultation{% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if status_filter == 'In Consultation' %}#d97706{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">In Consultation</div>
-    <div style="font-size: 1.75rem; font-weight: 800; color: #d97706; margin: 4px 0;">{{ in_consultation_count }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Currently with counselor</div>
-  </a>
+    <a href="?date_filter={{ date_filter }}&status_filter=In+Consultation{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="hud-kpi-card kpi-consult {% if status_filter == 'In Consultation' %}active-filter{% endif %}">
+      <div class="hud-kpi-label">
+        <span>In Consultation</span>
+        <span style="color:#d97706;">⚡</span>
+      </div>
+      <div class="hud-kpi-val" style="color: #d97706;">{{ in_consultation_count }}</div>
+      <div class="hud-kpi-sub">With assigned counselor</div>
+    </a>
 
-  <!-- Completed -->
-  <a href="?status_filter=Completed{% if branch_filter %}&branch={{ branch_filter }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 8px; padding: 16px; border: 2px solid {% if status_filter == 'Completed' %}#059669{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Completed</div>
-    <div style="font-size: 1.75rem; font-weight: 800; color: #059669; margin: 4px 0;">{{ completed_count }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Counseling completed</div>
-  </a>
-</div>
+    <a href="?date_filter={{ date_filter }}&status_filter=Completed{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="hud-kpi-card kpi-complete {% if status_filter == 'Completed' %}active-filter{% endif %}">
+      <div class="hud-kpi-label">
+        <span>Completed</span>
+        <span style="color:#059669;">✓</span>
+      </div>
+      <div class="hud-kpi-val" style="color: #059669;">{{ completed_count }}</div>
+      <div class="hud-kpi-sub">Counseling concluded</div>
+    </a>
+  </div>
 
-<!-- FILTERS -->
-<div class="filter-card" style="margin-bottom: 20px;">
-  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-    <div class="filter-col" style="flex: 2 1 200px;">
-      <label>Search Visitor</label>
-      <input type="text" name="search" class="form-control" placeholder="Search name, phone, token..." value="{{ search_query }}">
-    </div>
-    <div class="filter-col" style="flex: 1 1 160px;">
-      <label>Visiting Center / Branch</label>
-      <select name="branch" class="form-select">
-        <option value="">All Branches</option>
-        {% for b in branches %}
-        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="filter-col" style="flex: 1 1 150px;">
-      <label>Visitor Status</label>
-      <select name="status_filter" class="form-select">
-        <option value="">All Statuses</option>
-        <option value="Waiting" {% if status_filter == 'Waiting' %}selected{% endif %}>Waiting</option>
-        <option value="In Consultation" {% if status_filter == 'In Consultation' %}selected{% endif %}>In Consultation</option>
-        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
-        <option value="No Show" {% if status_filter == 'No Show' %}selected{% endif %}>No Show</option>
-      </select>
-    </div>
-    <div class="filter-col" style="display: flex; gap: 8px;">
-      <a href="{% url 'admin_walkin_desk' %}" class="btn btn-secondary">Reset</a>
-    </div>
-  </form>
-</div>
+  <!-- Search & Center Filter Card -->
+  <div class="filter-card" style="margin-bottom: 20px; background: var(--bg-card); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border-color);">
+    <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+      <input type="hidden" name="date_filter" value="{{ date_filter }}">
 
-<!-- WALK-IN VISITORS TABLE -->
-<div class="table-card">
-  <div class="table-responsive">
-    <table class="table" style="margin: 0;">
-      <thead>
-        <tr>
-          <th>Token #</th>
-          <th>Visitor Name</th>
-          <th>Phone</th>
-          <th>Visiting Center</th>
-          <th>Category</th>
-          <th>Arrival Time</th>
-          <th>Counselor</th>
-          <th>Visitor Status</th>
-          <th style="text-align: right;">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for lead in page_obj %}
-        <tr>
-          <td>
-            <span class="badge" style="background: #f1f5f9; color: #1e293b; font-family: monospace; font-size: 0.85rem; padding: 4px 8px; border: 1px solid #cbd5e1;">
-              {{ lead.token_number|default:lead.id }}
-            </span>
-          </td>
-          <td>
-            <a href="{% url 'admin_lead_detail' lead.id %}" style="font-weight: 600; color: #1e40af; text-decoration: none;">
-              {{ lead.name }}
-            </a>
-            <div style="font-size: 0.75rem; color: #6b7280;">ID #{{ lead.id }}</div>
-          </td>
-          <td>
-            <div style="font-family: monospace; font-size: 0.85rem;">{{ lead.phone }}</div>
-          </td>
-          <td>
-            <span class="badge" style="background: #f3f4f6; color: #374151;">
-              {{ lead.branch.name|default:"Unassigned Center" }}
-            </span>
-          </td>
-          <td>
-            <span class="badge" style="background: {% if lead.category == 'Training' %}#e0e7ff; color: #4338ca;{% else %}#fef3c7; color: #92400e;{% endif %}">
-              {{ lead.category|default:"Training" }}
-            </span>
-          </td>
-          <td>
-            <div style="font-size: 0.85rem; font-weight: 500;">
-              {{ lead.center_visit_date|default:lead.created_at|date:"h:i A" }}
-            </div>
-            <div style="font-size: 0.75rem; color: #6b7280;">
-              {{ lead.center_visit_date|default:lead.created_at|date:"M d, Y" }}
-            </div>
-          </td>
-          <td>
-            {% if lead.assigned_counselor %}
-              <div style="font-weight: 600; color: #1e293b;">
-                {{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}
+      <div class="filter-col" style="flex: 2 1 220px;">
+        <label style="font-size: 0.775rem; font-weight: 600; color: #475569; margin-bottom: 4px; display: block;">Search Visitor</label>
+        <input type="text" name="search" class="form-control" placeholder="Search name, phone, token #..." value="{{ search_query }}">
+      </div>
+
+      <div class="filter-col" style="flex: 1 1 180px;">
+        <label style="font-size: 0.775rem; font-weight: 600; color: #475569; margin-bottom: 4px; display: block;">Center / Branch</label>
+        <select name="branch" class="form-select" onchange="this.form.submit()">
+          <option value="">All Branches</option>
+          {% for b in branches %}
+          <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-col" style="flex: 1 1 160px;">
+        <label style="font-size: 0.775rem; font-weight: 600; color: #475569; margin-bottom: 4px; display: block;">Visitor Status</label>
+        <select name="status_filter" class="form-select" onchange="this.form.submit()">
+          <option value="">All Statuses</option>
+          <option value="Waiting" {% if status_filter == 'Waiting' %}selected{% endif %}>Waiting</option>
+          <option value="In Consultation" {% if status_filter == 'In Consultation' %}selected{% endif %}>In Consultation</option>
+          <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+          <option value="No Show" {% if status_filter == 'No Show' %}selected{% endif %}>No Show</option>
+        </select>
+      </div>
+
+      <div class="filter-col" style="display: flex; gap: 8px;">
+        <button type="submit" class="btn btn-primary" style="padding: 8px 16px;">Filter</button>
+        <a href="?date_filter={{ date_filter }}" class="btn btn-secondary" style="padding: 8px 14px;">Reset</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Redesigned Cyber Table -->
+  <div class="cyber-table-card">
+    <div class="table-responsive">
+      <table class="cyber-table">
+        <thead>
+          <tr>
+            <th>Token ID</th>
+            <th>Visitor Profile</th>
+            <th>Contact</th>
+            <th>Center</th>
+            <th>Arrival Time</th>
+            <th>Counselor</th>
+            <th>Visitor Status</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lead in page_obj %}
+          <tr>
+            <!-- Token -->
+            <td>
+              <span class="token-pill">
+                {{ lead.token_number|default:lead.id }}
+              </span>
+            </td>
+
+            <!-- Visitor Profile -->
+            <td>
+              <div class="visitor-profile">
+                <div class="visitor-avatar">
+                  {{ lead.name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <a href="{% url 'admin_lead_detail' lead.id %}" class="visitor-name">
+                    {{ lead.name }}
+                  </a>
+                  <div class="visitor-id">Lead #{{ lead.id }} {% if lead.product %}• {{ lead.product.name }}{% elif lead.custom_fields.courses %}• {{ lead.custom_fields.courses }}{% endif %}</div>
+                </div>
               </div>
-              <div style="font-size: 0.75rem; color: #64748b;">Counselor</div>
-            {% else %}
-              <span class="badge" style="background: #fee2e2; color: #991b1b;">Unassigned</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if lead.visitor_status == 'Waiting' %}
-              <span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 600;">
-                Waiting in Lobby
-              </span>
-            {% elif lead.visitor_status == 'In Consultation' %}
-              <span class="badge" style="background: #fef3c7; color: #b45309; font-weight: 600;">
-                In Consultation
-              </span>
-            {% elif lead.visitor_status == 'Completed' %}
-              <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 600;">
-                Completed
-              </span>
-            {% else %}
-              <span class="badge" style="background: #f1f5f9; color: #475569;">
-                {{ lead.visitor_status|default:"Waiting" }}
-              </span>
-            {% endif %}
-          </td>
-          <td style="text-align: right; white-space: nowrap;">
-            <!-- Assign Counselor button -->
-            <button type="button" class="btn btn-primary" style="font-size: 0.75rem; padding: 4px 8px;"
-                    onclick="openAssignCounselorModal({{ lead.id }}, '{{ lead.name|escapejs }}', '{{ lead.branch_id|default:'' }}')">
-              {% if lead.assigned_counselor %}Reassign{% else %}Assign Counselor{% endif %}
-            </button>
+            </td>
 
-            <!-- Status change dropdown -->
-            <div class="dropdown" style="display: inline-block; margin-left: 4px;">
-              <button type="button" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;" onclick="toggleStatusDropdown({{ lead.id }})">
-                Status &#9662;
+            <!-- Phone & Quick Actions -->
+            <td>
+              <div style="font-family: monospace; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px;">
+                {{ lead.phone }}
+              </div>
+              <div class="comm-pills">
+                <a href="tel:{{ lead.phone }}" class="comm-btn" title="Call visitor">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </a>
+                <a href="https://wa.me/91{{ lead.phone }}" target="_blank" class="comm-btn wa" title="Chat on WhatsApp">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </a>
+              </div>
+            </td>
+
+            <!-- Branch Center -->
+            <td>
+              <span class="badge" style="background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; font-weight: 600;">
+                📍 {{ lead.branch.name|default:"Main Center" }}
+              </span>
+            </td>
+
+            <!-- Arrival Time -->
+            <td>
+              <div style="font-weight: 700; color: #0f172a; font-size: 0.85rem;">
+                {{ lead.center_visit_date|default:lead.created_at|date:"h:i A" }}
+              </div>
+              <div style="font-size: 0.72rem; color: #64748b;">
+                {{ lead.center_visit_date|default:lead.created_at|date:"M d, Y" }}
+              </div>
+            </td>
+
+            <!-- Counselor -->
+            <td>
+              {% if lead.assigned_counselor %}
+                <div style="font-weight: 700; color: #1e293b; font-size: 0.85rem;">
+                  {{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}
+                </div>
+                <div style="font-size: 0.72rem; color: #10b981; font-weight: 600;">Assigned Counselor</div>
+              {% else %}
+                <span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 700; padding: 4px 8px;">
+                  ⚠️ Unassigned
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Visitor Status -->
+            <td>
+              {% if lead.visitor_status == 'Waiting' or not lead.visitor_status %}
+                <span class="status-badge-glow status-waiting">
+                  <span class="glow-dot"></span>
+                  Waiting in Lobby
+                </span>
+              {% elif lead.visitor_status == 'In Consultation' %}
+                <span class="status-badge-glow status-consult">
+                  <span class="glow-dot"></span>
+                  In Consultation
+                </span>
+              {% elif lead.visitor_status == 'Completed' %}
+                <span class="status-badge-glow status-completed">
+                  <span class="glow-dot"></span>
+                  Completed
+                </span>
+              {% else %}
+                <span class="status-badge-glow" style="background:#f1f5f9; color:#475569;">
+                  {{ lead.visitor_status }}
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Actions Toolbar -->
+            <td style="text-align: right; white-space: nowrap;">
+              <div style="display: inline-flex; align-items: center; gap: 6px;">
+                <!-- Assign Counselor Button -->
+                <button type="button" class="btn btn-primary" style="font-size: 0.75rem; padding: 5px 10px;"
+                        onclick="openAssignCounselorModal({{ lead.id }}, '{{ lead.name|escapejs }}', '{{ lead.branch_id|default:'' }}')">
+                  {% if lead.assigned_counselor %}Reassign{% else %}Assign Counselor{% endif %}
+                </button>
+
+                <!-- Fixed Dropdown Popper -->
+                <div class="action-wrapper">
+                  <button type="button" class="btn btn-secondary" style="font-size: 0.75rem; padding: 5px 10px;" onclick="toggleStatusDropdown(event, {{ lead.id }})">
+                    Status ▾
+                  </button>
+                  <div id="statusDropdown_{{ lead.id }}" class="cyber-popper-menu">
+                    <div class="popper-item" onclick="updateVisitorStatus({{ lead.id }}, 'Waiting')">
+                      <span style="color:#e11d48;">●</span> Waiting in Lobby
+                    </div>
+                    <div class="popper-item" onclick="updateVisitorStatus({{ lead.id }}, 'In Consultation')">
+                      <span style="color:#d97706;">⚡</span> In Consultation
+                    </div>
+                    <div class="popper-item" onclick="updateVisitorStatus({{ lead.id }}, 'Completed')">
+                      <span style="color:#059669;">✓</span> Completed
+                    </div>
+                    <div class="popper-item" onclick="updateVisitorStatus({{ lead.id }}, 'No Show')">
+                      <span style="color:#64748b;">✕</span> No Show
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 60px 20px;">
+              <div style="font-size: 2.5rem; margin-bottom: 10px;">📋</div>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 4px;">No Walk-in Visitors for {{ date_filter|title }}</h3>
+              <p style="color: #64748b; font-size: 0.875rem; max-width: 440px; margin: 0 auto 16px;">
+                No visitors recorded in this timeframe. Use the date tabs above or log a new walk-in visitor to generate a token pass.
+              </p>
+              <button type="button" class="btn btn-primary" onclick="openNewVisitorModal()">
+                + Log Walk-in Visitor
               </button>
-              <div id="statusDropdown_{{ lead.id }}" style="display: none; position: absolute; right: 0; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 6px; padding: 6px 0; z-index: 100; min-width: 140px; text-align: left; border: 1px solid #e2e8f0;">
-                <a href="#" onclick="updateVisitorStatus({{ lead.id }}, 'Waiting'); return false;" style="display: block; padding: 6px 12px; font-size: 0.8rem; color: #1e293b; text-decoration: none;">Waiting</a>
-                <a href="#" onclick="updateVisitorStatus({{ lead.id }}, 'In Consultation'); return false;" style="display: block; padding: 6px 12px; font-size: 0.8rem; color: #b45309; text-decoration: none;">In Consultation</a>
-                <a href="#" onclick="updateVisitorStatus({{ lead.id }}, 'Completed'); return false;" style="display: block; padding: 6px 12px; font-size: 0.8rem; color: #15803d; text-decoration: none;">Completed</a>
-                <a href="#" onclick="updateVisitorStatus({{ lead.id }}, 'No Show'); return false;" style="display: block; padding: 6px 12px; font-size: 0.8rem; color: #64748b; text-decoration: none;">No Show</a>
-              </div>
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="9" style="text-align: center; padding: 48px 16px; color: #6b7280;">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: #9ca3af;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <div style="font-size: 1rem; font-weight: 600; color: #374151;">No Walk-in Visitors Found</div>
-            <div style="font-size: 0.85rem; margin-top: 4px;">Click "+ Log Walk-in Visitor" above to register an incoming visitor at reception.</div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-  {% if page_obj.has_other_pages %}
-  <div style="padding: 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
-    <div style="font-size: 0.85rem; color: #6b7280;">
-      Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} visitors)
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; flex-wrap: wrap; gap: 8px;">
+      <div style="font-size: 0.825rem; color: #64748b;">
+        Showing page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} visitors in scope)
+      </div>
+      <div style="display: flex; gap: 6px;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&date_filter={{ date_filter }}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Previous</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&date_filter={{ date_filter }}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Next</a>
+        {% endif %}
+      </div>
     </div>
-    <div style="display: flex; gap: 6px;">
-      {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Previous</a>
-      {% endif %}
-      {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" class="btn btn-secondary" style="font-size: 0.8rem;">Next</a>
-      {% endif %}
-    </div>
+    {% endif %}
   </div>
-  {% endif %}
 </div>
 
 <!-- LOG NEW WALK-IN MODAL -->
-<div id="newVisitorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-  <div style="background: #fff; width: 100%; max-width: 540px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden; margin: 16px;">
-    <div style="padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b;">Log New Walk-in Visitor</h3>
-      <button type="button" onclick="closeNewVisitorModal()" style="border: none; background: none; font-size: 1.25rem; color: #64748b; cursor: pointer;">&times;</button>
+<div id="newVisitorModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #fff; width: 100%; max-width: 540px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden;">
+    <div style="padding: 18px 24px; background: #0f172a; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Check In Walk-in Visitor</h3>
+        <p style="margin: 2px 0 0; font-size: 0.75rem; color: #94a3b8;">Issue token pass &amp; assign counselor</p>
+      </div>
+      <button type="button" onclick="closeNewVisitorModal()" style="border: none; background: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; line-height: 1;">&times;</button>
     </div>
-    <form id="newVisitorForm" onsubmit="submitNewVisitor(event)" style="padding: 20px;">
+    <form id="newVisitorForm" onsubmit="submitNewVisitor(event)" style="padding: 24px;">
       {% csrf_token %}
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
         <div>
@@ -247,7 +739,7 @@
         </div>
         <div>
           <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Mobile Phone *</label>
-          <input type="text" name="phone" class="form-control" required placeholder="e.g. 9876543210">
+          <input type="text" name="phone" class="form-control" required placeholder="e.g. 9876543210" maxlength="10" pattern="[0-9]{10}">
         </div>
       </div>
 
@@ -276,7 +768,7 @@
       </div>
 
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Assign Counselor Immediately</label>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Assign Counselor</label>
         <select name="counselor_id" id="visitorCounselorSelect" class="form-select">
           <option value="">-- Leave Waiting in Reception (Unassigned) --</option>
           {% for c in counselors %}
@@ -287,35 +779,35 @@
 
       <div style="margin-bottom: 20px;">
         <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Notes / Purpose of Visit</label>
-        <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Enquiring about Full Stack Python course, referred by friend"></textarea>
+        <textarea name="notes" class="form-control" rows="2" placeholder="e.g. Enquiring about Full Stack course, referred by friend"></textarea>
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button type="button" class="btn btn-secondary" onclick="closeNewVisitorModal()">Cancel</button>
-        <button type="submit" id="btnSubmitNewVisitor" class="btn btn-primary">Check In Visitor</button>
+        <button type="submit" id="btnSubmitNewVisitor" class="btn btn-primary" style="background:#4f46e5;">Check In Visitor</button>
       </div>
     </form>
   </div>
 </div>
 
 <!-- ASSIGN COUNSELOR MODAL -->
-<div id="assignCounselorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-  <div style="background: #fff; width: 100%; max-width: 440px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden; margin: 16px;">
-    <div style="padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b;">Assign to Branch Counselor</h3>
-      <button type="button" onclick="closeAssignCounselorModal()" style="border: none; background: none; font-size: 1.25rem; color: #64748b; cursor: pointer;">&times;</button>
+<div id="assignCounselorModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #fff; width: 100%; max-width: 440px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden;">
+    <div style="padding: 18px 24px; background: #0f172a; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Assign to Branch Counselor</h3>
+      <button type="button" onclick="closeAssignCounselorModal()" style="border: none; background: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer; line-height: 1;">&times;</button>
     </div>
-    <form id="assignCounselorForm" onsubmit="submitAssignCounselor(event)" style="padding: 20px;">
+    <form id="assignCounselorForm" onsubmit="submitAssignCounselor(event)" style="padding: 24px;">
       {% csrf_token %}
       <input type="hidden" name="lead_id" id="assignLeadId" value="">
 
       <div style="margin-bottom: 16px;">
-        <div style="font-size: 0.85rem; color: #64748b;">Visitor:</div>
-        <div id="assignLeadName" style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-top: 2px;"></div>
+        <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Visitor:</div>
+        <div id="assignLeadName" style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-top: 2px;"></div>
       </div>
 
       <div style="margin-bottom: 16px;">
-        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Select Branch Counselor *</label>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Select Branch Counselor *</label>
         <select name="counselor_id" id="modalCounselorSelect" class="form-select" required>
           <option value="">-- Choose Counselor --</option>
           {% for c in counselors %}
@@ -325,13 +817,13 @@
       </div>
 
       <div style="margin-bottom: 20px;">
-        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Desk Note</label>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Desk Note</label>
         <input type="text" name="reason" class="form-control" value="Assigned at Reception Desk" placeholder="Optional handoff note">
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
         <button type="button" class="btn btn-secondary" onclick="closeAssignCounselorModal()">Cancel</button>
-        <button type="submit" id="btnSubmitAssignCounselor" class="btn btn-primary">Assign & Notify</button>
+        <button type="submit" id="btnSubmitAssignCounselor" class="btn btn-primary" style="background:#4f46e5;">Assign &amp; Notify</button>
       </div>
     </form>
   </div>
@@ -349,7 +841,6 @@ function openAssignCounselorModal(leadId, leadName, branchId) {
   document.getElementById('assignLeadId').value = leadId;
   document.getElementById('assignLeadName').textContent = leadName;
 
-  // Filter counselor options if branchId is present
   const select = document.getElementById('modalCounselorSelect');
   Array.from(select.options).forEach(opt => {
     if (!opt.value) return;
@@ -366,16 +857,22 @@ function closeAssignCounselorModal() {
   document.getElementById('assignCounselorModal').style.display = 'none';
 }
 
-function toggleStatusDropdown(leadId) {
-  const dd = document.getElementById(`statusDropdown_${leadId}`);
-  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+function toggleStatusDropdown(event, leadId) {
+  event.stopPropagation();
+  const targetDd = document.getElementById(`statusDropdown_${leadId}`);
+  const isCurrentlyOpen = targetDd.style.display === 'block';
+  
+  // Close all other poppers
+  document.querySelectorAll('.cyber-popper-menu').forEach(el => el.style.display = 'none');
+  
+  if (!isCurrentlyOpen) {
+    targetDd.style.display = 'block';
+  }
 }
 
-// Close dropdowns on outside click
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('.dropdown')) {
-    document.querySelectorAll('[id^="statusDropdown_"]').forEach(el => el.style.display = 'none');
-  }
+// Close popper menus when clicking outside
+document.addEventListener('click', function() {
+  document.querySelectorAll('.cyber-popper-menu').forEach(el => el.style.display = 'none');
 });
 
 async function updateVisitorStatus(leadId, newStatus) {
@@ -467,7 +964,6 @@ async function submitAssignCounselor(e) {
     });
     const data = await res.json();
     if (data.success) {
-      alert(`Visitor successfully assigned to Counselor ${data.counselor_name}!`);
       window.location.reload();
     } else {
       alert(`Error: ${data.error || 'Failed to assign counselor.'}`);
@@ -479,6 +975,19 @@ async function submitAssignCounselor(e) {
     btn.disabled = false;
     btn.textContent = 'Assign & Notify';
   }
+}
+
+function filterCounselorsByBranch(branchId) {
+  const select = document.getElementById('visitorCounselorSelect');
+  if (!select) return;
+  Array.from(select.options).forEach(opt => {
+    if (!opt.value) return;
+    if (!branchId || opt.getAttribute('data-branch') === branchId) {
+      opt.style.display = '';
+    } else {
+      opt.style.display = 'none';
+    }
+  });
 }
 </script>
 {% endblock %}

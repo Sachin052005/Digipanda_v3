@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Branch Admins - DigipandaCRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">BRANCH ADMINS</h1>
+      <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 9999px;">
+        {{ total_count }} Total
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Branch administrators with dedicated oversight of branch student enrollments, course fee schedules, and admission records.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px;">
+    <a href="{% url 'admin_enrolled_students' %}" class="btn btn-secondary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      Enrolled Students
+    </a>
+    <a href="{% url 'admin_branch_admin_create' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+       Add Branch Admin
+    </a>
+  </div>
+</div>
+
+<!-- KPI SUMMARY CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div style="background: var(--bg-card, #fff); border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted, #6b7280); letter-spacing: 0.05em;">Total Branch Admins</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ total_count }}</div>
+    <div style="font-size: 0.75rem; color: var(--text-muted, #6b7280);">Branch administrators configured</div>
+  </div>
+  <div style="background: var(--bg-card, #fff); border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted, #6b7280); letter-spacing: 0.05em;">Active Status</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #059669; margin: 4px 0;">{{ active_count }}</div>
+    <div style="font-size: 0.75rem; color: var(--text-muted, #6b7280);">Active login accounts</div>
+  </div>
+  <div style="background: var(--bg-card, #fff); border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted, #6b7280); letter-spacing: 0.05em;">Active Branches</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #7c3aed; margin: 4px 0;">{{ branches|length }}</div>
+    <div style="font-size: 0.75rem; color: var(--text-muted, #6b7280);">Branches available for assignment</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-card" style="margin-bottom: 20px; background: var(--bg-card, #fff); border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb);">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <div class="filter-col" style="flex: 2 1 200px;">
+      <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Search Staff</label>
+      <input type="text" name="search" class="form-control" placeholder="Search name, username, email, phone..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col" style="flex: 1 1 150px;">
+      <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1 1 160px;">
+      <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Branch</label>
+      <select name="branch" class="form-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="display: flex; gap: 8px;">
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="{% url 'admin_branch_admins_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- BRANCH ADMINS TABLE -->
+<div class="table-card" style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+  <div class="table-responsive" style="width: 100%; overflow-x: auto;">
+    <table class="crm-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="background: var(--table-header-bg, #f8fafc); border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <th style="padding: 12px 14px; text-align: left; color: var(--text-main);">Branch Admin</th>
+          <th style="padding: 12px 14px; text-align: left; color: var(--text-main);">Assigned Branch</th>
+          <th style="padding: 12px 14px; text-align: left; color: var(--text-main);">Contact Details</th>
+          <th style="padding: 12px 14px; text-align: center; color: var(--text-main);">Enrolled Students</th>
+          <th style="padding: 12px 14px; text-align: left; color: var(--text-main);">Status</th>
+          <th style="padding: 12px 14px; text-align: left; color: var(--text-main);">Created Date</th>
+          <th style="padding: 12px 14px; text-align: right; color: var(--text-main);">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ba in page_obj %}
+        <tr style="border-bottom: 1px solid var(--border-color, #f1f5f9);">
+          <td style="padding: 12px 14px;">
+            <strong><a href="{% url 'admin_branch_admin_detail' ba.pk %}" style="color: var(--primary, #2563eb); text-decoration: none;">{{ ba.get_full_name|default:ba.username }}</a></strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted, #64748b);">@{{ ba.username }}</div>
+          </td>
+          <td style="padding: 12px 14px;">
+            {% if ba.branch %}
+            <span class="badge" style="background: #e0f2fe; color: #0284c7; font-weight: 600;">{{ ba.branch.name }}</span>
+            {% else %}
+            <span style="color: var(--text-muted);">-</span>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 14px;">
+            <div>{{ ba.email }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ ba.phone|default:"-" }}</div>
+          </td>
+          <td style="padding: 12px 14px; text-align: center;">
+            <a href="{% url 'admin_enrolled_students' %}?branch={{ ba.branch_id }}" class="badge" style="background: #ecfdf5; color: #059669; text-decoration: none; font-weight: 700; padding: 4px 8px; border-radius: 6px;">
+              {{ ba.enrolled_count }} Enrolled
+            </a>
+          </td>
+          <td style="padding: 12px 14px;">
+            {% if ba.is_active %}
+            <span class="badge badge-active" style="background: #dcfce7; color: #15803d;">Active</span>
+            {% else %}
+            <span class="badge badge-inactive" style="background: #fee2e2; color: #b91c1c;">Inactive</span>
+            {% endif %}
+            {% if ba.invitation_status == 'SENT' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem;">Invite Sent</span></div>
+            {% elif ba.invitation_status == 'FAILED' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.68rem;">Invite Failed</span></div>
+            {% elif ba.invitation_status == 'ACTIVATED' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.68rem;">Activated</span></div>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 14px; color: var(--text-muted);">{{ ba.date_joined|date:"M d, Y" }}</td>
+          <td style="padding: 12px 14px; text-align: right;">
+            <div style="display: inline-flex; gap: 6px; align-items: center;">
+              {% if request.user.is_admin_user or request.user.is_manager %}
+              <a href="{% url 'resend_user_invitation' ba.pk %}" class="btn btn-secondary btn-sm" title="Resend Welcome Email">Resend</a>
+              {% endif %}
+              <a href="{% url 'admin_branch_admin_detail' ba.pk %}" class="btn btn-secondary btn-sm">View</a>
+              <a href="{% url 'admin_branch_admin_edit' ba.pk %}" class="btn btn-primary btn-sm">Edit</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+            No Branch Admins found matching your filters.
+            <div style="margin-top: 8px;">
+              <a href="{% url 'admin_branch_admin_create' %}" class="btn btn-primary btn-sm">+ Create First Branch Admin</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div style="display: flex; justify-content: center; margin-top: 16px;">
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="btn btn-secondary btn-sm">&laquo; Prev</a>
+    {% endif %}
+    <span style="padding: 6px 12px; font-size: 0.85rem; color: var(--text-muted);">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="btn btn-secondary btn-sm">Next &raquo;</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

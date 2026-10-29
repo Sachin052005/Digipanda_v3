@@ -1,40 +1,77 @@
 {% extends 'base.html' %}
-{% block title %}Sales Head Login - TECHPANDA CRM{% endblock %}
+{% load static %}
+{% block title %}Sales Head Login - DigipandaCRM{% endblock %}
 
 {% block content %}
-<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
-  <div style="width: 100%; max-width: 440px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-lg);">
-    <div style="text-align: center; margin-bottom: 24px;">
-      <div style="display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: var(--radius-md); background: var(--primary-light); color: var(--primary); margin-bottom: 12px;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+<div class="tp-login-ambient-wrapper">
+  <!-- Glowing ambient floating orbs -->
+  <div class="tp-ambient-blob tp-ambient-blob-1"></div>
+  <div class="tp-ambient-blob tp-ambient-blob-2"></div>
+
+  <div class="tp-login-glass-card">
+    <!-- Animation A — Welcome heading -->
+    <div class="tp-login-anim-heading" style="text-align: center; margin-bottom: 26px;">
+      <div style="margin-bottom: 16px;">
+        <img src="{% static 'images/digipanda_logo.png' %}" alt="DigiPanda" class="brand-logo-light" style="max-height: 48px; max-width: 210px; object-fit: contain;">
+        <img src="{% static 'images/digipanda_logo_dark.png' %}" alt="DigiPanda" class="brand-logo-dark" style="max-height: 48px; max-width: 210px; object-fit: contain;">
       </div>
-      <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--text-main);">Sales Head Login</h2>
-      <p style="color: var(--text-muted); font-size: 0.875rem;">Sales Head Portal</p>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary, #0f172a); margin: 0 0 6px 0;">Sales Head Portal</h1>
+      <p style="color: var(--tp-text-muted, #64748b); font-size: 0.88rem; margin: 0;">Sign in to monitor pipeline performance & branch operations</p>
     </div>
 
-    <form method="POST">
+    {% if form.errors %}
+    <div class="alert alert-error" style="margin-bottom: 20px; font-size: 0.84rem; padding: 10px 14px; border-radius: 8px;">
+      <span>Invalid email address or password. Please verify your credentials.</span>
+    </div>
+    {% endif %}
+
+    <form method="POST" autocomplete="on">
       {% csrf_token %}
-      <div class="form-group">
-        <label class="form-label">Username</label>
-        {{ form.username }}
+
+      <!-- Animation B — First input field -->
+      <div class="form-group tp-login-anim-field-1" style="margin-bottom: 18px;">
+        <label class="form-label" for="id_email" style="display: block; font-size: 0.84rem; font-weight: 600; margin-bottom: 7px; color: var(--tp-text-primary, #0f172a);">
+          Sales Head Email Address
+        </label>
+        {{ form.email }}
       </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        {{ form.password }}
+
+      <!-- Animation C — Second input field -->
+      <div class="form-group tp-login-anim-field-2" style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+          <label class="form-label" for="id_password" style="font-size: 0.84rem; font-weight: 600; margin-bottom: 0; color: var(--tp-text-primary, #0f172a);">
+            Password
+          </label>
+          <a href="{% url 'password_reset' %}" style="font-size: 0.8rem; color: var(--tp-primary-600, #4f46e5); font-weight: 600; text-decoration: none;" tabindex="4">
+            Forgot Password?
+          </a>
+        </div>
+        <div class="tp-password-field-wrapper" style="position: relative; width: 100%; display: block;">
+          {{ form.password }}
+          <button type="button" class="tp-password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
       </div>
-      <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 20px;">
-        <label style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+
+      <!-- Animation Meta — Remember me & portal switcher -->
+      <div class="tp-login-anim-meta" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.825rem; color: var(--tp-text-muted, #64748b); cursor: pointer; user-select: none;">
           {{ form.remember_me }} Remember me
         </label>
-        <a href="{% url 'login' %}" style="font-size: 0.8rem; color: var(--text-muted);">Switch Portal</a>
+        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">
+          <a href="{% url 'login' %}" style="color: var(--tp-text-muted); font-weight: 500;">Switch Portal</a>
+        </span>
       </div>
-      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; font-weight: 600;">
+
+      <!-- Animation D — Glossy login button with light sweep -->
+      <button type="submit" class="btn btn-primary tp-login-anim-btn tp-glossy-btn" style="width: 100%; padding: 12px; font-size: 0.94rem; font-weight: 700; letter-spacing: 0.01em;">
         Login as Sales Head
       </button>
     </form>
 
-    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.825rem; color: var(--text-muted);">
-      Don't have a Sales Head account? <a href="{% url 'manager_register' %}" style="font-weight: 600;">Register as Sales Head</a>
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--tp-surface-border-subtle, #e2e8f0); text-align: center; font-size: 0.825rem; color: var(--tp-text-muted);">
+      Don't have a Sales Head account? <a href="{% url 'manager_register' %}" style="font-weight: 600; color: var(--tp-primary-600);">Register as Sales Head</a>
     </div>
   </div>
 </div>

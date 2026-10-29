@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Employees Directory - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <!-- Top Page Header -->
+  <div class="tp-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 22px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h1 style="font-size: 1.55rem; font-weight: 800; color: var(--tp-text-primary); margin: 0; letter-spacing: -0.02em;">Employee Directory</h1>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">HR & PAYROLL</span>
+      </div>
+      <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+        Branch-scoped employee profiles, role assignments, salary structures, and compensation records
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="{% url 'finance_payroll' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.84rem; height: 38px; padding: 0 14px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+        <span>Monthly Payroll</span>
+      </a>
+      <a href="{% url 'finance_salary_arrears' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.84rem; height: 38px; padding: 0 14px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+        <span>Salary Arrears</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Card -->
+  <div class="card tp-card-glass" style="margin-bottom: 24px; padding: 18px;">
+    <form method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+      <div style="flex: 1; min-width: 240px; position: relative;">
+        <div style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--tp-text-muted); pointer-events: none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <input type="text" name="q" value="{{ query }}" placeholder="Search by Code, Name, Email, or Role..." class="form-input" style="height: 38px; font-size: 0.84rem; padding-left: 36px; border-radius: 8px;">
+      </div>
+
+      <div style="min-width: 150px;">
+        <select name="status" class="form-select tp-custom-select" onchange="this.form.submit()" style="height: 38px; font-size: 0.84rem; border-radius: 8px;">
+          <option value="">All Statuses</option>
+          <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+          <option value="Probation" {% if status_filter == 'Probation' %}selected{% endif %}>Probation</option>
+          <option value="On Hold" {% if status_filter == 'On Hold' %}selected{% endif %}>On Hold</option>
+          <option value="Resigned" {% if status_filter == 'Resigned' %}selected{% endif %}>Resigned</option>
+        </select>
+      </div>
+
+      <div style="min-width: 160px;">
+        <select name="department" class="form-select tp-custom-select" onchange="this.form.submit()" style="height: 38px; font-size: 0.84rem; border-radius: 8px;">
+          <option value="">All Departments</option>
+          <option value="Finance" {% if dept_filter == 'Finance' %}selected{% endif %}>Finance</option>
+          <option value="Admissions" {% if dept_filter == 'Admissions' %}selected{% endif %}>Admissions</option>
+          <option value="Operations" {% if dept_filter == 'Operations' %}selected{% endif %}>Operations</option>
+          <option value="HR" {% if dept_filter == 'HR' %}selected{% endif %}>HR</option>
+          <option value="Academics" {% if dept_filter == 'Academics' %}selected{% endif %}>Academics</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="height: 38px; padding: 0 16px; font-weight: 600; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 6px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Search</span>
+      </button>
+
+      {% if query or status_filter or dept_filter %}
+      <a href="{% url 'finance_employees' %}" class="btn btn-secondary" style="height: 38px; padding: 0 14px; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 4px;">
+        <span>Reset</span>
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Employees Table Card -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Staff Registry</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 2px 0 0 0;">Branch staff profiles and compensation parameters</p>
+      </div>
+      <div style="font-size: 0.82rem; color: var(--tp-text-muted); font-weight: 600;">
+        Showing {{ employees|length }} of {{ total_count }} employees
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px; width: 40px;">#</th>
+            <th style="padding: 10px 12px;">Employee Code</th>
+            <th style="padding: 10px 12px;">Employee Name</th>
+            <th style="padding: 10px 12px;">Designation</th>
+            <th style="padding: 10px 12px;">Department</th>
+            <th style="padding: 10px 12px;">Branch</th>
+            <th style="padding: 10px 12px;">Status</th>
+            <th style="padding: 10px 12px; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;" class="tp-table-row-hover">
+            <td style="padding: 12px;">{{ forloop.counter }}</td>
+            <td style="padding: 12px; font-weight: 700; font-family: monospace; color: var(--tp-text-primary);">
+              {{ emp.employee_code }}
+            </td>
+            <td style="padding: 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(99, 102, 241, 0.15); color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0;">
+                  {{ emp.full_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div style="font-weight: 700; color: var(--tp-text-primary);">{{ emp.full_name }}</div>
+                  <div style="font-size: 0.75rem; color: var(--tp-text-muted);">{{ emp.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="padding: 12px; font-weight: 600;">{{ emp.role_title }}</td>
+            <td style="padding: 12px; color: var(--tp-text-muted);">{{ emp.department }}</td>
+            <td style="padding: 12px;">{{ emp.branch.name }}</td>
+            <td style="padding: 12px;">
+              <span class="badge" style="{% if emp.status == 'Active' %}background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3);{% elif emp.status == 'Probation' %}background: rgba(217, 119, 6, 0.15); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.3);{% else %}background: rgba(0,0,0,0.06); color: var(--tp-text-muted);{% endif %} font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                {% if emp.status == 'Active' %}<span class="tp-pulse-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span>{% endif %}
+                <span>{{ emp.status }}</span>
+              </span>
+            </td>
+            <td style="padding: 12px; text-align: center;">
+              <div style="display: inline-flex; gap: 6px;">
+                <!-- View Profile Button (Opens View Modal) -->
+                <button type="button" class="btn btn-sm btn-secondary btn-view-emp" 
+                        data-code="{{ emp.employee_code }}"
+                        data-name="{{ emp.full_name }}"
+                        data-email="{{ emp.email }}"
+                        data-phone="{{ emp.phone|default:'Not provided' }}"
+                        data-role="{{ emp.role_title }}"
+                        data-dept="{{ emp.department }}"
+                        data-branch="{{ emp.branch.name }}"
+                        data-type="{{ emp.employment_type }}"
+                        data-status="{{ emp.status }}"
+                        style="font-size: 0.74rem; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <span>View</span>
+                </button>
+
+                <!-- Salary Structure Button (Opens Salary Modal) -->
+                <button type="button" class="btn btn-sm btn-secondary btn-view-salary"
+                        data-name="{{ emp.full_name }}"
+                        data-code="{{ emp.employee_code }}"
+                        data-basic="{{ emp.basic_salary|floatformat:2 }}"
+                        data-hra="{{ emp.hra|floatformat:2 }}"
+                        data-allowances="{{ emp.allowances|floatformat:2 }}"
+                        data-gross="{{ emp.gross_salary|floatformat:2 }}"
+                        data-pf="{{ emp.pf_deduction|floatformat:2 }}"
+                        data-esi="{{ emp.esi_deduction|floatformat:2 }}"
+                        data-pt="{{ emp.professional_tax|floatformat:2 }}"
+                        data-deductions="{{ emp.total_deductions|floatformat:2 }}"
+                        data-net="{{ emp.net_salary|floatformat:2 }}"
+                        style="font-size: 0.74rem; padding: 3px 8px; font-weight: 700; color: #059669; display: inline-flex; align-items: center; gap: 4px;">
+                  <span>₹ Salary</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding: 40px; text-align: center; color: var(--tp-text-muted);">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <div>No employee records found matching your filters.</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Employee Profile View Modal -->
+<div id="modal-emp-profile" class="tp-modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px;">
+  <div class="card tp-card-glass" style="width: 100%; max-width: 500px; padding: 26px; border-radius: 16px; position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--tp-text-primary);" id="modal-emp-title">Employee Details</h3>
+      <button type="button" class="btn-close-modal" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--tp-text-muted);">&times;</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 0.86rem; margin-bottom: 20px;">
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Employee Code</div>
+        <div style="font-weight: 700; font-family: monospace;" id="m-emp-code">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Status</div>
+        <div style="font-weight: 700;" id="m-emp-status">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Full Name</div>
+        <div style="font-weight: 700;" id="m-emp-name">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Email</div>
+        <div style="font-weight: 600;" id="m-emp-email">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Phone</div>
+        <div style="font-weight: 600;" id="m-emp-phone">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Branch</div>
+        <div style="font-weight: 600;" id="m-emp-branch">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Role / Designation</div>
+        <div style="font-weight: 700;" id="m-emp-role">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Department</div>
+        <div style="font-weight: 600;" id="m-emp-dept">-</div>
+      </div>
+      <div>
+        <div style="font-size: 0.74rem; color: var(--tp-text-muted);">Employment Type</div>
+        <div style="font-weight: 600;" id="m-emp-type">-</div>
+      </div>
+    </div>
+
+    <div style="text-align: right;">
+      <button type="button" class="btn btn-secondary btn-close-modal" style="font-size: 0.84rem; padding: 6px 16px;">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 2: Salary Structure Breakdown Modal -->
+<div id="modal-emp-salary" class="tp-modal-overlay" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 16px;">
+  <div class="card tp-card-glass" style="width: 100%; max-width: 520px; padding: 26px; border-radius: 16px; position: relative; border-top: 4px solid #059669;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+      <div>
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--tp-text-primary);">Salary Structure</h3>
+        <div style="font-size: 0.78rem; color: var(--tp-text-muted);" id="m-sal-emp-name">-</div>
+      </div>
+      <button type="button" class="btn-close-modal" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--tp-text-muted);">&times;</button>
+    </div>
+
+    <!-- Earnings Breakdown -->
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 0.76rem; font-weight: 700; color: #059669; text-transform: uppercase; margin-bottom: 8px;">EARNINGS (₹)</div>
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.84rem;">
+        <span>Basic Salary</span>
+        <strong id="m-sal-basic">₹0.00</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.84rem;">
+        <span>House Rent Allowance (HRA)</span>
+        <strong id="m-sal-hra">₹0.00</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.84rem;">
+        <span>Special Allowances</span>
+        <strong id="m-sal-allowances">₹0.00</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 800; font-size: 0.9rem; background: rgba(0,0,0,0.02); padding-inline: 6px; border-radius: 4px;">
+        <span>Gross Monthly Earnings</span>
+        <strong style="color: #059669;" id="m-sal-gross">₹0.00</strong>
+      </div>
+    </div>
+
+    <!-- Deductions Breakdown -->
+    <div style="margin-bottom: 18px;">
+      <div style="font-size: 0.76rem; font-weight: 700; color: #dc2626; text-transform: uppercase; margin-bottom: 8px;">STATUTORY DEDUCTIONS (₹)</div>
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.84rem;">
+        <span>Provident Fund (PF)</span>
+        <strong style="color: #dc2626;" id="m-sal-pf">₹0.00</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.84rem;">
+        <span>Employee State Insurance (ESI)</span>
+        <strong style="color: #dc2626;" id="m-sal-esi">₹0.00</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.84rem;">
+        <span>Professional Tax (PT)</span>
+        <strong style="color: #dc2626;" id="m-sal-pt">₹0.00</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: 800; font-size: 0.9rem; background: rgba(0,0,0,0.02); padding-inline: 6px; border-radius: 4px;">
+        <span>Total Deductions</span>
+        <strong style="color: #dc2626;" id="m-sal-deductions">₹0.00</strong>
+      </div>
+    </div>
+
+    <!-- Net Pay Highlight -->
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #047857; text-transform: uppercase;">NET MONTHLY IN-HAND SALARY</div>
+        <div style="font-size: 0.72rem; color: var(--tp-text-muted);">Payable via monthly branch payroll run</div>
+      </div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #059669;" id="m-sal-net">
+        ₹0.00
+      </div>
+    </div>
+
+    <div style="text-align: right;">
+      <button type="button" class="btn btn-secondary btn-close-modal" style="font-size: 0.84rem; padding: 6px 18px;">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var modalProfile = document.getElementById('modal-emp-profile');
+  var modalSalary = document.getElementById('modal-emp-salary');
+
+  function closeModal() {
+    if (modalProfile) modalProfile.style.display = 'none';
+    if (modalSalary) modalSalary.style.display = 'none';
+  }
+
+  document.querySelectorAll('.btn-close-modal').forEach(function (btn) {
+    btn.addEventListener('click', closeModal);
+  });
+
+  [modalProfile, modalSalary].forEach(function (m) {
+    if (m) {
+      m.addEventListener('click', function (e) {
+        if (e.target === m) closeModal();
+      });
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // Handle View Employee Details
+  document.querySelectorAll('.btn-view-emp').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.getElementById('m-emp-code').textContent = btn.getAttribute('data-code');
+      document.getElementById('m-emp-name').textContent = btn.getAttribute('data-name');
+      document.getElementById('m-emp-email').textContent = btn.getAttribute('data-email');
+      document.getElementById('m-emp-phone').textContent = btn.getAttribute('data-phone');
+      document.getElementById('m-emp-role').textContent = btn.getAttribute('data-role');
+      document.getElementById('m-emp-dept').textContent = btn.getAttribute('data-dept');
+      document.getElementById('m-emp-branch').textContent = btn.getAttribute('data-branch');
+      document.getElementById('m-emp-type').textContent = btn.getAttribute('data-type');
+      document.getElementById('m-emp-status').textContent = btn.getAttribute('data-status');
+      if (modalProfile) {
+        modalProfile.style.display = 'flex';
+      }
+    });
+  });
+
+  // Handle View Salary Structure
+  document.querySelectorAll('.btn-view-salary').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.getElementById('m-sal-emp-name').textContent = btn.getAttribute('data-name') + ' (' + btn.getAttribute('data-code') + ')';
+      document.getElementById('m-sal-basic').textContent = '₹' + btn.getAttribute('data-basic');
+      document.getElementById('m-sal-hra').textContent = '₹' + btn.getAttribute('data-hra');
+      document.getElementById('m-sal-allowances').textContent = '₹' + btn.getAttribute('data-allowances');
+      document.getElementById('m-sal-gross').textContent = '₹' + btn.getAttribute('data-gross');
+      document.getElementById('m-sal-pf').textContent = '₹' + btn.getAttribute('data-pf');
+      document.getElementById('m-sal-esi').textContent = '₹' + btn.getAttribute('data-esi');
+      document.getElementById('m-sal-pt').textContent = '₹' + btn.getAttribute('data-pt');
+      document.getElementById('m-sal-deductions').textContent = '₹' + btn.getAttribute('data-deductions');
+      document.getElementById('m-sal-net').textContent = '₹' + btn.getAttribute('data-net');
+      if (modalSalary) {
+        modalSalary.style.display = 'flex';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

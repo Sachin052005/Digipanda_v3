@@ -1,0 +1,675 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>QR Standee Poster - {{ form_obj.title }} | DigipandaCRM Academy</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+
+    :root {
+
+      --primary: {{ form_obj.theme_color|default:'#4f46e5' }};
+
+      --text-dark: #0f172a;
+
+      --text-muted: #64748b;
+
+    }
+
+
+
+    * {
+
+      box-sizing: border-box;
+
+      margin: 0;
+
+      padding: 0;
+
+    }
+
+
+
+    body {
+
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      background: #f1f5f9;
+
+      color: var(--text-dark);
+
+      padding: 30px 16px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      min-height: 100vh;
+
+    }
+
+
+
+    /* Non-printable action toolbar */
+
+    .print-toolbar {
+
+      width: 100%;
+
+      max-width: 600px;
+
+      margin-bottom: 24px;
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      background: #ffffff;
+
+      border: 1px solid #e2e8f0;
+
+      padding: 12px 20px;
+
+      border-radius: 12px;
+
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+
+    }
+
+    .print-btn {
+
+      background: var(--primary);
+
+      color: #ffffff;
+
+      border: none;
+
+      padding: 10px 20px;
+
+      border-radius: 8px;
+
+      font-weight: 700;
+
+      font-size: 0.9rem;
+
+      cursor: pointer;
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+      transition: filter 0.15s;
+
+    }
+
+    .print-btn:hover {
+
+      filter: brightness(0.92);
+
+    }
+
+    .back-link {
+
+      color: #475569;
+
+      text-decoration: none;
+
+      font-size: 0.85rem;
+
+      font-weight: 600;
+
+    }
+
+
+
+    /* Printable Poster Frame (A4 aspect) */
+
+    .poster-sheet {
+
+      width: 100%;
+
+      max-width: 580px;
+
+      background: #ffffff;
+
+      border-radius: 20px;
+
+      box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.15);
+
+      border: 2px solid #e2e8f0;
+
+      padding: 44px 36px;
+
+      text-align: center;
+
+      position: relative;
+
+      overflow: hidden;
+
+    }
+
+
+
+    /* Branded Top Accent */
+
+    .poster-sheet::before {
+
+      content: '';
+
+      position: absolute;
+
+      top: 0;
+
+      left: 0;
+
+      right: 0;
+
+      height: 8px;
+
+      background: linear-gradient(90deg, var(--primary), #06b6d4, #10b981);
+
+    }
+
+
+
+    .brand-logo-area {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 12px;
+
+      margin-bottom: 14px;
+
+    }
+
+    .brand-panda-badge {
+
+      width: 48px;
+
+      height: 48px;
+
+      border-radius: 50%;
+
+      background: #0f172a;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-size: 1.6rem;
+
+    }
+
+    .brand-name-text {
+
+      font-size: 1.9rem;
+
+      font-weight: 800;
+
+      letter-spacing: -0.03em;
+
+      color: #0f172a;
+
+      text-align: left;
+
+    }
+
+    .brand-name-text span {
+
+      color: var(--primary);
+
+    }
+
+
+
+    .poster-hero-tag {
+
+      display: inline-block;
+
+      background: #f1f5f9;
+
+      color: var(--primary);
+
+      border: 1.5px solid #cbd5e1;
+
+      padding: 6px 16px;
+
+      border-radius: 20px;
+
+      font-size: 0.85rem;
+
+      font-weight: 800;
+
+      letter-spacing: 0.05em;
+
+      text-transform: uppercase;
+
+      margin-bottom: 12px;
+
+    }
+
+
+
+    .poster-heading {
+
+      font-size: 1.85rem;
+
+      font-weight: 800;
+
+      color: #0f172a;
+
+      line-height: 1.2;
+
+      margin-bottom: 8px;
+
+    }
+
+
+
+    .poster-subheading {
+
+      font-size: 1.05rem;
+
+      color: #475569;
+
+      margin-bottom: 24px;
+
+      line-height: 1.4;
+
+    }
+
+
+
+    /* QR Code Display Container */
+
+    .qr-standee-box {
+
+      background: #ffffff;
+
+      border: 3px solid #0f172a;
+
+      border-radius: 20px;
+
+      padding: 24px;
+
+      display: inline-block;
+
+      margin-bottom: 24px;
+
+      box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.12);
+
+      position: relative;
+
+    }
+
+    .qr-standee-box::after {
+
+      content: 'SCAN TO REGISTER';
+
+      position: absolute;
+
+      bottom: -13px;
+
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      background: #0f172a;
+
+      color: #ffffff;
+
+      font-size: 0.72rem;
+
+      font-weight: 800;
+
+      letter-spacing: 0.1em;
+
+      padding: 4px 16px;
+
+      border-radius: 12px;
+
+      white-space: nowrap;
+
+    }
+
+    .qr-code-img {
+
+      width: 260px;
+
+      height: 260px;
+
+      display: block;
+
+      margin: 0 auto;
+
+    }
+
+
+
+    /* 3-Step Process Instruction */
+
+    .steps-container {
+
+      display: grid;
+
+      grid-template-columns: 1fr 1fr 1fr;
+
+      gap: 12px;
+
+      margin-bottom: 28px;
+
+      text-align: center;
+
+    }
+
+    .step-item {
+
+      background: #f8fafc;
+
+      border: 1px solid #e2e8f0;
+
+      border-radius: 12px;
+
+      padding: 12px 8px;
+
+    }
+
+    .step-circle {
+
+      width: 28px;
+
+      height: 28px;
+
+      border-radius: 50%;
+
+      background: var(--primary);
+
+      color: #ffffff;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-weight: 800;
+
+      font-size: 0.85rem;
+
+      margin: 0 auto 6px;
+
+    }
+
+    .step-title {
+
+      font-size: 0.8rem;
+
+      font-weight: 700;
+
+      color: #1e293b;
+
+      margin-bottom: 2px;
+
+    }
+
+    .step-desc {
+
+      font-size: 0.7rem;
+
+      color: #64748b;
+
+    }
+
+
+
+    /* Footer Info */
+
+    .poster-footer {
+
+      border-top: 1px solid #e2e8f0;
+
+      padding-top: 18px;
+
+      font-size: 0.85rem;
+
+      color: #475569;
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      flex-wrap: wrap;
+
+      gap: 8px;
+
+    }
+
+
+
+    /* Print Styles */
+
+    @media print {
+
+      body {
+
+        background: #ffffff;
+
+        padding: 0;
+
+      }
+
+      .print-toolbar {
+
+        display: none !important;
+
+      }
+
+      .poster-sheet {
+
+        border: none;
+
+        box-shadow: none;
+
+        max-width: 100%;
+
+        padding: 24px 20px;
+
+        page-break-inside: avoid;
+
+      }
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+
+
+  <!-- Non-printable Action Bar -->
+
+  <div class="print-toolbar">
+
+    <a href="javascript:window.history.back()" class="back-link">← Back</a>
+
+    <div style="font-weight: 600; font-size: 0.9rem; color: #1e293b;">
+
+      Standee Poster: {{ form_obj.title }}
+
+    </div>
+
+    <button type="button" class="print-btn" onclick="window.print()">
+
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+
+      Print Poster (A4)
+
+    </button>
+
+  </div>
+
+
+
+  <!-- A4 Printable Standee -->
+
+  <div class="poster-sheet">
+
+    <div class="brand-logo-area">
+
+      {% if form_obj.logo %}
+
+      <img src="{{ form_obj.logo.url }}" alt="{{ branding.brand_name|default:'Brand Logo' }}" style="max-height: 56px; max-width: 240px; object-fit: contain; margin-bottom: 8px;">
+
+      {% if branding.brand_name %}
+
+      <div class="brand-name-text" style="font-size: 1.3rem;">{{ branding.brand_name }}</div>
+
+      {% endif %}
+
+      {% else %}
+
+      <div class="brand-panda-badge">{{ branding.icon|default:"🐼" }}</div>
+
+      <div class="brand-name-text">{{ branding.brand_name|default:"digipanda" }}</div>
+
+      {% endif %}
+
+    </div>
+
+
+
+    <div style="margin-bottom: 8px;">
+
+      <span class="poster-hero-tag">
+
+        📍 {% if form_obj.branch %}{{ form_obj.branch.name }} Center{% elif branch %}{{ branch.name }} Center{% else %}Student Walk-in Desk{% endif %}
+
+      </span>
+
+    </div>
+
+
+
+    <h1 class="poster-heading">{% if form_obj %}{{ form_obj.title|default:"Welcome to DigiPanda Academy" }}{% else %}Welcome to DigiPanda Academy{% endif %}</h1>
+
+    <p class="poster-subheading">
+
+      {{ branding.subtitle|default:"Scan the QR code on your mobile phone to fill your enquiry details and get connected with our career counselors." }}
+
+    </p>
+
+
+
+    <!-- High Resolution QR Code -->
+
+    <div class="qr-standee-box">
+
+      {% if qr_b64 %}
+
+      <img src="data:image/png;base64,{{ qr_b64 }}" alt="Walk-in Enquiry QR Code" class="qr-code-img">
+
+      {% else %}
+
+      <div style="width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; background: #f8fafc; font-size: 0.85rem; color: #64748b;">
+
+        Generating QR Code...
+
+      </div>
+
+      {% endif %}
+
+    </div>
+
+
+
+    <!-- 3-Step Process -->
+
+    <div class="steps-container">
+
+      <div class="step-item">
+
+        <div class="step-circle">1</div>
+
+        <div class="step-title">Scan Code</div>
+
+        <div class="step-desc">Open Phone Camera or Google Lens</div>
+
+      </div>
+
+      <div class="step-item">
+
+        <div class="step-circle">2</div>
+
+        <div class="step-title">Enter Details</div>
+
+        <div class="step-desc">Fill course interest &amp; qualification</div>
+
+      </div>
+
+      <div class="step-item">
+
+        <div class="step-circle">3</div>
+
+        <div class="step-title">Get Token</div>
+
+        <div class="step-desc">Meet your assigned counselor</div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- Direct URL and Footer -->
+
+    <div class="poster-footer">
+
+      <div>
+
+        📞 Need Help? Call <strong>+91 74488 88593</strong>
+
+      </div>
+
+      <div>
+
+        🌐 <strong>www.digipanda.in</strong>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+</body>
+
+</html>
+

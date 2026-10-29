@@ -1,0 +1,492 @@
+# -*- coding: utf-8 -*-
+"""
+Generate complete modern duplicate_leads.html template.
+"""
+
+template_content = """{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Duplicate Leads Archive - TECHPANDA CRM{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0; letter-spacing: -0.02em;">
+        DUPLICATE DATA ARCHIVE & EXPLORER
+      </h1>
+      <span id="groupCountBadge" class="badge" style="background: #fef3c7; color: #b45309; font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 9999px; border: 1px solid #fde68a;">
+        {{ total_duplicate_count|default:0 }} duplicate record{{ total_duplicate_count|pluralize }}
+      </span>
+      {% if selected_search or selected_branch or selected_type %}
+      <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 9999px; border: 1px solid #bae6fd;">
+        Filters Active
+      </span>
+      {% endif %}
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px; margin-bottom: 0;">
+      Separate audit table preserving 100% of duplicate inquiries, multi-branch touches, and pre-merge archives.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <a href="{% url 'admin_duplicate_leads_export' %}?q={{ selected_search|urlencode }}&branch_id={{ selected_branch|urlencode }}&record_type={{ selected_type|urlencode }}" class="btn btn-outline-secondary" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px;" title="Export duplicate dataset to CSV">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Export CSV
+    </a>
+    <a href="{% url 'admin_offline_leads' %}" class="btn btn-secondary" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Offline Leads
+    </a>
+    <a href="{% url 'admin_leads_list' %}" class="btn btn-primary" style="font-weight: 600;">
+      All Leads
+    </a>
+  </div>
+</div>
+
+<!-- SEARCH & FILTER TOOLBAR -->
+<div class="crm-card" style="padding: 16px 20px; margin-bottom: 24px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); background: var(--bg-card);">
+  <form method="GET" action="{% url 'admin_duplicate_leads' %}" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <!-- Search Input -->
+      <div style="flex: 1; min-width: 240px; position: relative;">
+        <input 
+          type="text" 
+          name="q" 
+          value="{{ selected_search }}" 
+          placeholder="Search by student name, phone, email, source..." 
+          class="form-control" 
+          style="width: 100%; padding-left: 36px;"
+        >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
+          <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+
+      <!-- Branch Filter -->
+      <div style="min-width: 180px;">
+        <select name="branch_id" class="form-control" onchange="this.form.submit()">
+          <option value="">All Branches</option>
+          {% for b in all_branches %}
+          <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>
+            {{ b.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Submit & Reset Buttons -->
+      <button type="submit" class="btn btn-secondary" style="font-weight: 600;">
+        Filter
+      </button>
+      {% if selected_search or selected_branch or selected_type %}
+      <a href="{% url 'admin_duplicate_leads' %}" class="btn btn-outline-secondary" style="font-weight: 600;">
+        Reset
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Record Type Pills -->
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--border-color); padding-top: 12px;">
+      <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 4px;">Record Type:</span>
+      <a 
+        href="?q={{ selected_search|urlencode }}&branch_id={{ selected_branch|urlencode }}&record_type=" 
+        class="badge" 
+        style="padding: 5px 12px; font-size: 0.8rem; font-weight: 600; text-decoration: none; border-radius: 9999px; {% if not selected_type %}background: var(--color-primary, #0ea5e9); color: #fff;{% else %}background: var(--bg-hover, #f1f5f9); color: var(--text-main); border: 1px solid var(--border-color);{% endif %}"
+      >
+        All Records
+      </a>
+      {% for val, label in record_type_choices %}
+      <a 
+        href="?q={{ selected_search|urlencode }}&branch_id={{ selected_branch|urlencode }}&record_type={{ val }}" 
+        class="badge" 
+        style="padding: 5px 12px; font-size: 0.8rem; font-weight: 600; text-decoration: none; border-radius: 9999px; {% if selected_type == val %}background: var(--color-primary, #0ea5e9); color: #fff;{% else %}background: var(--bg-hover, #f1f5f9); color: var(--text-main); border: 1px solid var(--border-color);{% endif %}"
+      >
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </form>
+</div>
+
+<!-- UNIFIED DUPLICATE LEADS TABLE -->
+{% if duplicate_records %}
+<div class="crm-card" style="margin-bottom: 32px; overflow: hidden; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);">
+  <div class="crm-card-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+      Duplicate Lead Records
+    </h3>
+    <span style="font-size: 0.85rem; color: var(--text-muted);">
+      Enforcing 10-day cross-branch deduplication rule
+    </span>
+  </div>
+
+  <div class="table-responsive" style="overflow-x: auto;">
+    <table class="crm-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+      <thead>
+        <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.775rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          <th style="padding: 12px 16px; font-weight: 700;">Student & Type</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Phone</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Email</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Source</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Submitted Branch</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Original Branch</th>
+          <th style="padding: 12px 16px; font-weight: 700;">Submission Date</th>
+          <th style="padding: 12px 16px; font-weight: 700; text-align: center;">Elapsed</th>
+          <th style="padding: 12px 16px; font-weight: 700; text-align: center;">Status</th>
+          <th style="padding: 12px 16px; font-weight: 700; text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in duplicate_records %}
+        <tr id="rowRec-{{ rec.id }}" style="border-bottom: 1px solid var(--border-color); transition: background-color 0.15s ease;">
+          <td style="padding: 14px 16px; font-weight: 600; color: var(--text-main);">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>{{ rec.name }}</span>
+                {% if rec.is_cross_branch_10day %}
+                <span title="Cross-branch submission within 10 days" style="cursor: help; color: #f59e0b; font-size: 0.9rem;">⚠</span>
+                {% endif %}
+              </div>
+              <div>
+                {% if rec.record_type == 'INCOMING_DUPLICATE' %}
+                <span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Incoming Duplicate</span>
+                {% elif rec.record_type == 'REENQUIRY_DUPLICATE' %}
+                <span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Re-enquiry (&gt;10d)</span>
+                {% elif rec.record_type == 'MERGED_ARCHIVE' %}
+                <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Merged Archive</span>
+                {% elif rec.record_type == 'MANUAL_PROMOTED' %}
+                <span class="badge" style="background: #ede9fe; color: #6d28d9; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Promoted Lead</span>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td style="padding: 14px 16px; font-family: monospace; color: var(--text-main);">
+            {{ rec.phone }}
+          </td>
+          <td style="padding: 14px 16px; color: var(--text-muted);">
+            {{ rec.email|default:'—' }}
+          </td>
+          <td style="padding: 14px 16px;">
+            <span style="font-size: 0.8rem; font-weight: 600; color: #0284c7; background: #e0f2fe; padding: 2px 8px; border-radius: 4px;">
+              {{ rec.source|default:'Google Form' }}
+            </span>
+          </td>
+          <td style="padding: 14px 16px;">
+            <span style="font-weight: 600; color: #b91c1c; background: #fee2e2; padding: 3px 8px; border-radius: var(--radius-sm); font-size: 0.8rem;">
+              {{ rec.duplicate_branch }}
+            </span>
+          </td>
+          <td style="padding: 14px 16px;">
+            <span style="font-weight: 600; color: #1e293b; background: #f1f5f9; padding: 3px 8px; border-radius: var(--radius-sm); font-size: 0.8rem;">
+              {{ rec.original_branch }}
+            </span>
+          </td>
+          <td style="padding: 14px 16px; color: var(--text-muted); font-size: 0.825rem; white-space: nowrap;">
+            {{ rec.duplicate_date }}
+          </td>
+          <td style="padding: 14px 16px; text-align: center;">
+            {% if rec.days_difference <= 10.0 %}
+            <span class="badge" style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-weight: 600; font-size: 0.775rem; padding: 3px 8px; border-radius: 9999px;">
+              {{ rec.days_difference_display }} (&le;10d)
+            </span>
+            {% else %}
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: 600; font-size: 0.775rem; padding: 3px 8px; border-radius: 9999px;">
+              {{ rec.days_difference_display }} (&gt;10d)
+            </span>
+            {% endif %}
+          </td>
+          <td style="padding: 14px 16px; text-align: center;">
+            {% if rec.record_type == 'MANUAL_PROMOTED' %}
+            <span class="badge" style="background: #ede9fe; color: #6d28d9; font-weight: 700; font-size: 0.775rem; padding: 4px 10px; border-radius: 9999px;">
+              PROMOTED
+            </span>
+            {% elif rec.days_difference <= 10.0 %}
+            <span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 0.775rem; padding: 4px 10px; border-radius: 9999px;">
+              DUPLICATE
+            </span>
+            {% else %}
+            <span class="badge" style="background: #ecfdf5; color: #059669; font-weight: 700; font-size: 0.775rem; padding: 4px 10px; border-radius: 9999px;">
+              RENEWAL
+            </span>
+            {% endif %}
+          </td>
+          <td style="padding: 14px 16px; text-align: right; white-space: nowrap;">
+            <div style="display: inline-flex; align-items: center; gap: 6px;">
+              <!-- View Payload Modal Trigger -->
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-secondary" 
+                onclick="inspectPayload({{ rec.id }})" 
+                title="Inspect raw form payload"
+                style="padding: 5px 8px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                Payload
+              </button>
+
+              {% if rec.original_lead_id %}
+              <a 
+                href="{{ rec.original_lead_url }}" 
+                class="btn btn-sm btn-outline-primary" 
+                id="btnViewOriginal-{{ rec.id }}" 
+                style="padding: 5px 8px; font-size: 0.8rem; font-weight: 600;"
+              >
+                Original Lead
+              </a>
+              {% endif %}
+
+              {% if rec.record_type != 'MANUAL_PROMOTED' %}
+              <!-- Promote Action -->
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-success" 
+                onclick="promoteDuplicate({{ rec.id }}, '{{ rec.name|escapejs }}')" 
+                title="Promote to separate lead (e.g. sibling)"
+                style="padding: 5px 8px; font-size: 0.8rem; font-weight: 600;"
+              >
+                Promote
+              </button>
+              {% endif %}
+
+              {% if rec.lead_ids_str and rec.record_type != 'MERGED_ARCHIVE' and rec.record_type != 'MANUAL_PROMOTED' %}
+              <button 
+                type="button" 
+                class="btn btn-sm btn-primary" 
+                id="btnKeep-{{ rec.id }}" 
+                onclick="keepSingleLead('{{ rec.lead_ids_str }}', '{{ rec.id }}', '{{ rec.name|escapejs }}')" 
+                style="padding: 5px 8px; font-size: 0.8rem; font-weight: 600;"
+              >
+                Keep Single
+              </button>
+              {% endif %}
+            </div>
+            <div id="msgSuccess-{{ rec.id }}" style="display: none; color: #15803d; font-size: 0.775rem; font-weight: 600; margin-top: 4px; text-align: right;">
+              ✓ Updated
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<!-- CLEAN EMPTY STATE -->
+<div class="crm-card" style="text-align: center; padding: 56px 24px; background: var(--bg-card); border-radius: var(--radius-md); border: 1px dashed var(--border-color); max-width: 860px; margin: 0 auto;">
+  <div style="width: 56px; height: 56px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+  </div>
+  <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">No Duplicate Records Found</h3>
+  <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 480px; margin: 0 auto 20px;">
+    {% if selected_search or selected_branch or selected_type %}
+    No duplicate records match your current filters. Try resetting the search filters.
+    {% else %}
+    All lead records across all branches and acquisition sources are currently unique. Real-time duplicate protection is actively running on all incoming channels.
+    {% endif %}
+  </p>
+  {% if selected_search or selected_branch or selected_type %}
+  <a href="{% url 'admin_duplicate_leads' %}" class="btn btn-secondary" style="font-weight: 600;">Reset Filters</a>
+  {% else %}
+  <a href="{% url 'admin_offline_leads' %}" class="btn btn-secondary" style="font-weight: 600;">Go to Offline Leads</a>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- RAW PAYLOAD INSPECTOR MODAL -->
+<div class="modal-backdrop" id="payloadModal" style="display: none;">
+  <div class="modal-box" style="max-width: 650px;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        <h3 id="payloadModalTitle">Raw Duplicate Payload</h3>
+      </div>
+      <button class="modal-close-btn" onclick="closePayloadModal()" title="Close">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px; max-height: 75vh; overflow-y: auto;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; background: var(--bg-hover, #f8fafc); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div><strong>Record Type:</strong> <span id="modalRecType">—</span></div>
+        <div><strong>Source Channel:</strong> <span id="modalSource">—</span></div>
+        <div><strong>Submitted Branch:</strong> <span id="modalBranch">—</span></div>
+        <div><strong>Timestamp:</strong> <span id="modalTime">—</span></div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
+          Raw Submission Payload (JSON)
+        </label>
+        <pre id="modalJsonPayload" style="background: #0f172a; color: #38bdf8; padding: 14px; border-radius: 8px; font-size: 0.8rem; overflow-x: auto; max-height: 240px; margin: 0; font-family: monospace;"></pre>
+      </div>
+
+      <div id="modalFieldChangesWrap" style="display: none;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">
+          Field Changes & Diffs
+        </label>
+        <pre id="modalFieldChanges" style="background: #0f172a; color: #a7f3d0; padding: 12px; border-radius: 8px; font-size: 0.8rem; overflow-x: auto; max-height: 140px; margin: 0; font-family: monospace;"></pre>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+        <button type="button" class="btn btn-secondary" onclick="closePayloadModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING TOAST -->
+<div id="statusToast" style="display: none; position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 14px 20px; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 2000; font-size: 0.875rem; align-items: center; gap: 12px; border-left: 4px solid #10b981; min-width: 280px; max-width: 420px; animation: slideIn 0.3s ease;">
+  <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex-shrink: 0;"></span>
+    <span id="toastMsg" style="flex: 1; line-height: 1.4;">Notification</span>
+    <button type="button" onclick="document.getElementById('statusToast').style.display='none'" style="background: none; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; line-height: 1;">&times;</button>
+  </div>
+</div>
+
+<style>
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+</style>
+
+<script>
+let toastTimer = null;
+function showToast(message, isError = false) {
+  const toast = document.getElementById('statusToast');
+  const txt = document.getElementById('toastMsg');
+  if (toast && txt) {
+    txt.textContent = message;
+    toast.style.borderLeftColor = isError ? '#ef4444' : '#10b981';
+    toast.style.display = 'flex';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4500);
+  }
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function inspectPayload(recId) {
+  fetch(`/admin/duplicate-leads/${recId}/payload/`, {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('payloadModalTitle').textContent = `Payload: ${data.name} (${data.phone})`;
+      document.getElementById('modalRecType').textContent = data.record_type;
+      document.getElementById('modalSource').textContent = data.source;
+      document.getElementById('modalBranch').textContent = data.branch;
+      document.getElementById('modalTime').textContent = data.submitted_at;
+      document.getElementById('modalJsonPayload').textContent = JSON.stringify(data.data_payload, null, 2);
+
+      const fcWrap = document.getElementById('modalFieldChangesWrap');
+      if (data.field_changes && Object.keys(data.field_changes).length > 0) {
+        document.getElementById('modalFieldChanges').textContent = JSON.stringify(data.field_changes, null, 2);
+        fcWrap.style.display = 'block';
+      } else {
+        fcWrap.style.display = 'none';
+      }
+
+      document.getElementById('payloadModal').style.display = 'flex';
+    } else {
+      showToast('Failed to load payload: ' + (data.error || 'Unknown error'), true);
+    }
+  })
+  .catch(err => showToast('Error: ' + err, true));
+}
+
+function closePayloadModal() {
+  document.getElementById('payloadModal').style.display = 'none';
+}
+
+function promoteDuplicate(recId, leadName) {
+  if (!confirm(`Are you sure you want to promote "${leadName}" into an independent lead?\\n\\nUse this when this submission represents a sibling or separate student sharing a family phone number.`)) {
+    return;
+  }
+
+  fetch(`/admin/duplicate-leads/${recId}/promote/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': getCookie('csrftoken')
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast(data.message || `Promoted ${leadName} to an independent lead!`);
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      showToast(data.error || 'Failed to promote duplicate.', true);
+    }
+  })
+  .catch(err => showToast('Error: ' + err, true));
+}
+
+function keepSingleLead(leadIds, elementId, leadName) {
+  const btn = document.getElementById(`btnKeep-${elementId}`);
+  const msgSuccess = document.getElementById(`msgSuccess-${elementId}`);
+  const row = document.getElementById(`rowRec-${elementId}`);
+
+  if (btn) btn.disabled = true;
+
+  fetch("{% url 'admin_duplicate_leads_keep_single' %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': getCookie('csrftoken')
+    },
+    body: new URLSearchParams({ lead_ids: leadIds })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (btn) btn.disabled = false;
+    if (data.success) {
+      if (btn) {
+        btn.textContent = '✓ Kept Single Lead';
+        btn.className = 'btn btn-sm btn-secondary';
+        btn.disabled = true;
+      }
+      if (msgSuccess) {
+        msgSuccess.style.display = 'block';
+      }
+      if (row) {
+        row.style.backgroundColor = '#f0fdf4';
+      }
+      showToast(data.message || `Consolidated duplicate records! Kept single unique lead for ${leadName}.`);
+    } else {
+      showToast(data.error || 'Failed to consolidate leads.', true);
+    }
+  })
+  .catch(err => {
+    if (btn) btn.disabled = false;
+    showToast('Error: ' + err, true);
+  });
+}
+</script>
+{% endblock %}
+"""
+
+template_path = 'D:/CRM_Integrated_v2/CRM_Integrated_v2/CRM/templates/admin/duplicate_leads.html'
+with open(template_path, 'w', encoding='utf-8') as f:
+    f.write(template_content)
+
+print("Generated new templates/admin/duplicate_leads.html successfully!")

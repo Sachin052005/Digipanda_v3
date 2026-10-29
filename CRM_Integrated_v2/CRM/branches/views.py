@@ -50,7 +50,7 @@ def admin_branches_list(request):
 
 @admin_required
 def admin_branch_edit(request, pk):
-    from channels.models import Channel
+    from lead_channels.models import Channel
     from accounts.models import User, UserRole
     from leads.models import TelecallerLeadSetup
     from leads.allocation_service import save_branch_channel_allocation
@@ -160,6 +160,23 @@ def admin_branch_toggle_status(request, pk):
         request=request
     )
     messages.success(request, f"Branch '{branch.name}' status is now {branch.status}.")
+    return redirect('admin_branches_list')
+
+@admin_required
+def admin_branch_delete(request, pk):
+    branch = get_object_or_404(Branch, pk=pk)
+    branch_name = branch.name
+    branch.delete()
+
+    log_activity(
+        user=request.user,
+        action="Branch Deleted",
+        description=f"Branch '{branch_name}' was permanently deleted by {request.user.username}.",
+        object_type="Branch",
+        object_id=pk,
+        request=request
+    )
+    messages.success(request, f"Branch '{branch_name}' has been permanently deleted.")
     return redirect('admin_branches_list')
 
 @admin_required

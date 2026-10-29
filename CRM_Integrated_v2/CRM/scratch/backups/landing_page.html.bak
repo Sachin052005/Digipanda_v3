@@ -1,0 +1,2376 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="dark light">
+
+  <!-- Primary SEO Meta Tags -->
+  <title>Digipanda CRM | Next-Gen Lead Automation &amp; Student Admission Acceleration Platform</title>
+  <meta name="title" content="Digipanda CRM | Next-Gen Lead Automation &amp; Student Admission Acceleration Platform">
+  <meta name="description" content="Digipanda CRM is the premier AI-powered lead management, WhatsApp automation, and student enrollment platform engineered for high-growth academies, multi-branch training institutes, and sales teams.">
+  <meta name="keywords" content="Digipanda CRM, Digipanda, lead management software, education CRM, WhatsApp CRM, admission management, sales pipeline, telecaller software, training academy CRM, Web3 3D CRM">
+  <meta name="author" content="Digipanda CRM">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://digipandacrm.in/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://digipandacrm.in/">
+  <meta property="og:site_name" content="Digipanda CRM">
+  <meta property="og:title" content="Digipanda CRM | All-in-One Lead Management &amp; Sales Automation Platform">
+  <meta property="og:description" content="Supercharge admissions and lead conversions with Digipanda CRM. Featuring omnichannel lead capture, WhatsApp automation, telecaller workflows, and walk-in student token management.">
+  <meta property="og:image" content="https://digipandacrm.in{% static 'images/digipanda_logo.png' %}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://digipandacrm.in/">
+  <meta name="twitter:title" content="Digipanda CRM | All-in-One Lead Management &amp; Sales Automation Platform">
+  <meta name="twitter:description" content="Streamline academy admissions, WhatsApp campaigns, and sales pipelines with Digipanda CRM.">
+  <meta name="twitter:image" content="https://digipandacrm.in{% static 'images/digipanda_logo.png' %}">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Early Theme Attribution (Zero-FOUC) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="{% static 'js/theme-manager.js' %}?v=20261025"></script>
+
+  <!-- Core Design System -->
+  <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=20261025_elite_3d">
+
+  <!-- JSON-LD Structured Data: SoftwareApplication & Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://digipandacrm.in/#software",
+        "name": "Digipanda CRM",
+        "url": "https://digipandacrm.in/",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web, Cloud",
+        "description": "All-in-one lead management, WhatsApp automation, and student enrollment CRM built for educational academies, institutes, and sales teams.",
+        "image": "https://digipandacrm.in/static/images/digipanda_logo.png",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "INR",
+          "availability": "https://schema.org/InStock"
+        },
+        "publisher": {
+          "@id": "https://digipandacrm.in/#organization"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://digipandacrm.in/#organization",
+        "name": "Digipanda CRM",
+        "url": "https://digipandacrm.in/",
+        "logo": "https://digipandacrm.in/static/images/digipanda_logo.png",
+        "sameAs": [
+          "https://digipandacrm.in"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://digipandacrm.in/#website",
+        "url": "https://digipandacrm.in/",
+        "name": "Digipanda CRM",
+        "publisher": {
+          "@id": "https://digipandacrm.in/#organization"
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    /* ==========================================================================
+       Obsidian Kinetic 3D — Dual-Theme Tokens & Design System
+       ========================================================================== */
+    :root {
+      /* Dark Theme (Default Cinematic Aesthetic) */
+      --page-bg: #07090e;
+      --page-bg-subtle: #0d111a;
+      --card-bg: rgba(15, 23, 42, 0.65);
+      --card-bg-solid: #0f172a;
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(56, 189, 248, 0.4);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --nav-bg: rgba(7, 9, 14, 0.75);
+      --nav-border: rgba(255, 255, 255, 0.08);
+      --badge-bg: rgba(255, 255, 255, 0.05);
+      --badge-border: rgba(255, 255, 255, 0.1);
+      --input-bg: #111827;
+      --input-border: #1f2937;
+      --glow-cyan: rgba(14, 165, 233, 0.25);
+      --glow-mint: rgba(16, 185, 129, 0.25);
+      --glow-violet: rgba(139, 92, 246, 0.25);
+      --shadow-3d: 0 20px 50px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.06);
+      --shadow-hover: 0 25px 60px -10px rgba(14, 165, 233, 0.3), 0 0 30px rgba(14, 165, 233, 0.15);
+      --phone-bg: #0b0f19;
+      --chat-bubble-bot: #1e293b;
+      --chat-bubble-bot-text: #f1f5f9;
+      --chat-bubble-user: #065f46;
+      --chat-bubble-user-text: #ecfdf5;
+    }
+
+    [data-theme="light"] {
+      --page-bg: #f8fafc;
+      --page-bg-subtle: #f1f5f9;
+      --card-bg: rgba(255, 255, 255, 0.85);
+      --card-bg-solid: #ffffff;
+      --card-border: rgba(203, 213, 225, 0.8);
+      --card-border-hover: rgba(14, 165, 233, 0.5);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-subtle: #64748b;
+      --nav-bg: rgba(255, 255, 255, 0.8);
+      --nav-border: #e2e8f0;
+      --badge-bg: #f1f5f9;
+      --badge-border: #cbd5e1;
+      --input-bg: #ffffff;
+      --input-border: #cbd5e1;
+      --glow-cyan: rgba(14, 165, 233, 0.12);
+      --glow-mint: rgba(16, 185, 129, 0.12);
+      --glow-violet: rgba(139, 92, 246, 0.12);
+      --shadow-3d: 0 12px 32px -4px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(203, 213, 225, 0.5);
+      --shadow-hover: 0 20px 40px -8px rgba(14, 165, 233, 0.2), 0 4px 16px rgba(14, 165, 233, 0.1);
+      --phone-bg: #ffffff;
+      --chat-bubble-bot: #f1f5f9;
+      --chat-bubble-bot-text: #0f172a;
+      --chat-bubble-user: #dcfce7;
+      --chat-bubble-user-text: #064e3b;
+    }
+
+    /* Reset & Base */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--page-bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      position: relative;
+    }
+
+    /* Ambient Spatial Lights */
+    .spatial-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+      transform: translate3d(0, 0, 0);
+    }
+    .orb-cyan {
+      top: 5%;
+      left: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
+      opacity: 0.22;
+    }
+    .orb-violet {
+      top: 25%;
+      right: 5%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, #8b5cf6 0%, transparent 70%);
+      opacity: 0.18;
+    }
+    .orb-mint {
+      top: 55%;
+      left: 15%;
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, #10b981 0%, transparent 70%);
+      opacity: 0.16;
+    }
+
+    .landing-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Typography Utilities */
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .text-gradient-cyan {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .text-gradient-mint {
+      background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .text-gradient-violet {
+      background: linear-gradient(135deg, #c084fc 0%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .text-gradient-gold {
+      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* ==========================================================================
+       Sticky 3D Glass Navbar
+       ========================================================================== */
+    .landing-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--nav-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--nav-border);
+      transition: all 0.25s ease;
+    }
+    .landing-nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 74px;
+    }
+    .landing-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      perspective: 800px;
+    }
+    .brand-symbol-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
+      transform-style: preserve-3d;
+      transition: transform 0.4s var(--tp-3d-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+    }
+    .landing-brand:hover .brand-symbol-box {
+      transform: rotateY(180deg) scale(1.08);
+    }
+    .brand-title-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .brand-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #0ea5e9;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .landing-menu {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+    .landing-menu a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      font-weight: 600;
+      transition: color 0.2s ease;
+      position: relative;
+      padding: 6px 0;
+    }
+    .landing-menu a:hover {
+      color: var(--text-main);
+    }
+    .landing-menu a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #0ea5e9, #10b981);
+      transition: width 0.25s ease;
+    }
+    .landing-menu a:hover::after {
+      width: 100%;
+    }
+
+    .landing-nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Buttons */
+    .btn-3d {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+    }
+    .btn-3d-primary {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .btn-3d-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.5);
+      filter: brightness(1.08);
+    }
+    .btn-3d-secondary {
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+    .btn-3d-secondary:hover {
+      border-color: var(--card-border-hover);
+      transform: translateY(-2px);
+      background: var(--page-bg-subtle);
+    }
+
+    /* ==========================================================================
+       Hero Section & Interactive 3D Canvas
+       ========================================================================== */
+    .hero-section {
+      padding: 90px 0 70px;
+      position: relative;
+      overflow: hidden;
+      min-height: 85vh;
+      display: flex;
+      align-items: center;
+    }
+
+    #hero3dCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: auto;
+      opacity: 0.85;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 3;
+      max-width: 920px;
+      margin: 0 auto;
+      text-align: center;
+      pointer-events: none;
+    }
+    .hero-content a, .hero-content button, .hero-content input {
+      pointer-events: auto;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 18px;
+      background: var(--badge-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--badge-border);
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 24px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      animation: floatBadge 3.5s ease-in-out infinite;
+    }
+    @keyframes floatBadge {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 5.8vw, 4.2rem);
+      font-weight: 900;
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+      color: var(--text-main);
+      margin-bottom: 24px;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 780px;
+      margin: 0 auto 38px;
+      line-height: 1.65;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 50px;
+    }
+    .hero-actions .btn-3d {
+      padding: 14px 34px;
+      font-size: 1.05rem;
+    }
+
+    /* Live Trust & Velocity Metrics */
+    .hero-metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 18px 24px;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--shadow-3d);
+      pointer-events: auto;
+    }
+    .metric-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 6px 12px;
+    }
+    .metric-pill:not(:last-child) {
+      border-right: 1px solid var(--card-border);
+    }
+    .metric-number {
+      font-size: 1.7rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+    .metric-caption {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ==========================================================================
+       Interactive Product Showcase Cockpit (Playable In-Browser Simulator)
+       ========================================================================== */
+    .showcase-section {
+      padding: 90px 0;
+      position: relative;
+    }
+    .section-header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 48px;
+    }
+    .section-badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #0ea5e9;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 12px;
+      padding: 4px 12px;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.25);
+      border-radius: 999px;
+    }
+    .section-title {
+      font-size: clamp(2rem, 3.8vw, 2.9rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .section-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+    }
+
+    /* Tabs Header */
+    .showcase-tabs-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .tab-btn {
+      padding: 10px 22px;
+      border-radius: 12px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+      border-color: var(--card-border-hover);
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.18) 0%, rgba(16, 185, 129, 0.18) 100%);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.5);
+      box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2);
+    }
+
+    /* Showcase Cockpit Frame */
+    .cockpit-frame {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow-3d);
+      position: relative;
+      overflow: hidden;
+      min-height: 520px;
+    }
+    .cockpit-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #10b981 0%, #0ea5e9 50%, #8b5cf6 100%);
+    }
+
+    .cockpit-view {
+      display: none;
+      animation: fadeInView 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cockpit-view.active {
+      display: grid;
+    }
+    @keyframes fadeInView {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 1. WhatsApp Simulator Grid */
+    .whatsapp-sim-grid {
+      grid-template-columns: 1fr 1.3fr;
+      gap: 36px;
+      align-items: center;
+    }
+    .sim-phone-mockup {
+      background: var(--phone-bg);
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.7);
+      max-width: 360px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      height: 480px;
+    }
+    .phone-notch-bar {
+      height: 28px;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      font-size: 10px;
+      color: #94a3b8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .phone-chat-header {
+      background: #075e54;
+      color: #fff;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .phone-chat-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #25d366;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: #000;
+    }
+    .phone-chat-name {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .phone-chat-status {
+      font-size: 10px;
+      color: #a7f3d0;
+    }
+    .phone-chat-body {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: radial-gradient(#334155 0.5px, transparent 0.5px);
+      background-size: 16px 16px;
+    }
+    .phone-bubble {
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      max-width: 82%;
+      line-height: 1.4;
+      animation: popBubble 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popBubble {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .phone-bubble.bot {
+      background: var(--chat-bubble-bot);
+      color: var(--chat-bubble-bot-text);
+      align-self: flex-start;
+      border-top-left-radius: 2px;
+    }
+    .phone-bubble.user {
+      background: var(--chat-bubble-user);
+      color: var(--chat-bubble-user-text);
+      align-self: flex-end;
+      border-top-right-radius: 2px;
+    }
+    .phone-trigger-actions {
+      padding: 10px;
+      border-top: 1px solid var(--card-border);
+      background: var(--card-bg-solid);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .sim-action-btn {
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: rgba(14, 165, 233, 0.12);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      color: #0ea5e9;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sim-action-btn:hover {
+      background: #0ea5e9;
+      color: #fff;
+    }
+
+    /* 2. Omnichannel Ingestion Simulator */
+    .ingest-sim-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    .radar-box {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      background: var(--page-bg-subtle);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .radar-ping-ring {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #10b981;
+    }
+    .stream-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      font-size: 12px;
+      animation: streamEntry 0.3s ease;
+    }
+    @keyframes streamEntry {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* 3. Reception QR Standee Simulator */
+    .token-sim-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: center;
+    }
+    .token-ticket-card {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%);
+      border: 2px dashed rgba(16, 185, 129, 0.4);
+      border-radius: 18px;
+      padding: 28px;
+      text-align: center;
+    }
+    .token-number {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #10b981;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* ==========================================================================
+       3D Holographic Feature Cards Grid
+       ========================================================================== */
+    .features-section {
+      padding: 90px 0;
+      perspective: 1200px;
+    }
+    .features-3d-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+    }
+    .card-3d {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+      box-shadow: var(--shadow-3d);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-3d:hover {
+      border-color: var(--card-border-hover);
+      box-shadow: var(--shadow-hover);
+    }
+    .card-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+    .icon-emerald { background: rgba(16, 185, 129, 0.14); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .icon-cyan { background: rgba(14, 165, 233, 0.14); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); }
+    .icon-violet { background: rgba(139, 92, 246, 0.14); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .icon-amber { background: rgba(245, 158, 11, 0.14); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .icon-coral { background: rgba(249, 115, 22, 0.14); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3); }
+
+    .card-3d h3 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      letter-spacing: -0.015em;
+    }
+    .card-3d p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      flex: 1;
+    }
+    .card-tag-pill {
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-top: 18px;
+      width: fit-content;
+      background: var(--badge-bg);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+    }
+
+    /* ==========================================================================
+       Interactive ROI / Admission Accelerator Calculator
+       ========================================================================== */
+    .roi-section {
+      padding: 80px 0;
+    }
+    .roi-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: var(--shadow-3d);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .roi-slider-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .roi-slider-val {
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .roi-slider {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+      accent-color: #0ea5e9;
+    }
+    .roi-results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .roi-metric-tile {
+      padding: 20px;
+      border-radius: 14px;
+      background: var(--page-bg-subtle);
+      border: 1px solid var(--card-border);
+    }
+    .roi-metric-number {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #10b981;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ==========================================================================
+       Architectural Workflow Journey (4 Stages)
+       ========================================================================== */
+    .journey-section {
+      padding: 90px 0;
+      border-top: 1px solid var(--card-border);
+      border-bottom: 1px solid var(--card-border);
+      background: var(--page-bg-subtle);
+    }
+    .journey-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }
+    .journey-step-card {
+      padding: 28px 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      position: relative;
+    }
+    .journey-step-tag {
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.12);
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+
+    /* ==========================================================================
+       Interactive FAQ Accordion
+       ========================================================================== */
+    .faq-section {
+      padding: 90px 0;
+    }
+    .faq-list {
+      max-width: 840px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .faq-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .faq-item:hover {
+      border-color: var(--card-border-hover);
+    }
+    .faq-question-btn {
+      width: 100%;
+      padding: 20px 24px;
+      background: transparent;
+      border: none;
+      text-align: left;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      gap: 16px;
+      font-family: inherit;
+    }
+    .faq-chevron {
+      transition: transform 0.25s ease;
+      color: var(--text-muted);
+    }
+    .faq-item.active .faq-chevron {
+      transform: rotate(180deg);
+      color: #0ea5e9;
+    }
+    .faq-answer-box {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s ease;
+      padding: 0 24px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .faq-item.active .faq-answer-box {
+      max-height: 300px;
+      padding: 0 24px 20px 24px;
+    }
+
+    /* ==========================================================================
+       Bottom High-Conversion Banner & Footer
+       ========================================================================== */
+    .cta-banner-section {
+      padding: 60px 0 90px;
+    }
+    .cta-banner-box {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(14, 165, 233, 0.25) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 28px;
+      padding: 70px 40px;
+      text-align: center;
+      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-banner-title {
+      font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 18px;
+      letter-spacing: -0.025em;
+    }
+    .cta-banner-desc {
+      font-size: 1.15rem;
+      color: #cbd5e1;
+      max-width: 680px;
+      margin: 0 auto 36px;
+    }
+
+    .landing-footer {
+      background: #04060a;
+      border-top: 1px solid var(--card-border);
+      padding: 70px 0 35px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 50px;
+    }
+    .footer-brand h4 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+    .footer-col h5 {
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-col a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+    .footer-col a:hover {
+      color: #38bdf8;
+    }
+    .system-status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #10b981;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-top: 14px;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--card-border);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 960px) {
+      .landing-menu { display: none; }
+      .whatsapp-sim-grid, .ingest-sim-grid, .token-sim-grid, .roi-card { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .footer-grid { grid-template-columns: 1fr; }
+      .hero-section { padding: 60px 0 40px; }
+      .cta-banner-box { padding: 40px 20px; }
+      .hero-metrics-strip { grid-template-columns: 1fr 1fr; }
+      .metric-pill:not(:last-child) { border-right: none; }
+    }
+
+    /* ==========================================================================
+       ELITE CINEMATIC 3D MOTION & LIGHTING ENGINE
+       ========================================================================== */
+    #cursorSpotlight {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.16) 0%, rgba(16, 185, 129, 0.08) 40%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s ease;
+      mix-blend-mode: screen;
+    }
+    [data-theme="light"] #cursorSpotlight {
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.10) 0%, rgba(16, 185, 129, 0.05) 40%, transparent 70%);
+      mix-blend-mode: multiply;
+    }
+
+    /* Ambient Pulsing Aurora Wave in Hero */
+    .hero-aurora {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      width: 950px;
+      height: 550px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(ellipse at center, rgba(14, 165, 233, 0.22) 0%, rgba(16, 185, 129, 0.16) 40%, rgba(99, 102, 241, 0.12) 65%, transparent 75%);
+      filter: blur(85px);
+      pointer-events: none;
+      z-index: 1;
+      animation: auroraBreathe 9s ease-in-out infinite alternate;
+    }
+    @keyframes auroraBreathe {
+      0% { transform: translate(-50%, -50%) scale(0.92) rotate(0deg); opacity: 0.7; }
+      50% { transform: translate(-50%, -52%) scale(1.18) rotate(5deg); opacity: 1; }
+      100% { transform: translate(-50%, -48%) scale(0.98) rotate(-4deg); opacity: 0.8; }
+    }
+
+    /* 3D WebGL Canvas Stage */
+    .hero-3d-stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .hero-3d-stage canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* Floating 3D Holographic Stat Badges */
+    .hero-floating-badges {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .hologram-card {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 24px rgba(14, 165, 233, 0.2);
+      pointer-events: auto;
+      cursor: default;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    [data-theme="light"] .hologram-card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08), 0 0 20px rgba(14, 165, 233, 0.12);
+    }
+    .hologram-card:hover {
+      transform: translateY(-6px) scale(1.05) !important;
+      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45), 0 0 35px rgba(56, 189, 248, 0.35);
+    }
+    .hologram-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 8px rgba(14, 165, 233, 0.5));
+    }
+    .hologram-val {
+      font-size: 0.95rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .hologram-lbl {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .float-card-1 {
+      top: 16%;
+      left: 5%;
+      animation: floatBob1 6.5s ease-in-out infinite;
+    }
+    .float-card-2 {
+      bottom: 24%;
+      left: 7%;
+      animation: floatBob2 7.5s ease-in-out infinite 1s;
+    }
+    .float-card-3 {
+      top: 18%;
+      right: 5%;
+      animation: floatBob3 7.0s ease-in-out infinite 0.5s;
+    }
+    .float-card-4 {
+      bottom: 22%;
+      right: 7%;
+      animation: floatBob4 8.0s ease-in-out infinite 1.5s;
+    }
+
+    @keyframes floatBob1 {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-16px) rotate(-1.5deg); }
+    }
+    @keyframes floatBob2 {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(14px) rotate(1.2deg); }
+    }
+    @keyframes floatBob3 {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-18px) rotate(1.5deg); }
+    }
+    @keyframes floatBob4 {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(16px) rotate(-1.2deg); }
+    }
+
+    @media (max-width: 1100px) {
+      .hero-floating-badges {
+        display: none;
+      }
+    }
+
+    /* Kinetic Shimmer on Hero Title */
+    .hero-title-shimmer {
+      background: linear-gradient(135deg, #ffffff 0%, #38bdf8 30%, #34d399 70%, #ffffff 100%);
+      background-size: 220% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: titleCinematicShimmer 6s linear infinite;
+    }
+    [data-theme="light"] .hero-title-shimmer {
+      background: linear-gradient(135deg, #0f172a 0%, #0284c7 35%, #059669 65%, #0f172a 100%);
+      background-size: 220% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: titleCinematicShimmer 6s linear infinite;
+    }
+    @keyframes titleCinematicShimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Holographic Scanline for Cockpit */
+    .cockpit-scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), rgba(52, 211, 153, 0.9), transparent);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.7);
+      pointer-events: none;
+      z-index: 10;
+      animation: scanlineSweep 4.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes scanlineSweep {
+      0% { top: 0%; opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* Typing Dots for Interactive WhatsApp Simulator */
+    .typing-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: typingBounce 1.2s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(1) { animation-delay: 0s; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+      40% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Exact Brand Wordmark in Landing Navbar & Footer */
+    .landing-brand-logo {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .landing-brand:hover .landing-brand-logo {
+      transform: scale(1.05);
+    }
+    .logo-light-mode {
+      display: inline-block;
+    }
+    .logo-dark-mode {
+      display: none;
+    }
+    [data-theme="dark"] .logo-light-mode {
+      display: none !important;
+    }
+    [data-theme="dark"] .logo-dark-mode {
+      display: inline-block !important;
+    }
+    .brand-version-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #2bb34b;
+      background: rgba(43, 179, 75, 0.12);
+      border: 1px solid rgba(43, 179, 75, 0.35);
+      padding: 3px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+      margin-left: 6px;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="cursorSpotlight"></div>
+
+  <!-- Ambient Chromatic Spatial Orbs -->
+  <div class="spatial-orb orb-cyan"></div>
+  <div class="spatial-orb orb-violet"></div>
+  <div class="spatial-orb orb-mint"></div>
+
+  <!-- Sticky Blurred Glass Navbar -->
+  <header class="landing-nav">
+    <div class="landing-container">
+      <div class="landing-nav-inner">
+        <a href="{% url 'root' %}" class="landing-brand" aria-label="Digipanda CRM" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+          <img src="{% static 'images/digipanda_logo.svg' %}" alt="digipanda" class="landing-brand-logo logo-light-mode">
+          <img src="{% static 'images/digipanda_logo_dark.svg' %}" alt="digipanda" class="landing-brand-logo logo-dark-mode">
+          <span class="brand-version-badge">CRM 3.0</span>
+        </a>
+
+        <nav class="landing-menu" aria-label="Main Navigation">
+          <a href="#showcase">Interactive Cockpit</a>
+          <a href="#features">3D Matrix</a>
+          <a href="#calculator">ROI Engine</a>
+          <a href="#architecture">Journey</a>
+          <a href="#faq">FAQ</a>
+          <a href="{% url 'public_student_enquiry_form' %}" style="color: #10b981;">Walk-in Token Desk</a>
+        </nav>
+
+        <div class="landing-nav-actions">
+          <!-- 3D Isometric Theme Coin Switcher -->
+          <button type="button" class="theme-toggle-btn tp-3d-theme-toggle" id="theme-toggle" aria-label="Switch Theme" title="Toggle Light / Dark theme">
+            <div class="tp-3d-coin">
+              <div class="tp-coin-face tp-coin-front icon-moon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              </div>
+              <div class="tp-coin-face tp-coin-back icon-sun">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              </div>
+            </div>
+          </button>
+
+          {% if is_authenticated %}
+            <a href="{% url 'login_redirect' %}" class="btn-3d btn-3d-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              <span>Workspace</span>
+            </a>
+          {% else %}
+            <a href="{% url 'login' %}" class="btn-3d btn-3d-primary">
+              <span>Sign In</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       Hero Section with Interactive 3D Canvas
+       ========================================================================== -->
+  <main>
+    <section class="hero-section">
+      <!-- Ambient Pulsing Aurora Wave -->
+      <div class="hero-aurora"></div>
+
+      <!-- Real-Time Interactive Three.js 3D WebGL Cyber Core & Constellation -->
+      <div id="hero3dContainer" class="hero-3d-stage"></div>
+
+      <!-- Flanking 3D Holographic Stat Badges (Kinetic Motion) -->
+      <div class="hero-floating-badges" aria-hidden="true">
+        <div class="hologram-card float-card-1">
+          <div class="hologram-icon">⚡</div>
+          <div class="hologram-content">
+            <div class="hologram-val text-gradient-mint">&lt;5s SLA</div>
+            <div class="hologram-lbl">Instant Lead Call</div>
+          </div>
+        </div>
+
+        <div class="hologram-card float-card-2">
+          <div class="hologram-icon">🛡️</div>
+          <div class="hologram-content">
+            <div class="hologram-val text-gradient-cyan">100% Anti-Dupe</div>
+            <div class="hologram-lbl">Deduplication Shield</div>
+          </div>
+        </div>
+
+        <div class="hologram-card float-card-3">
+          <div class="hologram-icon">📈</div>
+          <div class="hologram-content">
+            <div class="hologram-val text-gradient-gold">4.2x Growth</div>
+            <div class="hologram-lbl">Admissions Velocity</div>
+          </div>
+        </div>
+
+        <div class="hologram-card float-card-4">
+          <div class="hologram-icon">💬</div>
+          <div class="hologram-content">
+            <div class="hologram-val text-gradient-violet">Meta Cloud</div>
+            <div class="hologram-lbl">Official WhatsApp API</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="landing-container">
+        <div class="hero-content">
+          
+          <div class="hero-badge">
+            <span class="pulse-dot"></span>
+            <span>Where Every Lead Converts • Next-Gen Admissions Engine</span>
+          </div>
+
+          <h1 class="hero-title">
+            The Intelligent CRM for High-Growth <span class="text-gradient-cyan">Academies</span> &amp; Modern <span class="text-gradient-mint">Sales Teams</span>
+          </h1>
+
+          <p class="hero-subtitle">
+            Unify real-time Meta Lead Ads, official WhatsApp Cloud API automation, capacity-based telecaller round-robin, touchless reception QR tokens, and multi-branch finance ledgers in one seamless 3D ecosystem.
+          </p>
+
+          <div class="hero-actions">
+            {% if is_authenticated %}
+              <a href="{% url 'login_redirect' %}" class="btn-3d btn-3d-primary">
+                <span>Launch CRM Workspace</span> &rarr;
+              </a>
+            {% else %}
+              <a href="{% url 'login' %}" class="btn-3d btn-3d-primary">
+                <span>Access Live Portal</span> &rarr;
+              </a>
+            {% endif %}
+            <a href="#showcase" class="btn-3d btn-3d-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Interactive Cockpit</span>
+            </a>
+            <a href="{% url 'public_student_enquiry_form' %}" class="btn-3d btn-3d-secondary" style="border-color: rgba(16, 185, 129, 0.4); color: #10b981;">
+              <span>Student Walk-in Desk</span>
+            </a>
+          </div>
+
+          <!-- Live Velocity Trust Metrics -->
+          <div class="hero-metrics-strip">
+            <div class="metric-pill">
+              <span class="metric-number text-gradient-cyan">99.8%</span>
+              <span class="metric-caption">Capture Reliability</span>
+            </div>
+            <div class="metric-pill">
+              <span class="metric-number text-gradient-mint">3.4x</span>
+              <span class="metric-caption">Faster Response Velocity</span>
+            </div>
+            <div class="metric-pill">
+              <span class="metric-number text-gradient-violet">Zero</span>
+              <span class="metric-caption">Lead Leakage Guarantee</span>
+            </div>
+            <div class="metric-pill">
+              <span class="metric-number text-gradient-gold">Meta Cloud</span>
+              <span class="metric-caption">Official API Certified</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Interactive Product Showcase Cockpit (Playable In-Browser Simulator)
+         ========================================================================== -->
+    <section id="showcase" class="showcase-section">
+      <div class="landing-container">
+        
+        <div class="section-header">
+          <span class="section-badge">INTERACTIVE COCKPIT</span>
+          <h2 class="section-title">Test-Drive Digipanda CRM In Real-Time</h2>
+          <p class="section-desc">Experience how incoming leads, automated WhatsApp bots, and walk-in campus students navigate the platform live.</p>
+        </div>
+
+        <!-- Cockpit Tabs -->
+        <div class="showcase-tabs-nav">
+          <button type="button" class="tab-btn active" onclick="switchShowcaseTab('whatsapp', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <span>WhatsApp Automation Bot</span>
+          </button>
+          <button type="button" class="tab-btn" onclick="switchShowcaseTab('ingest', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>Live Ingestion Radar</span>
+          </button>
+          <button type="button" class="tab-btn" onclick="switchShowcaseTab('token', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            <span>Walk-in Token Desk</span>
+          </button>
+          <button type="button" class="tab-btn" onclick="switchShowcaseTab('pipeline', this)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            <span>Conversion Pipeline</span>
+          </button>
+        </div>
+
+        <!-- Cockpit Frame -->
+        <div class="cockpit-frame">
+          
+          <!-- View 1: WhatsApp Simulator -->
+          <div class="cockpit-view active whatsapp-sim-grid" id="view-whatsapp">
+            <div class="sim-phone-mockup">
+              <div class="phone-notch-bar">
+                <span>9:41 AM</span>
+                <span>5G ●●● 100%</span>
+              </div>
+              <div class="phone-chat-header">
+                <div class="phone-chat-avatar">DP</div>
+                <div>
+                  <div class="phone-chat-name">Digipanda Admissions Bot ✓</div>
+                  <div class="phone-chat-status">Official Business Account • Online</div>
+                </div>
+              </div>
+              <div class="phone-chat-body" id="simPhoneChatBody">
+                <div class="phone-bubble bot">
+                  Hello! 👋 Welcome to Digipanda Training Academy. How can we assist your career goals today?
+                </div>
+              </div>
+              <div class="phone-trigger-actions">
+                <button type="button" class="sim-action-btn" onclick="triggerSimChat('fees')">
+                  <span>💰 Check Course Fees &amp; Discounts</span>
+                  <span>&rarr;</span>
+                </button>
+                <button type="button" class="sim-action-btn" onclick="triggerSimChat('brochure')">
+                  <span>📄 Download 2026 Syllabus (PDF)</span>
+                  <span>&rarr;</span>
+                </button>
+                <button type="button" class="sim-action-btn" onclick="triggerSimChat('counselor')">
+                  <span>🎓 Book 1-on-1 Counselor Call</span>
+                  <span>&rarr;</span>
+                </button>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:18px;">
+              <span class="section-badge" style="width:fit-content;">OFFICIAL META CLOUD API</span>
+              <h3 style="font-size:2rem; font-weight:800; color:var(--text-main); line-height:1.2;">Zero-Code Conversational Funnels That Close Enrollments</h3>
+              <p style="color:var(--text-muted); font-size:1.02rem;">
+                Every incoming lead receives an automated, tailored WhatsApp touchpoint within <strong>4 seconds</strong>. Send rich media brochures, interactive reply buttons, payment links, and trigger immediate handoff to human counselors when high-intent questions are detected.
+              </p>
+              <div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:8px;">
+                <div style="padding:12px 18px; border-radius:12px; background:var(--page-bg-subtle); border:1px solid var(--card-border);">
+                  <div style="font-size:1.4rem; font-weight:800; color:#10b981; font-family:'JetBrains Mono';">4.2 Sec</div>
+                  <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Avg Bot Response Time</div>
+                </div>
+                <div style="padding:12px 18px; border-radius:12px; background:var(--page-bg-subtle); border:1px solid var(--card-border);">
+                  <div style="font-size:1.4rem; font-weight:800; color:#0ea5e9; font-family:'JetBrains Mono';">+68%</div>
+                  <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Higher Open Rate vs Email</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 2: Lead Ingestion Radar -->
+          <div class="cockpit-view ingest-sim-grid" id="view-ingest">
+            <div class="radar-box">
+              <div class="radar-ping-ring">
+                <span class="pulse-dot"></span>
+                <span>REAL-TIME INGESTION RADAR • MULTI-CHANNEL ACTIVE</span>
+              </div>
+              <div id="simIngestStream" style="display:flex; flex-direction:column; gap:10px;">
+                <div class="stream-item">
+                  <div><strong>Priya Sharma</strong> <span style="color:#0ea5e9;">• Meta Lead Ads</span></div>
+                  <span class="font-mono" style="color:#10b981; font-weight:700;">DEDUP PASSED &rarr; Telecaller 02</span>
+                </div>
+                <div class="stream-item">
+                  <div><strong>Karan Patel</strong> <span style="color:#8b5cf6;">• Website Webhook</span></div>
+                  <span class="font-mono" style="color:#10b981; font-weight:700;">ROUTED &rarr; Branch South</span>
+                </div>
+                <div class="stream-item">
+                  <div><strong>Ananya Roy</strong> <span style="color:#f59e0b;">• Google Call Sync</span></div>
+                  <span class="font-mono" style="color:#10b981; font-weight:700;">CALL LOGGED &rarr; Counselor 01</span>
+                </div>
+              </div>
+              <button type="button" class="btn-3d btn-3d-secondary" onclick="simulateNewLead()" style="margin-top:auto;">
+                <span>+ Simulate Incoming Lead</span>
+              </button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:18px;">
+              <span class="section-badge" style="width:fit-content;">CROSS-CHANNEL DEDUPLICATION</span>
+              <h3 style="font-size:2rem; font-weight:800; color:var(--text-main); line-height:1.2;">Stop Overlapping Assignments &amp; Wasted Calling Credits</h3>
+              <p style="color:var(--text-muted); font-size:1.02rem;">
+                Digipanda CRM cross-references primary phone numbers, alternate contacts, and email records across all branches in sub-millisecond execution. If an enquiry came in 10 days ago, it honors your configurable re-enquiry policy rather than spamming the customer.
+              </p>
+            </div>
+          </div>
+
+          <!-- View 3: Walk-in Token Desk -->
+          <div class="cockpit-view token-sim-grid" id="view-token">
+            <div class="token-ticket-card">
+              <span class="font-mono" style="font-size:12px; font-weight:800; color:var(--text-muted); letter-spacing:0.1em;">DIGIPANDA CAMPUS TOKEN</span>
+              <div class="token-number" id="simTokenDisplay">#A-108</div>
+              <p style="font-size:13px; color:var(--text-muted); margin-bottom:18px;">Assigned to Senior Counselor • Room 302</p>
+              <button type="button" class="btn-3d btn-3d-primary" onclick="generateNewToken()">
+                <span>Scan Another QR Check-in</span>
+              </button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:18px;">
+              <span class="section-badge" style="width:fit-content;">TOUCHLESS RECEPTION QR STANDEE</span>
+              <h3 style="font-size:2rem; font-weight:800; color:var(--text-main); line-height:1.2;">Standardized 21-Point Career Profiling at Your Reception</h3>
+              <p style="color:var(--text-muted); font-size:1.02rem;">
+                Visiting students scan the front-desk QR code with their own phone. They complete their educational background, target course, and preferred batch timings—instantly issuing a digital token and routing their record to available campus counselors with zero paper waste.
+              </p>
+            </div>
+          </div>
+
+          <!-- View 4: Pipeline Kanban HUD -->
+          <div class="cockpit-view" id="view-pipeline" style="grid-template-columns:repeat(4, 1fr); gap:16px;">
+            <div style="background:var(--page-bg-subtle); padding:16px; border-radius:14px; border:1px solid var(--card-border);">
+              <div style="font-weight:800; font-size:13px; color:#0ea5e9; margin-bottom:12px;">NEW LEADS (142)</div>
+              <div style="padding:10px; background:var(--card-bg); border-radius:8px; border:1px solid var(--card-border); font-size:12px; margin-bottom:8px;">
+                <strong>Vikram S.</strong><br><span style="color:var(--text-muted);">Python Fullstack • 5m ago</span>
+              </div>
+              <div style="padding:10px; background:var(--card-bg); border-radius:8px; border:1px solid var(--card-border); font-size:12px;">
+                <strong>Meera N.</strong><br><span style="color:var(--text-muted);">Data Science • 14m ago</span>
+              </div>
+            </div>
+            <div style="background:var(--page-bg-subtle); padding:16px; border-radius:14px; border:1px solid var(--card-border);">
+              <div style="font-weight:800; font-size:13px; color:#8b5cf6; margin-bottom:12px;">DEMO SCHEDULED (48)</div>
+              <div style="padding:10px; background:var(--card-bg); border-radius:8px; border:1px solid var(--card-border); font-size:12px;">
+                <strong>Arun Kumar</strong><br><span style="color:var(--text-muted);">Demo: Tomorrow 11 AM</span>
+              </div>
+            </div>
+            <div style="background:var(--page-bg-subtle); padding:16px; border-radius:14px; border:1px solid var(--card-border);">
+              <div style="font-weight:800; font-size:13px; color:#f59e0b; margin-bottom:12px;">COUNSELING DESK (26)</div>
+              <div style="padding:10px; background:var(--card-bg); border-radius:8px; border:1px solid var(--card-border); font-size:12px;">
+                <strong>Siddharth G.</strong><br><span style="color:var(--text-muted);">Fee Discussion Stage</span>
+              </div>
+            </div>
+            <div style="background:var(--page-bg-subtle); padding:16px; border-radius:14px; border:1px solid var(--card-border);">
+              <div style="font-weight:800; font-size:13px; color:#10b981; margin-bottom:12px;">ENROLLED (89)</div>
+              <div style="padding:10px; background:var(--card-bg); border-radius:8px; border:1px solid rgba(16,185,129,0.3); font-size:12px;">
+                <strong>Pooja Jain ✓</strong><br><span style="color:#10b981;">Receipt Verified • Batch A</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         3D Holographic Feature Matrix (Foundry Taxonomy)
+         ========================================================================== -->
+    <section id="features" class="features-section">
+      <div class="landing-container">
+        <div class="section-header">
+          <span class="section-badge">ENTERPRISE CAPABILITIES</span>
+          <h2 class="section-title">Engineered For High-Performance Academies</h2>
+          <p class="section-desc">Every stakeholder—from Superadmin to Telecallers, Counselors, and Accountants—operates in role-optimized workflows.</p>
+        </div>
+
+        <div class="features-3d-grid">
+          
+          <!-- Card 1 -->
+          <article class="card-3d" data-tilt>
+            <div class="card-icon-wrap icon-cyan">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+            </div>
+            <h3>Omnichannel Ingestion &amp; Dedup</h3>
+            <p>Seamlessly ingest prospects from Meta Facebook Lead Ads, Google Call sync, website forms, CSV bulk imports, and offline QR codes with real-time deduplication safeguards.</p>
+            <span class="card-tag-pill">⚡ SUB-SECOND RESOLUTION</span>
+          </article>
+
+          <!-- Card 2 -->
+          <article class="card-3d" data-tilt>
+            <div class="card-icon-wrap icon-emerald">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            </div>
+            <h3>Official WhatsApp Cloud API</h3>
+            <p>Deploy no-code automated customer journey flows, send brochure downloads, execute broadcast campaigns, and manage multi-agent live chats with full audit trails.</p>
+            <span class="card-tag-pill">💬 META CERTIFIED</span>
+          </article>
+
+          <!-- Card 3 -->
+          <article class="card-3d" data-tilt>
+            <div class="card-icon-wrap icon-violet">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </div>
+            <h3>Intelligent Round-Robin Routing</h3>
+            <p>Distribute leads using capacity-aware allocation, course category specialization, and multi-branch boundaries. Eliminate manual distribution delays and favoritism.</p>
+            <span class="card-tag-pill">⚖️ CAPACITY BALANCED</span>
+          </article>
+
+          <!-- Card 4 -->
+          <article class="card-3d" data-tilt>
+            <div class="card-icon-wrap icon-amber">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            </div>
+            <h3>Telecaller &amp; RNR Management</h3>
+            <p>Empower calling teams with one-click dialer, Google Drive call recording synchronization, automated RNR (Ring No Response) recycling queues, and structured outcome notes.</p>
+            <span class="card-tag-pill">📞 ZERO MISSED CALLBACKS</span>
+          </article>
+
+          <!-- Card 5 -->
+          <article class="card-3d" data-tilt>
+            <div class="card-icon-wrap icon-emerald">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            </div>
+            <h3>Touchless Reception QR Desk</h3>
+            <p>Every campus branch gets a branded QR Standee. Walking-in students scan with their mobile devices, fill a 21-point career profile, and get assigned an instant token.</p>
+            <span class="card-tag-pill">📱 PAPERLESS CHECK-IN</span>
+          </article>
+
+          <!-- Card 6 -->
+          <article class="card-3d" data-tilt>
+            <div class="card-icon-wrap icon-coral">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </div>
+            <h3>Financial Ledgers &amp; Approvals</h3>
+            <p>Track student installment milestones, verify fee payment receipts with segregated accountant permissions, and review branch revenue conversion analytics in real time.</p>
+            <span class="card-tag-pill">🔒 STRICT LEDGER AUDITING</span>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Interactive ROI & Admissions Acceleration Calculator
+         ========================================================================== */
+    <section id="calculator" class="roi-section">
+      <div class="landing-container">
+        
+        <div class="roi-card">
+          <div class="roi-slider-wrap">
+            <span class="section-badge" style="width:fit-content;">GROWTH CALCULATOR</span>
+            <h3 style="font-size:2.2rem; font-weight:800; color:var(--text-main); line-height:1.2;">Calculate Your Admission Lift</h3>
+            <p style="color:var(--text-muted); font-size:1rem;">Adjust your monthly incoming leads volume to see projected conversion recovery and hours saved:</p>
+            
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+                <span style="font-weight:700; font-size:14px; color:var(--text-muted); text-transform:uppercase;">Monthly Inbound Leads</span>
+                <span class="roi-slider-val" id="roiLeadsDisplay">5,000</span>
+              </div>
+              <input type="range" min="500" max="25000" step="500" value="5000" class="roi-slider" id="roiLeadsSlider" oninput="updateRoiCalculator(this.value)">
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-subtle); margin-top:6px; font-family:'JetBrains Mono';">
+                <span>500 Leads</span>
+                <span>12,500</span>
+                <span>25,000+ Leads</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="roi-results-grid">
+            <div class="roi-metric-tile">
+              <div class="roi-metric-number" id="roiHoursSaved">400 hrs</div>
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-top:4px;">Staff Hours Saved / Mo</div>
+            </div>
+            <div class="roi-metric-tile">
+              <div class="roi-metric-number text-gradient-mint" id="roiExtraStudents">+225</div>
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-top:4px;">Additional Enrollments</div>
+            </div>
+            <div class="roi-metric-tile" style="grid-column: span 2;">
+              <div class="roi-metric-number text-gradient-cyan" id="roiRevenueProtected">₹ 22.5 Lakhs</div>
+              <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-top:4px;">Estimated Revenue Saved from Zero Lead Leakage</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         4-Stage Architectural Journey (From Click to Enrollment)
+         ========================================================================== -->
+    <section id="architecture" class="journey-section">
+      <div class="landing-container">
+        
+        <div class="section-header">
+          <span class="section-badge">PIPELINE ARCHITECTURE</span>
+          <h2 class="section-title">The Complete Admission &amp; Sales Lifecycle</h2>
+          <p class="section-desc">Designed to support every stakeholder from first digital impression to enrollment completion.</p>
+        </div>
+
+        <div class="journey-grid">
+          <div class="journey-step-card">
+            <span class="journey-step-tag">STAGE 01</span>
+            <h4 style="font-size:1.2rem; font-weight:800; color:var(--text-main); margin-bottom:8px;">Capture &amp; Ingestion</h4>
+            <p style="color:var(--text-muted); font-size:0.92rem;">Leads flow automatically from Meta Facebook Ads, Google call sync, or offline QR tokens. Deduplication triggers in milliseconds.</p>
+          </div>
+          <div class="journey-step-card">
+            <span class="journey-step-tag">STAGE 02</span>
+            <h4 style="font-size:1.2rem; font-weight:800; color:var(--text-main); margin-bottom:8px;">Telecalling &amp; RNR</h4>
+            <p style="color:var(--text-muted); font-size:0.92rem;">Assigned telecallers receive instant notifications, auto-dial prospects, record notes, and schedule demos or RNR callbacks.</p>
+          </div>
+          <div class="journey-step-card">
+            <span class="journey-step-tag">STAGE 03</span>
+            <h4 style="font-size:1.2rem; font-weight:800; color:var(--text-main); margin-bottom:8px;">Counselor Discovery</h4>
+            <p style="color:var(--text-muted); font-size:0.92rem;">Lead ownership smoothly transitions to campus counselors for in-depth career profiling, fee structuring, and course orientation.</p>
+          </div>
+          <div class="journey-step-card">
+            <span class="journey-step-tag">STAGE 04</span>
+            <h4 style="font-size:1.2rem; font-weight:800; color:var(--text-main); margin-bottom:8px;">Enrollment &amp; Finance</h4>
+            <p style="color:var(--text-muted); font-size:0.92rem;">Student is confirmed into an official training batch. Fee installments and payment receipts are audited by the finance desk.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Interactive FAQ Accordion
+         ========================================================================== -->
+    <section id="faq" class="faq-section">
+      <div class="landing-container">
+        
+        <div class="section-header">
+          <span class="section-badge">FREQUENTLY ASKED QUESTIONS</span>
+          <h2 class="section-title">Everything You Need to Know</h2>
+          <p class="section-desc">Clear answers regarding deployment, multi-branch scaling, and Meta Cloud API integration.</p>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item active">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>What makes Digipanda CRM different from generic sales CRMs?</span>
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer-box">
+              Generic CRMs are designed for B2B deals. Digipanda CRM is engineered specifically for educational academies, coaching institutes, and high-velocity training programs. It features dedicated telecaller quotas, automated RNR recycling, touchless reception QR standees, student enrollment ledgers, and official WhatsApp Cloud API funnels.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>How does official Meta WhatsApp Cloud API integration work?</span>
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer-box">
+              Digipanda CRM connects directly with your official Meta Developer Business account. This guarantees zero phone-number bans, 99.9% delivery rates, interactive button templates, and real-time webhook status ticks (sent, delivered, read) without third-party markups.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>Can Digipanda CRM support multi-branch campus isolation?</span>
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer-box">
+              Yes. Role-based data fences ensure Branch Admins, Counselors, and Telecallers only see prospects allocated to their specific physical campus. Superadmins and Sales Heads maintain complete 360° visibility with unified company-wide conversion reporting.
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button type="button" class="faq-question-btn" onclick="toggleFaq(this)">
+              <span>How does the touchless Reception QR Standee work?</span>
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer-box">
+              Each branch prints their generated campus QR poster. When visiting students scan the QR with any mobile phone, they fill out a standardized 21-point career enquiry form. The system generates an immediate token number (e.g., #A-108) and pushes an instant notification to available counselors.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         Bottom High-Conversion Banner
+         ========================================================================== -->
+    <section class="cta-banner-section">
+      <div class="landing-container">
+        <div class="cta-banner-box">
+          <h2 class="cta-banner-title">Ready to Accelerate Your Student Admissions?</h2>
+          <p class="cta-banner-desc">Join leading academies and institutes scaling their revenue with zero lead leakage and automated WhatsApp funnels.</p>
+          <div class="hero-actions" style="margin-bottom:0;">
+            {% if is_authenticated %}
+              <a href="{% url 'login_redirect' %}" class="btn-3d btn-3d-primary" style="background:#ffffff; color:#0f172a;">
+                <span>Launch My Workspace</span> &rarr;
+              </a>
+            {% else %}
+              <a href="{% url 'login' %}" class="btn-3d btn-3d-primary" style="background:#ffffff; color:#0f172a;">
+                <span>Sign In to CRM Portal</span> &rarr;
+              </a>
+            {% endif %}
+            <a href="{% url 'public_student_enquiry_form' %}" class="btn-3d btn-3d-secondary" style="border-color:rgba(255,255,255,0.3); color:#ffffff; background:transparent;">
+              <span>Student Walk-in Desk</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================================================
+       Enterprise System HUD Footer
+       ========================================================================== -->
+  <footer class="landing-footer">
+    <div class="landing-container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div style="margin-bottom: 14px; display: inline-flex; align-items: center; gap: 8px;">
+            <img src="{% static 'images/digipanda_logo.svg' %}" alt="digipanda" class="landing-brand-logo logo-light-mode" style="height: 32px;">
+            <img src="{% static 'images/digipanda_logo_dark.svg' %}" alt="digipanda" class="landing-brand-logo logo-dark-mode" style="height: 32px;">
+            <span class="brand-version-badge">CRM 3.0</span>
+          </div>
+          <p>The premier enterprise lead management, WhatsApp automation, and admission acceleration system for modern training academies and sales teams.</p>
+          <div class="system-status-indicator">
+            <span class="pulse-dot" style="width:6px; height:6px;"></span>
+            <span>ALL SYSTEMS NOMINAL • 99.98% SLA</span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Platform</h5>
+          <ul>
+            <li><a href="#showcase">Interactive Cockpit</a></li>
+            <li><a href="#features">Omnichannel Lead Radar</a></li>
+            <li><a href="#features">WhatsApp Cloud API</a></li>
+            <li><a href="#calculator">ROI Engine</a></li>
+            <li><a href="{% url 'public_student_enquiry_form' %}">Walk-in QR Standee</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Portals &amp; Access</h5>
+          <ul>
+            <li><a href="{% url 'login' %}">Staff Sign In</a></li>
+            <li><a href="{% url 'public_student_enquiry_form' %}">Student Registration</a></li>
+            <li><a href="{% url 'root' %}">Platform Overview</a></li>
+            <li><a href="/sitemap.xml">XML Sitemap</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Security &amp; Governance</h5>
+          <ul>
+            <li><span style="color:var(--text-subtle);">Multi-Branch Data Fencing</span></li>
+            <li><span style="color:var(--text-subtle);">Role-Based Access Control</span></li>
+            <li><span style="color:var(--text-subtle);">Encrypted Session Auth</span></li>
+            <li><span style="color:var(--text-subtle);">Financial Ledger Auditing</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; {{ current_year }} Digipanda CRM. Built for high-growth academies &amp; sales organizations.</p>
+        <p class="font-mono" style="font-size:0.8rem;">Domain: <a href="https://digipandacrm.in/" style="color:#0ea5e9;">https://digipandacrm.in/</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================================================
+       Interactive Kinetic 3D Engine & Cockpit Scripts
+       ========================================================================== -->
+  <script>
+    /* 1. Real-Time Hardware-Accelerated Three.js 3D WebGL Cyber Core & Constellation */
+    (function init3DHeroScene() {
+      const container = document.getElementById('hero3dContainer');
+      if (!container) return;
+
+      if (typeof THREE === 'undefined') {
+        console.warn('Three.js CDN not available, skipping WebGL core');
+        return;
+      }
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.z = 32;
+
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const coreGroup = new THREE.Group();
+      scene.add(coreGroup);
+
+      // Central Icosahedron Wireframe
+      const icoGeo = new THREE.IcosahedronGeometry(8.5, 1);
+      const icoMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.6
+      });
+      const icoMesh = new THREE.Mesh(icoGeo, icoMat);
+      coreGroup.add(icoMesh);
+
+      // Inner Glowing Nucleus Sphere
+      const innerGeo = new THREE.SphereGeometry(4.2, 16, 16);
+      const innerMat = new THREE.MeshBasicMaterial({
+        color: 0x10b981,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.35
+      });
+      const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+      coreGroup.add(innerMesh);
+
+      // Outer Concentric Orbital Torus Rings
+      const ring1Geo = new THREE.TorusGeometry(12.5, 0.08, 16, 100);
+      const ring1Mat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.75 });
+      const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
+      ring1.rotation.x = Math.PI / 3;
+      coreGroup.add(ring1);
+
+      const ring2Geo = new THREE.TorusGeometry(15.2, 0.08, 16, 100);
+      const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.65 });
+      const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+      ring2.rotation.y = Math.PI / 4;
+      ring2.rotation.x = -Math.PI / 6;
+      coreGroup.add(ring2);
+
+      // 1,200 Star Particles
+      const starCount = 1200;
+      const starGeo = new THREE.BufferGeometry();
+      const starPositions = new Float32Array(starCount * 3);
+      const starColors = new Float32Array(starCount * 3);
+
+      const colors = [
+        new THREE.Color(0x38bdf8),
+        new THREE.Color(0x34d399),
+        new THREE.Color(0x818cf8),
+        new THREE.Color(0xffffff)
+      ];
+
+      for (let i = 0; i < starCount; i++) {
+        starPositions[i * 3] = (Math.random() - 0.5) * 140;
+        starPositions[i * 3 + 1] = (Math.random() - 0.5) * 90;
+        starPositions[i * 3 + 2] = (Math.random() - 0.5) * 90;
+
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        starColors[i * 3] = c.r;
+        starColors[i * 3 + 1] = c.g;
+        starColors[i * 3 + 2] = c.b;
+      }
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+      starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+      const starMat = new THREE.PointsMaterial({
+        size: 0.8,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85
+      });
+      const starField = new THREE.Points(starGeo, starMat);
+      scene.add(starField);
+
+      // Interactive Cursor Spotlight Tracking
+      const spotlight = document.getElementById('cursorSpotlight');
+      let mouseX = 0, mouseY = 0;
+      let targetRotX = 0, targetRotY = 0;
+
+      window.addEventListener('mousemove', (e) => {
+        if (spotlight) {
+          spotlight.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        }
+        const halfW = window.innerWidth / 2;
+        const halfH = window.innerHeight / 2;
+        mouseX = (e.clientX - halfW) / halfW;
+        mouseY = (e.clientY - halfH) / halfH;
+
+        targetRotY = mouseX * 0.45;
+        targetRotX = mouseY * 0.35;
+      });
+
+      // Responsive Resize
+      window.addEventListener('resize', () => {
+        if (!container) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      // Render Loop
+      function renderLoop() {
+        requestAnimationFrame(renderLoop);
+
+        icoMesh.rotation.x += 0.0035;
+        icoMesh.rotation.y += 0.0055;
+
+        innerMesh.rotation.x -= 0.004;
+        innerMesh.rotation.y -= 0.006;
+
+        ring1.rotation.z += 0.008;
+        ring2.rotation.z -= 0.007;
+
+        starField.rotation.y += 0.0003;
+        starField.rotation.x += 0.0001;
+
+        // Smooth Elastic Spring Parallax to Cursor
+        coreGroup.rotation.y += (targetRotY - coreGroup.rotation.y) * 0.05;
+        coreGroup.rotation.x += (targetRotX - coreGroup.rotation.x) * 0.05;
+
+        camera.position.x += (mouseX * 3.0 - camera.position.x) * 0.04;
+        camera.position.y += (-mouseY * 2.5 - camera.position.y) * 0.04;
+        camera.lookAt(0, 0, 0);
+
+        renderer.render(scene, camera);
+      }
+      renderLoop();
+    })();
+
+    /* 2. Interactive Product Showcase Tab Switching */
+    function switchShowcaseTab(tabKey, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.cockpit-view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      const targetView = document.getElementById('view-' + tabKey);
+      if (targetView) targetView.classList.add('active');
+    }
+
+    /* 3. Interactive WhatsApp Simulator Logic */
+    function triggerSimChat(action) {
+      const body = document.getElementById('simPhoneChatBody');
+      if (!body) return;
+
+      let userMsg = '';
+      let botReply = '';
+
+      if (action === 'fees') {
+        userMsg = 'Check Course Fees & Discounts';
+        botReply = '🎓 Our Python Fullstack & AI diploma is ₹38,000 (Installment plan available: ₹12,000/mo). Use code PANDA2026 for a flat 15% early-bird waiver!';
+      } else if (action === 'brochure') {
+        userMsg = 'Download 2026 Syllabus (PDF)';
+        botReply = '📄 [2026_Digipanda_Curriculum.pdf] (4.8 MB) — Verified industry syllabus with 12 live capstone projects has been dispatched to your WhatsApp!';
+      } else if (action === 'counselor') {
+        userMsg = 'Book 1-on-1 Counselor Call';
+        botReply = '📞 Great! Counselor Anjali has been alerted. She will call you within 15 minutes to discuss batch schedules and scholarship criteria.';
+      }
+
+      // Append user bubble
+      const uEl = document.createElement('div');
+      uEl.className = 'phone-bubble user';
+      uEl.textContent = userMsg;
+      body.appendChild(uEl);
+      body.scrollTop = body.scrollHeight;
+
+      // Show animated typing indicator
+      const typingEl = document.createElement('div');
+      typingEl.className = 'phone-bubble bot';
+      typingEl.id = 'simTypingBubble';
+      typingEl.style.cssText = 'display: inline-flex; align-items: center; gap: 5px; padding: 10px 14px; width: fit-content;';
+      typingEl.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+      body.appendChild(typingEl);
+      body.scrollTop = body.scrollHeight;
+
+      // Simulated Bot typing delay
+      setTimeout(() => {
+        if (typingEl && typingEl.parentNode) {
+          typingEl.parentNode.removeChild(typingEl);
+        }
+        const bEl = document.createElement('div');
+        bEl.className = 'phone-bubble bot';
+        bEl.textContent = botReply;
+        body.appendChild(bEl);
+        body.scrollTop = body.scrollHeight;
+      }, 700);
+    }
+
+    /* 4. Interactive Ingestion Simulator Stream */
+    const mockNames = ['Deepak Verma', 'Sneha Reddy', 'Aman Gupta', 'Divya Nair', 'Rohan Mehta', 'Kavita Joshi'];
+    const mockSources = ['Meta Lead Ads', 'Google Call Sync', 'Offline QR Standee', 'Website Webhook'];
+    function simulateNewLead() {
+      const stream = document.getElementById('simIngestStream');
+      if (!stream) return;
+      const name = mockNames[Math.floor(Math.random() * mockNames.length)];
+      const source = mockSources[Math.floor(Math.random() * mockSources.length)];
+      const item = document.createElement('div');
+      item.className = 'stream-item';
+      item.innerHTML = `<div><strong>${name}</strong> <span style="color:#0ea5e9;">• ${source}</span></div><span class="font-mono" style="color:#10b981; font-weight:700;">DEDUP PASSED &rarr; Telecaller 0${Math.floor(Math.random()*4)+1}</span>`;
+      stream.insertBefore(item, stream.firstChild);
+      if (stream.children.length > 5) stream.removeChild(stream.lastChild);
+    }
+
+    /* 5. Interactive QR Token Simulator */
+    let currentToken = 108;
+    function generateNewToken() {
+      currentToken++;
+      const el = document.getElementById('simTokenDisplay');
+      if (el) el.textContent = '#A-' + currentToken;
+    }
+
+    /* 6. 3D Mouse-Tracking Card Tilt */
+    document.querySelectorAll('[data-tilt]').forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -6;
+        const rotateY = ((x - centerX) / centerX) * 6;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0)';
+      });
+    });
+
+    /* 7. Interactive ROI Calculator */
+    function updateRoiCalculator(leadsVal) {
+      const leads = parseInt(leadsVal, 10);
+      document.getElementById('roiLeadsDisplay').textContent = leads.toLocaleString('en-IN');
+      const hours = Math.round(leads * 0.08);
+      const extraStudents = Math.round(leads * 0.045);
+      const revenue = (leads * 0.0045).toFixed(1);
+
+      document.getElementById('roiHoursSaved').textContent = hours.toLocaleString('en-IN') + ' hrs';
+      document.getElementById('roiExtraStudents').textContent = '+' + extraStudents.toLocaleString('en-IN');
+      document.getElementById('roiRevenueProtected').textContent = '₹ ' + revenue + ' Lakhs';
+    }
+
+    /* 8. FAQ Accordion Toggle */
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      if (!item) return;
+      const isActive = item.classList.contains('active');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+      if (!isActive) item.classList.add('active');
+    }
+
+    /* 9. Dual-Theme Engine & 3D Isometric Coin Sync */
+    (function initThemeEngine() {
+      const THEME_KEY = 'techpanda_theme';
+      const themeToggleBtn = document.getElementById('theme-toggle');
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
+        try {
+          localStorage.setItem(THEME_KEY, theme);
+        } catch (e) {}
+      }
+
+      const saved = localStorage.getItem(THEME_KEY) || 'dark';
+      applyTheme(saved);
+
+      if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+          const active = document.documentElement.getAttribute('data-theme') || 'dark';
+          const target = active === 'dark' ? 'light' : 'dark';
+          applyTheme(target);
+        });
+      }
+    })();
+
+    /* 10. Scroll-Driven Number Counter & Cinematic Viewport Reveal */
+    (function initScrollCinematic() {
+      const counters = document.querySelectorAll('.metric-number');
+      if (!('IntersectionObserver' in window)) return;
+
+      const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const el = entry.target;
+            const originalText = el.textContent.trim();
+            // Match numbers
+            const match = originalText.match(/([0-9.]+)/);
+            if (match) {
+              const targetVal = parseFloat(match[1]);
+              const suffix = originalText.replace(match[1], '');
+              let current = 0;
+              const step = targetVal / 30;
+              const timer = setInterval(() => {
+                current += step;
+                if (current >= targetVal) {
+                  current = targetVal;
+                  clearInterval(timer);
+                }
+                el.textContent = (targetVal % 1 === 0 ? Math.round(current) : current.toFixed(1)) + suffix;
+              }, 30);
+            }
+            obs.unobserve(el);
+          }
+        });
+      }, { threshold: 0.2 });
+
+      counters.forEach(c => observer.observe(c));
+    })();
+
+  </script>
+</body>
+</html>

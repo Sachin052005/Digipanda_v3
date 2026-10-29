@@ -240,14 +240,20 @@ def admin_telecaller_toggle_status(request, pk):
 @admin_required
 def admin_telecaller_change_password(request, pk):
     telecaller = get_object_or_404(User, pk=pk, role=UserRole.TELECALLER)
+    from accounts.permissions import can_manage_user
+    if not can_manage_user(request.user, telecaller):
+        raise PermissionDenied("You do not have permission to manage this telecaller's password.")
+
     if request.method == 'POST':
         form = SetPasswordForm(telecaller, request.POST)
         if form.is_valid():
             form.save()
+            telecaller.must_change_password = False
+            telecaller.save(update_fields=['must_change_password'])
             log_activity(
                 user=request.user,
-                action="Password Reset by Admin",
-                description=f"Admin reset password for Telecaller '{telecaller.username}'.",
+                action="Administrator Set Password",
+                description=f"Administrator '{request.user.username}' reset password for Telecaller '{telecaller.username}'.",
                 object_type="User",
                 object_id=telecaller.pk,
                 request=request
@@ -341,36 +347,23 @@ def telecaller_dashboard(request):
     telecaller = request.user
     today = timezone.localdate()
 
-    period = request.GET.get('period', 'all').strip()
-    start_date = request.GET.get('start_date', '').strip()
-    end_date = request.GET.get('end_date', '').strip()
+    from leads.utils_date_filter import extract_normalized_date_range
+    _date_info = extract_normalized_date_range(request, default_period='all')
+    start_date = _date_info['start_date']
+    end_date = _date_info['end_date']
+    period = _date_info['period']
+    start_dt = _date_info['start_dt']
+    end_dt = _date_info['end_dt']
 
-    start_dt, end_dt = None, None
-    if period == 'today':
-        start_dt = timezone.make_aware(datetime.combine(today, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'week':
-        start_of_week = today - timedelta(days=today.weekday())
-        start_dt = timezone.make_aware(datetime.combine(start_of_week, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'month':
-        start_of_month = today.replace(day=1)
-        start_dt = timezone.make_aware(datetime.combine(start_of_month, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'custom' and start_date and end_date:
-        try:
-            s_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            e_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            start_dt = timezone.make_aware(datetime.combine(s_date, time.min))
-            end_dt = timezone.make_aware(datetime.combine(e_date, time.max))
-        except ValueError:
-            start_dt, end_dt = None, None
+    start_of_today = timezone.make_aware(datetime.combine(today, time.min))
+    end_of_today = timezone.make_aware(datetime.combine(today, time.max))
 
     # 1. Fresh Leads Today: assigned today or created today if assigned_at is null
     fresh_leads_qs = Lead.objects.filter(
         assigned_telecaller=telecaller
     ).filter(
-        Q(assigned_at__date=today) | Q(assigned_at__isnull=True, created_at__date=today)
+        Q(assigned_at__range=(start_of_today, end_of_today)) |
+        Q(assigned_at__isnull=True, created_at__range=(start_of_today, end_of_today))
     )
     fresh_leads_today_count = fresh_leads_qs.count()
 
@@ -386,30 +379,33 @@ def telecaller_dashboard(request):
     pending_calls_qs = CallHistory.objects.filter(
         caller=telecaller
     ).filter(
-        Q(call_started_at__date=today) | Q(created_at__date=today)
+        Q(call_started_at__range=(start_of_today, end_of_today)) |
+        Q(created_at__range=(start_of_today, end_of_today))
     ).filter(
         Q(notes_completed=False) | ~Q(call_status__in=[CallStatus.COMPLETED, CallStatus.CANCELLED])
     )
     pending_calls_today_count = pending_calls_qs.count()
 
     # 4. Leads Not Touched for 7 Days
-    cutoff_7 = today - timezone.timedelta(days=7)
+    cutoff_7 = today - timedelta(days=7)
+    cutoff_7_dt = timezone.make_aware(datetime.combine(cutoff_7, time.max))
     touched_7_ids = CallHistory.objects.filter(
-        call_started_at__date__gt=cutoff_7
+        call_started_at__gt=cutoff_7_dt
     ).values_list('lead_id', flat=True)
     not_touched_7_count = Lead.objects.filter(
         assigned_telecaller=telecaller,
-        created_at__date__lte=cutoff_7
+        created_at__lte=cutoff_7_dt
     ).exclude(id__in=touched_7_ids).count()
 
     # 5. Leads Not Touched for 15 Days
-    cutoff_15 = today - timezone.timedelta(days=15)
+    cutoff_15 = today - timedelta(days=15)
+    cutoff_15_dt = timezone.make_aware(datetime.combine(cutoff_15, time.max))
     touched_15_ids = CallHistory.objects.filter(
-        call_started_at__date__gt=cutoff_15
+        call_started_at__gt=cutoff_15_dt
     ).values_list('lead_id', flat=True)
     not_touched_15_count = Lead.objects.filter(
         assigned_telecaller=telecaller,
-        created_at__date__lte=cutoff_15
+        created_at__lte=cutoff_15_dt
     ).exclude(id__in=touched_15_ids).count()
 
     # 6. Call Not Picked: leads where call outcome in ['No Answer', 'Busy'] or status in ['Missed', 'Failed']
@@ -455,7 +451,7 @@ def telecaller_dashboard(request):
     calls_qs = CallHistory.objects.filter(caller=telecaller)
     if start_dt and end_dt:
         calls_qs = calls_qs.filter(call_started_at__range=(start_dt, end_dt))
-    todays_calls_count = calls_qs.filter(call_started_at__date=today).count() if not (start_dt and end_dt) else calls_qs.count()
+    todays_calls_count = calls_qs.filter(call_started_at__range=(start_of_today, end_of_today)).count() if not (start_dt and end_dt) else calls_qs.count()
 
     completed_calls_count = calls_qs.filter(call_status='Completed').count()
 

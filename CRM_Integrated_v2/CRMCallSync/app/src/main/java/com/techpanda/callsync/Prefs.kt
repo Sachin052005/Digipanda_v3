@@ -3,10 +3,14 @@ package com.techpanda.callsync
 import android.content.Context
 
 class Prefs(context: Context) {
+    companion object {
+        const val DEFAULT_SERVER_URL = "https://digipandacrm.in/"
+    }
+
     private val sp = context.getSharedPreferences("callsync", Context.MODE_PRIVATE)
 
     var serverUrl: String
-        get() = sp.getString("server_url", "") ?: ""
+        get() = DEFAULT_SERVER_URL.trimEnd('/')
         set(v) = sp.edit().putString("server_url", v.trimEnd('/')).apply()
 
     var token: String?

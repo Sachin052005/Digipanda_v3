@@ -1,107 +1,123 @@
 {% extends 'base.html' %}
-{% block title %}Admin Dashboard - TECHPANDA CRM{% endblock %}
+{% load kpi_tags %}
+{% block title %}Admin Dashboard - DigipandaCRM{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+<div class="page-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
   <div class="page-title-group">
-    <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0 0 6px 0;">Organization Overview</h1>
-    <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 0;">Real-time analytics and management control center for TECHPANDA CRM</p>
+    <h1 style="font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0 0 3px 0;">Organization Overview</h1>
+    <p style="font-size: 0.835rem; color: var(--tp-text-muted); margin: 0;">Real-time analytics and management control center for DigipandaCRM</p>
   </div>
-  <div class="page-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-    <button type="button" class="btn btn-warning btn-sm tp-btn-warning tp-btn-sm" id="btn-trigger-sla-escalation" style="font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+  <div class="page-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <button type="button" class="btn btn-warning btn-sm tp-btn-warning tp-btn-sm" id="btn-trigger-sla-escalation" style="font-weight: 700; display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 12px;">
       <span>⚡ Enforce SLAs Now</span>
     </button>
-    <a href="{% url 'admin_enrolled_students' %}" class="btn btn-primary btn-sm tp-btn-primary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 5px;">
+    <a href="{% url 'admin_enrolled_students' %}" class="btn btn-primary btn-sm tp-btn-primary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 12px;">
       <span>🎓 Enrolled Students</span>
     </a>
-    <a href="{% url 'admin_lead_create' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">
-      + Add Lead
+    <a href="{% url 'admin_lead_create' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px;">
+      <span>+ Add Lead</span>
     </a>
   </div>
 </div>
 
-<!-- Admin Dashboard Filters (Section 15) -->
-<div class="filter-card tp-card" style="padding: 16px 20px; margin-bottom: 24px;">
-  <!-- Preset Period Buttons -->
-  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--tp-surface-border, #e5e7eb);">
-    <span style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-right: 4px;">Quick Period:</span>
-    <a href="?period=all" class="btn {% if period == 'all' or not period and not from_date and not to_date %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">All Time</a>
-    <a href="?period=today" class="btn {% if period == 'today' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">Today</a>
-    <a href="?period=week" class="btn {% if period == 'week' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Week</a>
-    <a href="?period=month" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Month</a>
+<!-- Admin Dashboard Command Filter Bar (Compact & Sleek) -->
+<div class="tp-filter-bar tp-card">
+  <!-- Top Quick Period Row -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--tp-surface-border, rgba(226, 232, 240, 0.8));">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Quick Period:</span>
+      <div style="display: inline-flex; gap: 6px; flex-wrap: wrap;">
+        <a href="?period=all" class="btn btn-sm {% if period == 'all' or not period and not from_date and not to_date %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.775rem; padding: 3px 10px; border-radius: 6px;">All Time</a>
+        <a href="?period=today" class="btn btn-sm {% if period == 'today' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.775rem; padding: 3px 10px; border-radius: 6px;">Today</a>
+        <a href="?period=week" class="btn btn-sm {% if period == 'week' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.775rem; padding: 3px 10px; border-radius: 6px;">This Week</a>
+        <a href="?period=month" class="btn btn-sm {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.775rem; padding: 3px 10px; border-radius: 6px;">This Month</a>
+      </div>
+    </div>
+    {% if from_date or to_date or manager_filter or telecaller_filter or branch_filter or channel_filter or status_filter or period and period != 'all' %}
+    <a href="{% url 'admin_dashboard' %}" style="font-size: 0.775rem; font-weight: 600; color: #ef4444; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      Reset Filters
+    </a>
+    {% endif %}
   </div>
 
-  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-    <div class="filter-col" style="flex: 1; min-width: 130px;">
-      <label class="tp-label">From Date</label>
-      <input type="date" name="from_date" class="form-control tp-input" value="{{ from_date }}">
+  <form method="GET" class="tp-compact-filter-grid">
+    <div class="tp-filter-field">
+      <label class="tp-field-label">Date Range</label>
+      <div class="tp-smart-date-container compact w-100">
+        <input type="date" name="from_date" value="{{ from_date }}" style="display: none;">
+        <input type="date" name="to_date" value="{{ to_date }}" style="display: none;">
+      </div>
     </div>
-    <div class="filter-col" style="flex: 1; min-width: 130px;">
-      <label class="tp-label">To Date</label>
-      <input type="date" name="to_date" class="form-control tp-input" value="{{ to_date }}">
-    </div>
-    <div class="filter-col" style="flex: 1; min-width: 140px;">
-      <label class="tp-label">Sales Head</label>
-      <select name="manager" class="form-select tp-select">
+    <div class="tp-filter-field">
+      <label class="tp-field-label">Sales Head</label>
+      <select name="manager" class="form-select tp-select-compact" onchange="this.form.submit()">
         <option value="">All Sales Heads</option>
         {% for m in managers %}
         <option value="{{ m.id }}" {% if manager_filter == m.id|stringformat:"i" %}selected{% endif %}>{{ m.get_full_name|default:m.username }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="filter-col" style="flex: 1; min-width: 140px;">
-      <label class="tp-label">Telecaller</label>
-      <select name="telecaller" class="form-select tp-select">
+    <div class="tp-filter-field">
+      <label class="tp-field-label">Telecaller</label>
+      <select name="telecaller" class="form-select tp-select-compact" onchange="this.form.submit()">
         <option value="">All Telecallers</option>
         {% for t in telecallers %}
         <option value="{{ t.id }}" {% if telecaller_filter == t.id|stringformat:"i" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="filter-col" style="flex: 1; min-width: 130px;">
-      <label class="tp-label">Branch</label>
-      <select name="branch" class="form-select tp-select">
+    <div class="tp-filter-field">
+      <label class="tp-field-label">Branch</label>
+      <select name="branch" class="form-select tp-select-compact" onchange="this.form.submit()">
         <option value="">All Branches</option>
         {% for b in branches %}
         <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="filter-col" style="flex: 1; min-width: 130px;">
-      <label class="tp-label">Channel</label>
-      <select name="channel" class="form-select tp-select">
+    <div class="tp-filter-field">
+      <label class="tp-field-label">Channel</label>
+      <select name="channel" class="form-select tp-select-compact" onchange="this.form.submit()">
         <option value="">All Channels</option>
         {% for c in channels %}
         <option value="{{ c.id }}" {% if channel_filter == c.id|stringformat:"i" %}selected{% endif %}>{{ c.name }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="filter-col" style="flex: 1; min-width: 130px;">
-      <label class="tp-label">Status</label>
-      <select name="status" class="form-select tp-select">
+    <div class="tp-filter-field">
+      <label class="tp-field-label">Status</label>
+      <select name="status" class="form-select tp-select-compact" onchange="this.form.submit()">
         <option value="">All Statuses</option>
         {% for code, label in statuses %}
         <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </div>
-    <div style="display: flex; gap: 8px;">
-      <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary tp-btn-secondary">Reset</a>
+    <div class="tp-filter-action">
+      <button type="submit" class="btn btn-primary tp-btn-primary btn-sm" style="font-size: 0.775rem; height: 33px; padding: 0 12px; display: inline-flex; align-items: center; gap: 4px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        Filter
+      </button>
+      <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary tp-btn-secondary btn-sm" style="font-size: 0.775rem; height: 33px; padding: 0 10px; display: inline-flex; align-items: center;" title="Reset Filters">
+        Reset
+      </a>
     </div>
   </form>
 </div>
 
 <!-- SECTION 1: High-Velocity Operational Metrics -->
-<div style="margin-bottom: 24px;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+<div style="margin-bottom: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
       Operational Velocity & Workload
     </h3>
     <span style="font-size: 0.8rem; color: var(--tp-text-muted);">Real-time pipeline pulse</span>
   </div>
-  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-    <a href="{% url 'admin_leads_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all leads">
+  <div class="kpi-grid tp-kpi-grid-7 tp-stagger-container" style="gap: 12px;">
+    <a href="{% build_kpi_url 'admin_leads_list' 'view' 'all' kpi_label='Total Inbound Leads' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all leads">
       <div class="kpi-info">
         <h4>Total Inbound Leads</h4>
         <div class="kpi-value" style="color: var(--tp-primary-600);">{{ total_leads }}</div>
@@ -111,7 +127,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_leads_list' %}?status=New" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view new leads">
+    <a href="{% build_kpi_url 'admin_leads_list' 'status' 'New' kpi_label='New Leads' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view new leads">
       <div class="kpi-info">
         <h4>New Unhandled Leads</h4>
         <div class="kpi-value" style="color: #2563eb;">{{ new_leads }}</div>
@@ -121,7 +137,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_leads_list' %}?status=active" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view active leads">
+    <a href="{% build_kpi_url 'admin_leads_list' 'status' 'active' kpi_label='Active Pipeline Leads' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view active leads">
       <div class="kpi-info">
         <h4>Active Pipeline Leads</h4>
         <div class="kpi-value" style="color: #10b981;">{{ active_leads }}</div>
@@ -131,7 +147,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_followups_list' %}?status=overdue" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; border-left: 4px solid #ef4444;" title="Click to view overdue follow-ups">
+    <a href="{% build_kpi_url 'admin_followups_list' 'status' 'overdue' kpi_label='Overdue Follow-ups' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; border-left: 4px solid #ef4444;" title="Click to view overdue follow-ups">
       <div class="kpi-info">
         <h4>Overdue Follow-ups</h4>
         <div class="kpi-value" style="color: #ef4444; font-weight: 800;">{{ overdue_followups }}</div>
@@ -141,7 +157,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_calls_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all calls">
+    <a href="{% build_kpi_url 'admin_calls_list' kpi_label='Total Calls Made' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all calls">
       <div class="kpi-info">
         <h4>Total Calls Made</h4>
         <div class="kpi-value" style="color: #0284c7;">{{ total_calls }}</div>
@@ -151,7 +167,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_followups_list' %}?status=pending" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view pending follow-ups">
+    <a href="{% build_kpi_url 'admin_followups_list' 'status' 'pending' kpi_label='Pending Follow-ups' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view pending follow-ups">
       <div class="kpi-info">
         <h4>Pending Follow-ups</h4>
         <div class="kpi-value" style="color: #f59e0b;">{{ pending_followups }}</div>
@@ -161,7 +177,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_calls_list' %}?status=Completed" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view completed calls">
+    <a href="{% build_kpi_url 'admin_calls_list' 'status' 'Completed' kpi_label='Completed Calls' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view completed calls">
       <div class="kpi-info">
         <h4>Completed Calls</h4>
         <div class="kpi-value" style="color: #10b981;">{{ completed_calls }}</div>
@@ -174,16 +190,17 @@
 </div>
 
 <!-- SECTION: Admissions, Revenue & Fee Collections -->
-<div style="margin-bottom: 24px;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+<div style="margin-bottom: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
       Admissions, Revenue &amp; Fee Collections
     </h3>
     <a href="{% url 'admin_enrolled_students' %}" style="font-size: 0.85rem; font-weight: 600; color: #0284c7; text-decoration: none;">View All Students &rarr;</a>
   </div>
-  <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;">
-    <a href="{% url 'admin_enrolled_students' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view enrolled students">
+  <div class="kpi-grid tp-kpi-grid-5" style="gap: 12px;">
+    
+    <a href="{% build_kpi_url 'admin_enrolled_students' kpi_label='Enrolled Students' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view enrolled students">
       <div class="kpi-info">
         <h4>Enrolled Students</h4>
         <div class="kpi-value" style="color: #0f172a;">{{ total_enrolled }}</div>
@@ -193,7 +210,8 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_enrolled_students' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view total contracted revenue">
+
+    <a href="{% build_kpi_url 'admin_enrolled_students' kpi_label='Total Contracted Revenue' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view total contracted revenue">
       <div class="kpi-info">
         <h4>Total Revenue</h4>
         <div class="kpi-value" style="color: #0f172a;">₹{{ total_revenue|floatformat:2 }}</div>
@@ -203,7 +221,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_enrolled_students' %}?payment_status=Fully+Paid" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view verified collections">
+    <a href="{% build_kpi_url 'admin_enrolled_students' 'payment_status' 'Fully Paid' kpi_label='Fully Paid Collections' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view verified collections">
       <div class="kpi-info">
         <h4>Total Collections</h4>
         <div class="kpi-value" style="color: #059669;">₹{{ total_collections|floatformat:2 }}</div>
@@ -213,7 +231,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_enrolled_students' %}?payment_status=Partially+Paid" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view outstanding balance">
+    <a href="{% build_kpi_url 'admin_enrolled_students' 'payment_status' 'Partially Paid' kpi_label='Outstanding Balance' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view outstanding balance">
       <div class="kpi-info">
         <h4>Outstanding Balance</h4>
         <div class="kpi-value" style="color: #d97706;">₹{{ total_outstanding|floatformat:2 }}</div>
@@ -223,7 +241,7 @@
       </div>
     </a>
 
-    <a href="{% url 'admin_enrolled_students' %}?payment_status=Overdue" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; border-left: 4px solid #ef4444;" title="Click to view overdue installments">
+    <a href="{% build_kpi_url 'admin_enrolled_students' 'payment_status' 'Overdue' kpi_label='Overdue Installments' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; border-left: 4px solid #ef4444;" title="Click to view overdue installments">
       <div class="kpi-info">
         <h4>Overdue Installments</h4>
         <div class="kpi-value" style="color: #dc2626;">{{ total_overdue_installments }}</div>
@@ -236,31 +254,31 @@
 </div>
 
 <!-- SECTION 2: Visual Pipeline & Telecaller Performance Charts -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-bottom: 24px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; margin-bottom: 20px;">
   <!-- Pipeline Status Distribution Chart -->
-  <div class="tp-card" style="padding: 20px; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-lg);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+  <div class="tp-chart-card tp-card" style="padding: 16px 20px; border-radius: var(--tp-radius-lg, 12px); min-width: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <div>
-        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">Lead Pipeline Distribution</h4>
-        <p style="font-size: 0.8rem; color: var(--tp-text-muted); margin: 0;">Breakdown by operational lead stages</p>
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 2px 0;">Lead Pipeline Distribution</h4>
+        <p style="font-size: 0.775rem; color: var(--tp-text-muted); margin: 0;">Breakdown by operational lead stages</p>
       </div>
-      <a href="{% url 'leads_kanban' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm" style="font-size: 0.8rem;">View Kanban</a>
+      <a href="{% url 'leads_kanban' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm" style="font-size: 0.775rem; padding: 3px 10px;">View Kanban</a>
     </div>
-    <div style="height: 260px; position: relative;">
+    <div style="height: 240px; position: relative; width: 100%; min-width: 0;">
       <canvas id="adminStatusChart"></canvas>
     </div>
   </div>
 
   <!-- Telecaller Activity & RNR Chart -->
-  <div class="tp-card" style="padding: 20px; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-lg);">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+  <div class="tp-chart-card tp-card" style="padding: 16px 20px; border-radius: var(--tp-radius-lg, 12px); min-width: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <div>
-        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">Telecaller Call Outcomes</h4>
-        <p style="font-size: 0.8rem; color: var(--tp-text-muted); margin: 0;">Connected vs. Ringing No Response (RNR)</p>
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 2px 0;">Telecaller Call Outcomes</h4>
+        <p style="font-size: 0.775rem; color: var(--tp-text-muted); margin: 0;">Connected vs. Ringing No Response (RNR)</p>
       </div>
-      <a href="{% url 'telecaller_rnr_report' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm" style="font-size: 0.8rem;">Full Report</a>
+      <a href="{% url 'telecaller_rnr_report' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm" style="font-size: 0.775rem; padding: 3px 10px;">Full Report</a>
     </div>
-    <div style="height: 260px; position: relative;">
+    <div style="height: 240px; position: relative; width: 100%; min-width: 0;">
       <canvas id="adminTelecallerChart"></canvas>
     </div>
   </div>
@@ -301,7 +319,7 @@
 </div>
 
 <!-- Performance Tables (Section 15) -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; margin-bottom: 24px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 16px; margin-bottom: 20px;">
   <!-- Sales Head Performance -->
   <div class="crm-card tp-card">
     <div class="crm-card-header tp-card-header">
@@ -380,7 +398,7 @@
 </div>
 
 <!-- Recent Leads & Recent Calls -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 16px; margin-bottom: 20px;">
   <!-- Recent Leads -->
   <div class="crm-card">
     <div class="crm-card-header">
@@ -530,93 +548,44 @@ document.addEventListener('DOMContentLoaded', function() {
   fetch('{% url "management_charts_api" %}')
     .then(r => r.json())
     .then(data => {
-      // Palette
-      const palette = [
-        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
-        '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'
-      ];
-
-      // Chart 1: Lead Status Distribution (Doughnut)
+      // Chart 1: Lead Status Distribution (Modern Doughnut with Center KPI Stat)
       const statusCtx = document.getElementById('adminStatusChart');
       if (statusCtx && data.status_chart) {
-        new Chart(statusCtx, {
-          type: 'doughnut',
-          data: {
+        if (window.TPCharts) {
+          window.TPCharts.createDoughnut(statusCtx, {
             labels: data.status_chart.labels.length ? data.status_chart.labels : ['No leads yet'],
-            datasets: [{
-              data: data.status_chart.data.length ? data.status_chart.data : [1],
-              backgroundColor: data.status_chart.data.length ? palette.slice(0, data.status_chart.labels.length) : ['#e2e8f0'],
-              borderWidth: 2,
-              borderColor: '#ffffff',
-              hoverOffset: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'right',
-                labels: {
-                  boxWidth: 12,
-                  font: { size: 11, family: 'Inter, system-ui, sans-serif' },
-                  color: '#475569'
-                }
-              }
-            },
-            cutout: '68%'
-          }
-        });
+            data: data.status_chart.data.length ? data.status_chart.data : [0],
+            centerLabel: 'TOTAL LEADS',
+            cutout: '74%',
+            legendPosition: 'right'
+          });
+        }
       }
 
-      // Chart 2: Telecaller Connected vs RNR (Bar)
+      // Chart 2: Telecaller Connected vs RNR (Bar with Rounded Geometry & Gradient Fills)
       const tcCtx = document.getElementById('adminTelecallerChart');
       if (tcCtx && data.telecaller_chart) {
-        new Chart(tcCtx, {
-          type: 'bar',
-          data: {
+        if (window.TPCharts) {
+          window.TPCharts.createBar(tcCtx, {
             labels: data.telecaller_chart.labels.length ? data.telecaller_chart.labels : ['No calls recorded'],
             datasets: [
               {
                 label: 'Connected Calls',
                 data: data.telecaller_chart.connected.length ? data.telecaller_chart.connected : [0],
-                backgroundColor: '#10b981',
-                borderRadius: 4
+                gradientStart: '#059669',
+                gradientEnd: '#34d399',
+                borderRadius: 8
               },
               {
                 label: 'RNR / Unanswered',
                 data: data.telecaller_chart.rnr.length ? data.telecaller_chart.rnr : [0],
-                backgroundColor: '#ef4444',
-                borderRadius: 4
+                gradientStart: '#dc2626',
+                gradientEnd: '#f87171',
+                borderRadius: 8
               }
             ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'top',
-                labels: {
-                  boxWidth: 12,
-                  font: { size: 11, family: 'Inter, system-ui, sans-serif' },
-                  color: '#475569'
-                }
-              }
-            },
-            scales: {
-              x: {
-                grid: { display: false },
-                ticks: { font: { size: 11 } }
-              },
-              y: {
-                beginAtZero: true,
-                grid: { color: '#f1f5f9' },
-                ticks: { precision: 0 }
-              }
-            }
-          }
-        });
+          });
+        }
       }
     })
     .catch(err => console.warn('Could not load management charts:', err));

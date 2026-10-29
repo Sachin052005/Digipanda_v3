@@ -1,38 +1,74 @@
 {% extends 'base.html' %}
-{% block title %}Admin Portal Login - TECHPANDA CRM{% endblock %}
+{% load static %}
+{% block title %}Admin Portal Login - DigiPanda CRM{% endblock %}
 
 {% block content %}
-<div style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 20px;">
-  <div style="width: 100%; max-width: 440px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-lg);">
-    <div style="text-align: center; margin-bottom: 24px;">
-      <div style="display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: var(--radius-md); background: var(--purple-light); color: var(--purple); margin-bottom: 12px;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+<div class="tp-login-ambient-wrapper">
+  <!-- Glowing ambient floating orbs with purple accent -->
+  <div class="tp-ambient-blob tp-ambient-blob-2" style="top: 10%; left: 15%; background: radial-gradient(circle, #7c3aed 0%, rgba(124, 58, 237, 0) 70%);"></div>
+  <div class="tp-ambient-blob tp-ambient-blob-1" style="bottom: 8%; right: 12%; background: radial-gradient(circle, #6366f1 0%, rgba(99, 102, 241, 0) 70%);"></div>
+
+  <div class="tp-login-glass-card" style="border-top: 3px solid var(--purple, #8b5cf6);">
+    <!-- Animation A — Welcome heading -->
+    <div class="tp-login-anim-heading" style="text-align: center; margin-bottom: 26px;">
+      <div style="margin-bottom: 16px;">
+        <img src="{% static 'images/digipanda_logo.png' %}" alt="DigiPanda" class="brand-logo-light" style="max-height: 48px; max-width: 210px; object-fit: contain;">
+        <img src="{% static 'images/digipanda_logo_dark.png' %}" alt="DigiPanda" class="brand-logo-dark" style="max-height: 48px; max-width: 210px; object-fit: contain;">
       </div>
-      <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--text-main);">Admin Secure Login</h2>
-      <p style="color: var(--text-muted); font-size: 0.875rem;">Authorized administrators only</p>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary, #0f172a); margin: 0 0 6px 0;">Admin Secure Login</h1>
+      <p style="color: var(--tp-text-muted, #64748b); font-size: 0.88rem; margin: 0;">Authorized system administrators only</p>
     </div>
 
-    <form method="POST">
+    {% if form.errors %}
+    <div class="alert alert-error" style="margin-bottom: 20px; font-size: 0.84rem; padding: 10px 14px; border-radius: 8px;">
+      <span>Invalid admin credentials. Access has been logged.</span>
+    </div>
+    {% endif %}
+
+    <form method="POST" autocomplete="on">
       {% csrf_token %}
-      <div class="form-group">
-        <label class="form-label">Username</label>
-        {{ form.username }}
+
+      <!-- Animation B — First input field -->
+      <div class="form-group tp-login-anim-field-1" style="margin-bottom: 18px;">
+        <label class="form-label" for="id_email" style="display: block; font-size: 0.84rem; font-weight: 600; margin-bottom: 7px; color: var(--tp-text-primary, #0f172a);">
+          Admin Email Address
+        </label>
+        {{ form.email }}
       </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        {{ form.password }}
+
+      <!-- Animation C — Second input field -->
+      <div class="form-group tp-login-anim-field-2" style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+          <label class="form-label" for="id_password" style="font-size: 0.84rem; font-weight: 600; margin-bottom: 0; color: var(--tp-text-primary, #0f172a);">
+            Password
+          </label>
+          <a href="{% url 'password_reset' %}" style="font-size: 0.8rem; color: var(--purple, #8b5cf6); font-weight: 600; text-decoration: none;" tabindex="4">
+            Forgot Password?
+          </a>
+        </div>
+        <div class="tp-password-field-wrapper" style="position: relative; width: 100%; display: block;">
+          {{ form.password }}
+          <button type="button" class="tp-password-toggle-btn" aria-label="Toggle password visibility" tabindex="-1">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
       </div>
-      <div style="display: flex; align-items: center; justify-content: flex-end; margin-bottom: 20px;">
-        <label style="display: none; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+
+      <!-- Animation Meta — Remember me & portal switcher -->
+      <div class="tp-login-anim-meta" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.825rem; color: var(--tp-text-muted, #64748b); cursor: pointer; user-select: none;">
           {{ form.remember_me }} Remember me
         </label>
-        <a href="{% url 'login' %}" style="font-size: 0.8rem; color: var(--text-muted);">Switch Portal</a>
+        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">
+          <a href="{% url 'login' %}" style="color: var(--tp-text-muted); font-weight: 500;">General Login &rarr;</a>
+        </span>
       </div>
-      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; font-weight: 600; background: var(--purple); border-color: var(--purple);">
-        Login as Admin
+
+      <!-- Animation D — Glossy login button with light sweep -->
+      <button type="submit" class="btn tp-login-anim-btn tp-glossy-btn" style="width: 100%; padding: 12px; font-size: 0.94rem; font-weight: 700; letter-spacing: 0.01em; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);">
+        Authenticate as Admin
       </button>
     </form>
-    <!-- Public registration link is intentionally omitted as per Section 4 requirement -->
   </div>
 </div>
 {% endblock %}

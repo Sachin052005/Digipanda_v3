@@ -37,11 +37,9 @@ def assign_new_lead(lead, branch=None, source="Google Sheet", triggered_by=None,
         return False
 
     with transaction.atomic():
-        # Channel-aware branch percentage lookup
-        lead_channel = getattr(lead, 'channel', None)
-        if not lead_channel and getattr(lead, 'source', None):
-            from channels.models import Channel
-            lead_channel = Channel.objects.filter(name__iexact=lead.source, status='Active').first()
+        # Lead source normalization & hierarchical rule selection
+        from .models import normalize_lead_source
+        lead_source = normalize_lead_source(getattr(lead, 'source', None) or source)
 
         # Query active telecallers belonging to this branch with is_active=True in setup
         qs = TelecallerLeadSetup.objects.select_for_update().filter(
@@ -53,11 +51,24 @@ def assign_new_lead(lead, branch=None, source="Google Sheet", triggered_by=None,
         if exclude_telecaller:
             qs = qs.exclude(telecaller=exclude_telecaller)
 
-        # Prefer channel-specific rules if configured; fallback to general branch rules
-        if lead_channel and qs.filter(channel=lead_channel).exists():
-            qs = qs.filter(channel=lead_channel)
+        rule_source_name = ''
+        # 1. Prefer source-specific rules if configured
+        if lead_source and qs.filter(source=lead_source).exists():
+            qs = qs.filter(source=lead_source)
+            rule_source_name = lead_source
         else:
-            qs = qs.filter(channel__isnull=True)
+            # 2. Check channel-specific rules
+            lead_channel = getattr(lead, 'channel', None)
+            if not lead_channel and lead_source:
+                from lead_channels.models import Channel
+                lead_channel = Channel.objects.filter(name__iexact=lead_source, status='Active').first()
+            if lead_channel and qs.filter(channel=lead_channel).exists():
+                qs = qs.filter(channel=lead_channel)
+                rule_source_name = lead_channel.name
+            else:
+                # 3. Fall back to branch general rule (source='' and channel__isnull=True)
+                qs = qs.filter(source='', channel__isnull=True)
+                rule_source_name = 'Branch General'
 
         setups = list(qs.select_related('telecaller', 'telecaller__branch'))
 
@@ -66,10 +77,11 @@ def assign_new_lead(lead, branch=None, source="Google Sheet", triggered_by=None,
         total_pct = sum(s.assignment_percentage for s in valid_setups)
 
         # Strict 100% check
+        src_label = f" for source '{lead_source}'" if (lead_source and rule_source_name == lead_source) else ""
         if not valid_setups:
             lead.branch = target_branch
             lead.assignment_status = 'Pending Assignment'
-            lead.pending_assignment_reason = f"No active telecallers or allocation configured for branch '{target_branch.name}'."
+            lead.pending_assignment_reason = f"No active telecallers or allocation configured for branch '{target_branch.name}'{src_label}."
             lead.assigned_telecaller = None
             if lead.pk:
                 lead.save(update_fields=['branch', 'assignment_status', 'pending_assignment_reason', 'assigned_telecaller', 'updated_at'])
@@ -78,7 +90,7 @@ def assign_new_lead(lead, branch=None, source="Google Sheet", triggered_by=None,
             log_activity(
                 user=triggered_by,
                 action="Lead Assignment Pending",
-                description=f"Lead '{lead.name}' marked Pending Assignment: No active telecallers or allocation configured for branch '{target_branch.name}'.",
+                description=f"Lead '{lead.name}' marked Pending Assignment: No active telecallers or allocation configured for branch '{target_branch.name}'{src_label}.",
                 object_type="Lead",
                 object_id=getattr(lead, 'pk', None)
             )
@@ -89,7 +101,7 @@ def assign_new_lead(lead, branch=None, source="Google Sheet", triggered_by=None,
         if not exclude_telecaller and total_pct != 100:
             lead.branch = target_branch
             lead.assignment_status = 'Pending Assignment'
-            lead.pending_assignment_reason = f"Branch '{target_branch.name}' telecaller allocation total is {total_pct}% (must equal exactly 100%)."
+            lead.pending_assignment_reason = f"Branch '{target_branch.name}'{src_label} telecaller allocation total is {total_pct}% (must equal exactly 100%)."
             lead.assigned_telecaller = None
             if lead.pk:
                 lead.save(update_fields=['branch', 'assignment_status', 'pending_assignment_reason', 'assigned_telecaller', 'updated_at'])
@@ -98,7 +110,7 @@ def assign_new_lead(lead, branch=None, source="Google Sheet", triggered_by=None,
             log_activity(
                 user=triggered_by,
                 action="Lead Assignment Pending",
-                description=f"Lead '{lead.name}' marked Pending Assignment: Branch '{target_branch.name}' allocation total is {total_pct}% (must equal 100%).",
+                description=f"Lead '{lead.name}' marked Pending Assignment: Branch '{target_branch.name}'{src_label} allocation total is {total_pct}% (must equal 100%).",
                 object_type="Lead",
                 object_id=getattr(lead, 'pk', None)
             )
@@ -242,67 +254,63 @@ def retry_pending_assignments(branch=None, user=None) -> tuple[int, int]:
     return assigned_count, still_pending_count
 
 
-def apply_branch_lead_distribution(branch, user=None) -> tuple[int, int, str]:
+def apply_branch_lead_distribution(branch, user=None, source=None) -> tuple[int, int, str]:
     """
-    Applies strict percentage-based distribution to all available leads in the specified branch.
-    Available leads include:
-    - Leads in the branch (or unassigned branch leads)
-    - Excluding protected leads (leads in progress, follow-up, demo scheduled, converted, lost, or having existing calls/followups)
-    - Unassigned leads, pending assignment leads, or fresh/new leads
-    
-    Guarantees:
-    - Exactly reflects the configured percentages across all available leads in the database.
-    - Saves assignments directly to Lead.assigned_telecaller, Lead.assigned_sales_head, Lead.assignment_status='Assigned'.
-    - Updates telecaller current_leads_assigned counters.
-    - Preserves all protected leads.
+    Applies strict percentage-based distribution to all available leads in the specified branch and source.
+    - If source is provided, allocates leads specifically matching that source according to its 100% rule.
+    - If source is None, allocates general unassigned leads according to the branch general rule (source='').
     """
-    from .models import Lead, LeadStatus, TelecallerLeadSetup, AssignmentMethod, LeadSetupConfig, LeadOwnerType, LeadAssignmentHistory
+    from .models import Lead, LeadStatus, TelecallerLeadSetup, AssignmentMethod, LeadSetupConfig, LeadOwnerType, LeadAssignmentHistory, normalize_lead_source
 
     if not branch:
         return 0, 0, "No branch provided."
 
+    norm_source = normalize_lead_source(source) if source else ''
+    src_display = f" (Source: '{norm_source}')" if norm_source else ""
+
     with transaction.atomic():
-        valid_setups = list(
-            TelecallerLeadSetup.objects.select_for_update()
-            .filter(
-                branch=branch,
-                is_active=True,
-                assignment_percentage__gt=0,
-                telecaller__is_active=True,
-                telecaller__role=UserRole.TELECALLER
-            )
-            .select_related('telecaller', 'telecaller__branch')
-            .order_by('id')
+        setups_qs = TelecallerLeadSetup.objects.select_for_update().filter(
+            branch=branch,
+            is_active=True,
+            assignment_percentage__gt=0,
+            telecaller__is_active=True,
+            telecaller__role=UserRole.TELECALLER
         )
+        if norm_source:
+            setups_qs = setups_qs.filter(source=norm_source)
+        else:
+            setups_qs = setups_qs.filter(source='', channel__isnull=True)
+
+        valid_setups = list(setups_qs.select_related('telecaller', 'telecaller__branch').order_by('id'))
+
+        leads_scope = Q(branch=branch) | Q(branch__isnull=True)
+        if norm_source:
+            leads_scope = leads_scope & (Q(source__iexact=norm_source) | Q(source__iexact=source))
 
         if not valid_setups:
-            unassigned_qs = Lead.objects.filter(
-                Q(branch=branch) | Q(branch__isnull=True)
-            ).filter(
+            unassigned_qs = Lead.objects.filter(leads_scope).filter(
                 Q(assigned_telecaller__isnull=True) | Q(assignment_status='Pending Assignment')
             )
             count = unassigned_qs.count()
             unassigned_qs.update(
                 branch=branch,
                 assignment_status='Pending Assignment',
-                pending_assignment_reason=f"No active telecallers or allocation configured for branch '{branch.name}'."
+                pending_assignment_reason=f"No active telecallers or allocation configured for branch '{branch.name}'{src_display}."
             )
-            return 0, count, f"No active telecallers or allocation configured for branch '{branch.name}'."
+            return 0, count, f"No active telecallers or allocation configured for branch '{branch.name}'{src_display}."
 
         total_pct = sum(s.assignment_percentage for s in valid_setups)
         if total_pct != 100:
-            unassigned_qs = Lead.objects.filter(
-                Q(branch=branch) | Q(branch__isnull=True)
-            ).filter(
+            unassigned_qs = Lead.objects.filter(leads_scope).filter(
                 Q(assigned_telecaller__isnull=True) | Q(assignment_status='Pending Assignment')
             )
             count = unassigned_qs.count()
             unassigned_qs.update(
                 branch=branch,
                 assignment_status='Pending Assignment',
-                pending_assignment_reason=f"Branch '{branch.name}' telecaller allocation total is {total_pct}% (must equal exactly 100%)."
+                pending_assignment_reason=f"Branch '{branch.name}'{src_display} telecaller allocation total is {total_pct}% (must equal exactly 100%)."
             )
-            return 0, count, f"Total percentage allocation for branch '{branch.name}' is {total_pct}% (must equal 100%)."
+            return 0, count, f"Total percentage allocation for branch '{branch.name}'{src_display} is {total_pct}% (must equal 100%)."
 
         # Protected statuses that MUST NOT be reassigned
         protected_statuses = [
@@ -317,12 +325,10 @@ def apply_branch_lead_distribution(branch, user=None) -> tuple[int, int, str]:
             LeadStatus.DISCUSSION
         ]
 
-        # Query eligible leads for this branch
+        # Query eligible leads for this branch and source
         available_leads = list(
             Lead.objects.select_for_update()
-            .filter(
-                Q(branch=branch) | Q(branch__isnull=True)
-            )
+            .filter(leads_scope)
             .exclude(status__in=protected_statuses)
             .exclude(calls__isnull=False)
             .exclude(followups__isnull=False)
@@ -336,7 +342,7 @@ def apply_branch_lead_distribution(branch, user=None) -> tuple[int, int, str]:
         )
 
         if not available_leads:
-            return 0, 0, f"No available leads to distribute for branch '{branch.name}'."
+            return 0, 0, f"No available leads to distribute for branch '{branch.name}'{src_display}."
 
         # Reset current_leads_assigned counters so this batch distribution precisely allocates by percentage
         for s in valid_setups:

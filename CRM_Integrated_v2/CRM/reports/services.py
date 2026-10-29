@@ -11,8 +11,9 @@ from datetime import datetime, time, timedelta
 import urllib.request
 import urllib.error
 
-from django.db.models import Count, Q, Avg, Sum
+from django.db.models import Count, Q, Avg, Sum, Min, Max
 from django.utils import timezone
+from django.urls import reverse
 
 from accounts.models import User, UserRole
 from accounts.permissions import get_accessible_branch_ids
@@ -36,12 +37,12 @@ CANONICAL_CHANNELS = [
 ]
 
 CHANNEL_COLORS = {
-    'Meta WhatsApp': '#059669',
+    'Meta WhatsApp': '#25D366',
     'Meta Lead Form': '#0284c7',
     'Website (Google Ad)': '#f59e0b',
     'Website (Google SEO)': '#8b5cf6',
     'Instagram': '#ec4899',
-    'Google Calls': '#10b981',
+    'Google Calls': '#06b6d4',
     'Influencer': '#6366f1',
     'Other': '#64748b',
 }
@@ -461,13 +462,54 @@ def get_dashboard_report_data(user, params=None):
         outcome_values = [0]
         outcome_percentages = [0]
 
+    resolved_start_date = start_dt.strftime('%Y-%m-%d') if start_dt else ''
+    resolved_end_date = end_dt.strftime('%Y-%m-%d') if end_dt else ''
+
+    report_state_payload = {
+        'period_label': period_label,
+        'date_filter': date_filter,
+        'start_date': resolved_start_date,
+        'end_date': resolved_end_date,
+        'branch_filter': effective_branch_id,
+        'channel_filter': channel_filter,
+        'kpi_total_leads': total_leads,
+        'kpi_total_change_pct': total_change_pct,
+        'kpi_connected_leads': connected_leads,
+        'kpi_connected_pct': connected_pct,
+        'kpi_prospected_leads': prospected_leads,
+        'kpi_prospected_pct': prospected_pct,
+        'kpi_not_connected_leads': not_connected_leads,
+        'kpi_not_connected_pct': not_connected_pct,
+        'channels': channel_cards,
+        'donut_chart': {
+            'labels': donut_labels,
+            'values': donut_values,
+            'colors': donut_colors,
+            'percentages': donut_percentages,
+            'total': total_leads,
+        },
+        'stacked_chart': {
+            'labels': stacked_labels,
+            'datasets': stacked_datasets,
+        },
+        'outcomes_chart': {
+            'labels': outcome_labels,
+            'values': outcome_values,
+            'percentages': outcome_percentages,
+            'total': total_calls_count,
+        },
+    }
+    report_state_json = json.dumps(report_state_payload)
+
     return {
         'period_label': period_label,
         'date_filter': date_filter,
-        'start_date': start_date_str,
-        'end_date': end_date_str,
+        'start_date': resolved_start_date,
+        'end_date': resolved_end_date,
         'branch_filter': effective_branch_id,
         'channel_filter': channel_filter,
+        'report_state_json': report_state_json,
+        'leads_url': reverse('admin_leads_list') if (getattr(user, 'is_admin_user', False) or getattr(user, 'role', '') == 'ADMIN' or getattr(user, 'is_superuser', False)) else reverse('manager_leads_list'),
 
         # 4 Pastel KPI Cards
         'kpi_total_leads': total_leads,
@@ -564,8 +606,8 @@ def get_telecaller_rnr_report_data(branch_ids=None, counselor_id=None, start_dt=
     - total calls
     - connected calls
     - RNR calls
-    - unique RNR leads
-    - repeat RNR leads (>= 2 RNR calls)
+    - unique RNR leads (distinct leads with >=1 RNR call)
+    - repeat RNR leads (distinct leads with >=2 RNR calls)
     - average attempts per RNR lead
     - connection rate & RNR rate
     """
@@ -591,13 +633,29 @@ def get_telecaller_rnr_report_data(branch_ids=None, counselor_id=None, start_dt=
     if start_dt and end_dt:
         date_filter = Q(call_started_at__range=(start_dt, end_dt))
 
-    report_rows = []
-    overall_total_calls = 0
-    overall_connected_calls = 0
-    overall_rnr_calls = 0
-    overall_unique_rnr_leads = 0
-    overall_repeat_rnr_leads = 0
+    # Overall aggregates across all matching telecallers (no duplicate lead inflation)
+    all_filtered_calls = CallHistory.objects.filter(
+        Q(caller__in=telecallers_qs) | Q(telecaller__in=telecallers_qs)
+    ).filter(date_filter).distinct()
 
+    overall_total_calls = all_filtered_calls.count()
+    overall_connected_calls = all_filtered_calls.filter(duration__gt=0).exclude(rnr_call_q).count()
+    overall_rnr_calls_qs = all_filtered_calls.filter(rnr_call_q)
+    overall_rnr_calls = overall_rnr_calls_qs.count()
+
+    # Distinct leads with at least 1 RNR call across the filtered call set
+    overall_unique_rnr_leads = overall_rnr_calls_qs.filter(lead__isnull=False).values('lead_id').distinct().count()
+
+    # Distinct leads with at least 2 RNR calls across the filtered call set
+    overall_repeat_rnr_leads = (
+        overall_rnr_calls_qs.filter(lead__isnull=False)
+        .values('lead_id')
+        .annotate(c=Count('id'))
+        .filter(c__gte=2)
+        .count()
+    )
+
+    report_rows = []
     for tc in telecallers_qs:
         tc_calls = CallHistory.objects.filter(Q(caller=tc) | Q(telecaller=tc)).filter(date_filter)
         total_calls = tc_calls.count()
@@ -605,23 +663,17 @@ def get_telecaller_rnr_report_data(branch_ids=None, counselor_id=None, start_dt=
         rnr_calls = rnr_calls_qs.count()
         connected_calls = tc_calls.filter(duration__gt=0).exclude(rnr_call_q).count()
 
-        unique_rnr_lead_ids = set(rnr_calls_qs.values_list('lead_id', flat=True))
+        unique_rnr_lead_ids = set(rnr_calls_qs.filter(lead__isnull=False).values_list('lead_id', flat=True))
         unique_rnr_leads = len(unique_rnr_lead_ids)
 
         repeat_rnr_leads = 0
         if unique_rnr_leads > 0:
-            lead_counts = rnr_calls_qs.values('lead_id').annotate(c=Count('id')).filter(c__gte=2)
+            lead_counts = rnr_calls_qs.filter(lead__isnull=False).values('lead_id').annotate(c=Count('id')).filter(c__gte=2)
             repeat_rnr_leads = lead_counts.count()
 
         avg_attempts_per_rnr = round(rnr_calls / unique_rnr_leads, 1) if unique_rnr_leads > 0 else 0.0
         connection_rate = round((connected_calls / total_calls) * 100, 1) if total_calls > 0 else 0.0
         rnr_rate = round((rnr_calls / total_calls) * 100, 1) if total_calls > 0 else 0.0
-
-        overall_total_calls += total_calls
-        overall_connected_calls += connected_calls
-        overall_rnr_calls += rnr_calls
-        overall_unique_rnr_leads += unique_rnr_leads
-        overall_repeat_rnr_leads += repeat_rnr_leads
 
         report_rows.append({
             'telecaller': tc,
@@ -644,6 +696,7 @@ def get_telecaller_rnr_report_data(branch_ids=None, counselor_id=None, start_dt=
         'overall_rnr_calls': overall_rnr_calls,
         'overall_unique_rnr_leads': overall_unique_rnr_leads,
         'overall_repeat_rnr_leads': overall_repeat_rnr_leads,
+        'overall_avg_attempts_per_rnr': round(overall_rnr_calls / overall_unique_rnr_leads, 1) if overall_unique_rnr_leads > 0 else 0.0,
         'overall_connection_rate': round((overall_connected_calls / overall_total_calls) * 100, 1) if overall_total_calls > 0 else 0.0,
         'overall_rnr_rate': round((overall_rnr_calls / overall_total_calls) * 100, 1) if overall_total_calls > 0 else 0.0,
     }
@@ -651,6 +704,154 @@ def get_telecaller_rnr_report_data(branch_ids=None, counselor_id=None, start_dt=
     return {
         'rows': report_rows,
         'summary': summary,
+    }
+
+
+def get_telecaller_rnr_lead_details(detail_type='unique_rnr', branch_ids=None, counselor_id=None,
+                                    start_dt=None, end_dt=None, search_query=None, telecaller_id=None,
+                                    lead_search=None):
+    """
+    Returns distinct leads with RNR attempts for drilldown modal and CSV export (Module 2).
+    - detail_type: 'unique_rnr' (>= 1 RNR call) or 'repeat_rnr' (>= 2 RNR calls)
+    - avoids N+1 queries, aggregates attempt metrics, and formats call history
+    """
+    from leads.models import Lead
+    rnr_call_q = Q(call_outcome__in=['RNR', 'No Answer', 'Busy']) | Q(call_status__in=['No Answer', 'Busy', 'Missed', 'Failed'])
+
+    telecallers_qs = User.objects.filter(role=UserRole.TELECALLER)
+    if branch_ids is not None:
+        telecallers_qs = telecallers_qs.filter(branch_id__in=branch_ids)
+    if counselor_id:
+        telecallers_qs = telecallers_qs.filter(counselor_id=counselor_id)
+    if telecaller_id:
+        telecallers_qs = telecallers_qs.filter(id=telecaller_id)
+    if search_query:
+        telecallers_qs = telecallers_qs.filter(
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(phone__icontains=search_query)
+        )
+
+    date_filter = Q()
+    if start_dt and end_dt:
+        date_filter = Q(call_started_at__range=(start_dt, end_dt))
+
+    calls_base_qs = CallHistory.objects.filter(
+        Q(caller__in=telecallers_qs) | Q(telecaller__in=telecallers_qs)
+    ).filter(date_filter).filter(lead__isnull=False).distinct()
+
+    rnr_calls_qs = calls_base_qs.filter(rnr_call_q)
+
+    min_attempts = 2 if detail_type == 'repeat_rnr' else 1
+    lead_rnr_agg = (
+        rnr_calls_qs.order_by().values('lead_id')
+        .annotate(
+            rnr_count=Count('id'),
+            first_rnr_at=Min('call_started_at'),
+            latest_rnr_at=Max('call_started_at')
+        )
+        .filter(rnr_count__gte=min_attempts)
+    )
+
+    lead_meta_map = {item['lead_id']: item for item in lead_rnr_agg}
+    target_lead_ids = list(lead_meta_map.keys())
+
+    if not target_lead_ids:
+        return {
+            'leads': [],
+            'total_count': 0,
+            'detail_type': detail_type,
+            'title': 'Repeat RNR Leads (>= 2 Attempts)' if detail_type == 'repeat_rnr' else 'Unique RNR Leads',
+        }
+
+    leads_qs = Lead.objects.filter(id__in=target_lead_ids).select_related('branch', 'assigned_telecaller', 'assigned_counselor')
+
+    if lead_search:
+        lead_search = lead_search.strip()
+        leads_qs = leads_qs.filter(
+            Q(name__icontains=lead_search) |
+            Q(phone__icontains=lead_search) |
+            Q(email__icontains=lead_search)
+        )
+
+    # Total calls in filtered period per lead
+    total_calls_agg = (
+        calls_base_qs.filter(lead_id__in=target_lead_ids)
+        .order_by()
+        .values('lead_id')
+        .annotate(total_count=Count('id'))
+    )
+    total_calls_map = {item['lead_id']: item['total_count'] for item in total_calls_agg}
+
+    # Calls in period for these leads (ordered by call_started_at)
+    recent_calls = (
+        calls_base_qs.filter(lead_id__in=target_lead_ids)
+        .select_related('caller', 'telecaller')
+        .order_by('call_started_at')
+    )
+    calls_by_lead = {}
+    for c in recent_calls:
+        caller_label = 'System'
+        if c.caller:
+            caller_label = c.caller.get_full_name() or c.caller.username
+        elif c.telecaller:
+            caller_label = c.telecaller.get_full_name() or c.telecaller.username
+
+        calls_by_lead.setdefault(c.lead_id, []).append({
+            'id': c.id,
+            'caller_name': caller_label,
+            'call_started_at': c.call_started_at.strftime('%Y-%m-%d %H:%M:%S') if c.call_started_at else '',
+            'duration_formatted': c.formatted_duration,
+            'duration': c.duration,
+            'call_status': c.call_status,
+            'call_outcome': c.call_outcome,
+            'notes': c.notes or '',
+        })
+
+    lead_items = []
+    for lead in leads_qs:
+        meta = lead_meta_map.get(lead.id, {})
+        lead_calls = calls_by_lead.get(lead.id, [])
+        latest_call = lead_calls[-1] if lead_calls else None
+
+        first_rnr_str = meta.get('first_rnr_at').strftime('%Y-%m-%d %H:%M') if meta.get('first_rnr_at') else ''
+        latest_rnr_str = meta.get('latest_rnr_at').strftime('%Y-%m-%d %H:%M') if meta.get('latest_rnr_at') else ''
+
+        assigned_tc_name = 'Unassigned'
+        if lead.assigned_telecaller:
+            assigned_tc_name = lead.assigned_telecaller.get_full_name() or lead.assigned_telecaller.username
+
+        assigned_c_name = 'Unassigned'
+        if lead.assigned_counselor:
+            assigned_c_name = lead.assigned_counselor.get_full_name() or lead.assigned_counselor.username
+
+        lead_items.append({
+            'lead_id': lead.id,
+            'name': lead.name or 'Unknown',
+            'phone': lead.phone or '',
+            'masked_phone': lead.masked_phone,
+            'email': lead.email or '',
+            'branch_name': lead.branch.name if lead.branch else 'General',
+            'assigned_telecaller_name': assigned_tc_name,
+            'assigned_counselor_name': assigned_c_name,
+            'status': lead.status,
+            'rnr_count': meta.get('rnr_count', 0),
+            'total_calls_count': total_calls_map.get(lead.id, meta.get('rnr_count', 0)),
+            'first_rnr_at': first_rnr_str,
+            'latest_rnr_at': latest_rnr_str,
+            'latest_call_outcome': latest_call['call_outcome'] if latest_call else 'RNR',
+            'latest_call_status': latest_call['call_status'] if latest_call else 'No Answer',
+            'calls_history': lead_calls,
+        })
+
+    lead_items.sort(key=lambda x: (x['rnr_count'], x['latest_rnr_at']), reverse=True)
+
+    return {
+        'leads': lead_items,
+        'total_count': len(lead_items),
+        'detail_type': detail_type,
+        'title': 'Repeat RNR Leads (>= 2 Attempts)' if detail_type == 'repeat_rnr' else 'Unique RNR Leads',
     }
 
 

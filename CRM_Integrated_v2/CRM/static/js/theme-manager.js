@@ -8,13 +8,10 @@
     var THEME_KEY = 'techpanda_theme';
     var savedTheme = localStorage.getItem(THEME_KEY);
     if (!savedTheme) {
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        savedTheme = 'dark';
-      } else {
-        savedTheme = 'light';
-      }
+      savedTheme = 'light';
     }
     document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.style.colorScheme = savedTheme;
   } catch (e) {
     // Graceful fallback if localStorage is blocked
   }

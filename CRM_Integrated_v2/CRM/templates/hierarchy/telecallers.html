@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Telecallers - TECHPANDA CRM{% endblock %}
+{% block title %}Telecallers - DigipandaCRM{% endblock %}
 
 {% block content %}
 <!-- Progressive Hierarchy Breadcrumbs -->
@@ -85,7 +85,7 @@
         {% for t in page_obj %}
         <tr>
           <td>
-            <strong><a href="{% url 'telecaller_leads' t.id %}" style="color: var(--primary); text-decoration: none; font-size: 0.95rem;">{{ t.get_full_name|default:t.username }}</a></strong>
+            <strong><a href="{% url 'admin_telecaller_detail' t.id %}" style="color: var(--primary); text-decoration: none; font-size: 0.95rem;">{{ t.get_full_name|default:t.username }}</a></strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ t.username }}</div>
           </td>
           <td>{{ t.email|default:"-" }}</td>

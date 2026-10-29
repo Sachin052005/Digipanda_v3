@@ -2,8 +2,12 @@
 Django views and API endpoints for WhatsApp CRM.
 """
 
+import os
 import json
 import logging
+import hmac
+import hashlib
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -24,7 +28,7 @@ from rest_framework.permissions import BasePermission
 
 from . import crm
 
-from .models import BusinessAccount, Conversation, Message, AutomationFlow, UserFlowSession
+from .models import BusinessAccount, Conversation, Message, AutomationFlow, AutomationFlowVersion, UserFlowSession
 from .serializers import (
     BusinessAccountSerializer,
     ConversationSerializer,
@@ -56,7 +60,7 @@ class IsInboxUser(BasePermission):
 
 
 class CanManageAutomation(BasePermission):
-    message = "Only Admin and Sales Head can manage WhatsApp automations and numbers."
+    message = "Only Admin, Superadmin, and Sales Head can manage WhatsApp automations and numbers."
 
     def has_permission(self, request, view):
         return crm.can_manage_automation(request.user)
@@ -66,8 +70,8 @@ class AutomationPageMixin(LoginRequiredMixin):
     login_url = 'login'
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and not crm.can_manage_automation(request.user):
-            raise PermissionDenied("Only Admin and Sales Head can manage WhatsApp automations.")
+        if not (request.user.is_authenticated and crm.can_manage_automation(request.user)):
+            raise PermissionDenied("Only Admin, Superadmin, and Sales Head can manage WhatsApp automations.")
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -91,9 +95,16 @@ def broadcast_event(group_name: str, event_data: dict):
 class InboxView(LoginRequiredMixin, View):
     """
     Renders the main WhatsApp CRM single-page inbox.
-    Only two panels: CONVERSATIONS (left) and CHAT (right).
+    Only accessible to Admin and Superadmin.
     """
     login_url = 'login'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+        if not crm.can_use_inbox(request.user):
+            raise PermissionDenied("You do not have permission to access WhatsApp Chats.")
+        return super().dispatch(request, *args, **kwargs)
 
     def get(self, request):
         return render(request, 'chat/inbox.html', {
@@ -112,9 +123,19 @@ class AutomationListView(AutomationPageMixin, View):
 class FlowBuilderView(AutomationPageMixin, View):
     """
     Renders the visual No-Code Flow Builder page.
+    Dynamically resolves the requested or most recent active flow.
     """
     def get(self, request, pk=None):
-        return render(request, 'chat/flow_builder.html')
+        flow_id = pk or request.GET.get('id', '')
+        if not flow_id:
+            latest = AutomationFlow.objects.order_by('-updated_at').first()
+            if latest:
+                flow_id = str(latest.id)
+            else:
+                from .automation.engine import AutomationEngine
+                default_flow = AutomationEngine.get_or_create_default_flow()
+                flow_id = str(default_flow.id)
+        return render(request, 'chat/flow_builder.html', {'flow_id': flow_id})
 
 
 class BusinessAccountListAPI(APIView):
@@ -156,20 +177,38 @@ class BusinessAccountListAPI(APIView):
 
 class BusinessAccountDetailAPI(APIView):
     """
+    PATCH /api/business-accounts/<id>/
+    Update settings (e.g. toggle automation_enabled, change assigned CRM branch).
     DELETE /api/business-accounts/<id>/
     Removes or deactivates a business number.
     """
     def patch(self, request, pk):
-        """
-        PATCH /api/business-accounts/<id>/
-        Update settings (e.g. toggle automation_enabled on/off).
-        """
         account = get_object_or_404(BusinessAccount, pk=pk)
+        updated_fields = []
         if 'automation_enabled' in request.data:
             account.automation_enabled = bool(request.data['automation_enabled'])
-            account.save(update_fields=['automation_enabled'])
+            updated_fields.append('automation_enabled')
+        if 'crm_branch_id' in request.data or 'crm_branch' in request.data:
+            raw_branch = request.data.get('crm_branch_id') if 'crm_branch_id' in request.data else request.data.get('crm_branch')
+            if raw_branch:
+                from branches.models import Branch
+                try:
+                    account.crm_branch = Branch.objects.filter(pk=int(raw_branch)).first()
+                except (ValueError, TypeError):
+                    account.crm_branch = None
+            else:
+                account.crm_branch = None
+            updated_fields.append('crm_branch')
+        if 'name' in request.data and str(request.data['name']).strip():
+            account.name = str(request.data['name']).strip()
+            updated_fields.append('name')
+        if updated_fields:
+            account.save(update_fields=updated_fields)
         serializer = BusinessAccountSerializer(account)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        return self.patch(request, pk)
 
     def delete(self, request, pk):
         account = get_object_or_404(BusinessAccount, pk=pk)
@@ -437,6 +476,17 @@ class WhatsAppWebhookView(View):
         return HttpResponse("Verification token mismatch", status=403)
 
     def post(self, request):
+        secret = getattr(settings, "WHATSAPP_APP_SECRET", "") or getattr(settings, "FB_APP_SECRET", "")
+        if not secret:
+            logger.error("WhatsApp webhook rejected: WHATSAPP_APP_SECRET is not configured.")
+            return HttpResponse("Webhook secret not configured", status=403)
+
+        signature = request.headers.get("X-Hub-Signature-256", "")
+        expected = "sha256=" + hmac.new(secret.encode('utf-8'), request.body, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            logger.warning("WhatsApp webhook rejected: bad or missing X-Hub-Signature-256 signature")
+            return HttpResponse("Bad signature", status=403)
+
         try:
             payload = json.loads(request.body.decode('utf-8'))
         except Exception as exc:
@@ -469,12 +519,7 @@ class WhatsAppWebhookView(View):
         return HttpResponse("EVENT_RECEIVED", status=200)
 
 
-class FlowBuilderView(AutomationPageMixin, View):
-    """
-    Renders the Visual No-Code Flow Builder interface (/automation/).
-    """
-    def get(self, request, pk=None):
-        return render(request, 'chat/flow_builder.html')
+# FlowBuilderView is defined above at line 123
 
 
 class AutomationFlowListAPI(APIView):
@@ -482,6 +527,8 @@ class AutomationFlowListAPI(APIView):
     GET /api/flows/?business_account_id=...
     POST /api/flows/ (Creates new draft flow)
     """
+    permission_classes = [CanManageAutomation]
+
     def get(self, request):
         business_account_id = request.query_params.get('business_account_id')
         flows = AutomationFlow.objects.all()
@@ -495,6 +542,20 @@ class AutomationFlowListAPI(APIView):
             AutomationEngine.get_or_create_default_flow(biz)
             flows = AutomationFlow.objects.all()
 
+        # Deduplicate to show 1 card per distinct workflow on the studio dashboard
+        # Prioritize active published workflow; fallback to latest draft
+        include_all = request.query_params.get('all_versions') == 'true'
+        if not include_all:
+            ordered_flows = flows.order_by('-is_active', '-published_at', '-version', '-updated_at')
+            seen_keys = set()
+            deduped_flows = []
+            for f in ordered_flows:
+                norm_key = (f.business_account_id, (f.slug or f.name).strip().lower())
+                if norm_key not in seen_keys:
+                    seen_keys.add(norm_key)
+                    deduped_flows.append(f)
+            flows = deduped_flows
+
         serializer = AutomationFlowSerializer(flows, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -502,6 +563,18 @@ class AutomationFlowListAPI(APIView):
         serializer = AutomationFlowSerializer(data=request.data)
         if serializer.is_valid():
             flow = serializer.save(status=AutomationFlow.STATUS_DRAFT)
+            from .models import AutomationFlowVersion
+            ver, _ = AutomationFlowVersion.objects.get_or_create(
+                flow=flow,
+                version_number=1,
+                defaults={
+                    'status': AutomationFlowVersion.STATUS_DRAFT,
+                    'flow_data': flow.flow_data or {},
+                    'change_summary': 'Initial draft',
+                }
+            )
+            flow.working_draft_version = ver
+            flow.save(update_fields=['working_draft_version'])
             return Response(AutomationFlowSerializer(flow).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -510,6 +583,8 @@ class AutomationFlowDetailAPI(APIView):
     """
     GET, PUT, PATCH, DELETE /api/flows/<id>/
     """
+    permission_classes = [CanManageAutomation]
+
     def get(self, request, pk):
         flow = get_object_or_404(AutomationFlow, pk=pk)
         return Response(AutomationFlowSerializer(flow).data, status=status.HTTP_200_OK)
@@ -517,8 +592,46 @@ class AutomationFlowDetailAPI(APIView):
     def put(self, request, pk):
         flow = get_object_or_404(AutomationFlow, pk=pk)
         if flow.status == AutomationFlow.STATUS_PUBLISHED:
+            # If requested to auto-fork or draft mode
+            if request.data.get('auto_fork_draft') or request.query_params.get('auto_fork') == 'true':
+                # Check if a working draft ALREADY exists for this flow - reuse it in-place!
+                existing_draft = AutomationFlow.objects.filter(
+                    Q(slug=flow.slug) | Q(name=flow.name),
+                    business_account=flow.business_account,
+                    status=AutomationFlow.STATUS_DRAFT
+                ).order_by('-version', '-id').first()
+
+                if existing_draft:
+                    serializer = AutomationFlowSerializer(existing_draft, data=request.data, partial=True)
+                    if serializer.is_valid():
+                        updated = serializer.save()
+                        return Response(AutomationFlowSerializer(updated).data, status=status.HTTP_200_OK)
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                # No draft exists yet: fork into exactly ONE new working draft
+                latest_flow = AutomationFlow.objects.filter(
+                    Q(slug=flow.slug) | Q(name=flow.name),
+                    business_account=flow.business_account
+                ).order_by('-version').first()
+                new_version = (latest_flow.version + 1) if latest_flow else flow.version + 1
+                draft_flow = AutomationFlow.objects.create(
+                    business_account=flow.business_account,
+                    name=request.data.get('name') or flow.name,
+                    slug=flow.slug,
+                    version=new_version,
+                    status=AutomationFlow.STATUS_DRAFT,
+                    trigger_type=request.data.get('trigger_type') or flow.trigger_type,
+                    trigger_keywords=request.data.get('trigger_keywords') or flow.trigger_keywords,
+                    flow_data=request.data.get('flow_data') or flow.flow_data,
+                    is_active=True
+                )
+                return Response(AutomationFlowSerializer(draft_flow).data, status=status.HTTP_201_CREATED)
             return Response(
-                {'error': 'Cannot modify published flow. Published flow versions are immutable. Create a new draft version to make changes.'},
+                {
+                    'error': 'Cannot modify published flow. Published flow versions are immutable. Create a new draft version to make changes.',
+                    'code': 'PUBLISHED_IMMUTABLE',
+                    'flow_id': flow.id
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
         serializer = AutomationFlowSerializer(flow, data=request.data, partial=True)
@@ -538,6 +651,8 @@ class AutomationFlowPublishAPI(APIView):
     POST /api/flows/<id>/publish/
     Validates graph, increments version, marks status as 'published', sets published_at = now().
     """
+    permission_classes = [CanManageAutomation]
+
     def post(self, request, pk):
         flow = get_object_or_404(AutomationFlow, pk=pk)
         from .automation.validator import validate_flow_graph
@@ -552,9 +667,36 @@ class AutomationFlowPublishAPI(APIView):
 
         if flow.version < 1:
             flow.version = 1
+
+        # DEC-03: Create immutable version snapshot
+        ver, _ = AutomationFlowVersion.objects.get_or_create(
+            flow=flow,
+            version_number=flow.version,
+            defaults={
+                'status': AutomationFlowVersion.STATUS_PUBLISHED,
+                'flow_data': flow.flow_data or {},
+                'change_summary': request.data.get('change_summary', f'Published version {flow.version}'),
+                'created_by': request.user if request.user.is_authenticated else None,
+                'published_at': timezone.now()
+            }
+        )
+        ver.status = AutomationFlowVersion.STATUS_PUBLISHED
+        ver.flow_data = flow.flow_data or {}
+        ver.published_at = timezone.now()
+        ver.save(update_fields=['status', 'flow_data', 'published_at'])
+
         flow.status = AutomationFlow.STATUS_PUBLISHED
         flow.published_at = timezone.now()
-        flow.save(update_fields=['version', 'status', 'published_at'])
+        flow.published_version = ver
+        flow.working_draft_version = None
+        flow.save(update_fields=['version', 'status', 'published_at', 'published_version', 'working_draft_version'])
+
+        # Deactivate any older published instances of this same workflow so exactly one active published flow runs
+        AutomationFlow.objects.filter(
+            Q(slug=flow.slug) | Q(name=flow.name),
+            business_account=flow.business_account
+        ).exclude(pk=flow.pk).update(is_active=False)
+
         return Response({
             'valid': True,
             'message': f'Flow "{flow.name}" successfully published as Version {flow.version}!',
@@ -562,26 +704,228 @@ class AutomationFlowPublishAPI(APIView):
         }, status=status.HTTP_200_OK)
 
 
+class AutomationFlowUnpublishAPI(APIView):
+    """
+    POST /api/flows/<id>/unpublish/
+    Pauses a live workflow, moves it back to draft status, and sets is_active=False.
+    Preserves version audit history.
+    """
+    permission_classes = [CanManageAutomation]
+
+    def post(self, request, pk):
+        flow = get_object_or_404(AutomationFlow, pk=pk)
+        flow.status = AutomationFlow.STATUS_DRAFT
+        flow.is_active = False
+        flow.save(update_fields=['status', 'is_active', 'updated_at'])
+        return Response({
+            'message': f'Flow "{flow.name}" has been paused and reverted to draft status.',
+            'flow': AutomationFlowSerializer(flow).data
+        }, status=status.HTTP_200_OK)
+
+
 class AutomationFlowCreateDraftAPI(APIView):
     """
     POST /api/flows/<id>/create-draft/
-    Forks a published flow into a new editable draft.
+    Forks a published flow into a new editable draft, reusing any existing draft in-place.
     """
+    permission_classes = [CanManageAutomation]
+
     def post(self, request, pk):
         source_flow = get_object_or_404(AutomationFlow, pk=pk)
+
+        # Reuse existing working draft if one already exists
+        existing_draft = AutomationFlow.objects.filter(
+            Q(slug=source_flow.slug) | Q(name=source_flow.name),
+            business_account=source_flow.business_account,
+            status=AutomationFlow.STATUS_DRAFT
+        ).order_by('-version', '-id').first()
+
+        if existing_draft:
+            if request.data.get('flow_data'):
+                existing_draft.flow_data = request.data['flow_data']
+            if request.data.get('name'):
+                existing_draft.name = request.data['name']
+            if request.data.get('trigger_type'):
+                existing_draft.trigger_type = request.data['trigger_type']
+            if request.data.get('trigger_keywords') is not None:
+                existing_draft.trigger_keywords = request.data['trigger_keywords']
+            existing_draft.save(update_fields=['flow_data', 'name', 'trigger_type', 'trigger_keywords', 'updated_at'])
+            data = AutomationFlowSerializer(existing_draft).data
+            return Response({'flow': data, **data}, status=status.HTTP_200_OK)
+
+        latest_flow = AutomationFlow.objects.filter(
+            Q(slug=source_flow.slug) | Q(name=source_flow.name),
+            business_account=source_flow.business_account
+        ).order_by('-version').first()
+        new_version_num = (latest_flow.version + 1) if latest_flow else source_flow.version + 1
+
         new_draft = AutomationFlow.objects.create(
             business_account=source_flow.business_account,
-            name=source_flow.name,
+            name=request.data.get('name') or source_flow.name,
             slug=source_flow.slug,
-            version=source_flow.version + 1,
+            version=new_version_num,
             status=AutomationFlow.STATUS_DRAFT,
-            trigger_type=source_flow.trigger_type,
-            trigger_keywords=source_flow.trigger_keywords,
-            flow_data=source_flow.flow_data,
+            trigger_type=request.data.get('trigger_type') or source_flow.trigger_type,
+            trigger_keywords=request.data.get('trigger_keywords') or source_flow.trigger_keywords,
+            flow_data=request.data.get('flow_data') or source_flow.flow_data,
             is_active=True
         )
         data = AutomationFlowSerializer(new_draft).data
         return Response({'flow': data, **data}, status=status.HTTP_201_CREATED)
+
+
+class AutomationMediaUploadAPI(APIView):
+    """
+    POST /api/flows/upload-media/
+    Uploads a media asset (PDF document, brochure, or image) for use in WhatsApp automation flows.
+    """
+    permission_classes = [CanManageAutomation]
+
+    def post(self, request):
+        from rest_framework.parsers import MultiPartParser, FormParser
+        from django.core.files.storage import default_storage
+        from django.utils.text import get_valid_filename
+
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return Response({'error': 'No file was uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Security check: validate file extension
+        ext = os.path.splitext(uploaded_file.name)[1].lower()
+        allowed_extensions = ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.doc', '.docx']
+        if ext not in allowed_extensions:
+            return Response({
+                'error': f'File extension "{ext}" is not supported. Please upload a PDF or image.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate file size (max 25MB for WhatsApp documents)
+        max_size = 25 * 1024 * 1024
+        if uploaded_file.size > max_size:
+            return Response({'error': 'File exceeds maximum limit of 25MB.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Store file in media/whatsapp/flows/
+        clean_name = get_valid_filename(uploaded_file.name)
+        storage_path = os.path.join('whatsapp', 'flows', clean_name)
+        saved_path = default_storage.save(storage_path, uploaded_file)
+        file_url = default_storage.url(saved_path)
+        absolute_url = request.build_absolute_uri(file_url)
+
+        return Response({
+            'success': True,
+            'file_url': file_url,
+            'absolute_url': absolute_url,
+            'filename': clean_name,
+            'size': uploaded_file.size,
+            'content_type': uploaded_file.content_type
+        }, status=status.HTTP_201_CREATED)
+
+
+class AutomationFlowVersionListAPI(APIView):
+    """
+    GET /api/flows/<id>/versions/
+    Returns list of all historical and current versions of this flow.
+    """
+    permission_classes = [CanManageAutomation]
+
+    def get(self, request, pk):
+        flow = get_object_or_404(AutomationFlow, pk=pk)
+        versions_qs = flow.versions.all().order_by('-version_number')
+        results = []
+        for v in versions_qs:
+            results.append({
+                'id': v.id,
+                'version': v.version_number, 'version_number': v.version_number,
+                'status': v.status,
+                'change_summary': v.change_summary or '',
+                'created_by_name': v.created_by.get_full_name() if v.created_by else 'Admin',
+                'created_at': v.created_at.isoformat() if v.created_at else None,
+                'published_at': v.published_at.isoformat() if v.published_at else None,
+            })
+        if not results:
+            flows_qs = AutomationFlow.objects.filter(
+                Q(slug=flow.slug) | Q(name=flow.name),
+                business_account=flow.business_account
+            ).order_by('-version', '-created_at')
+            for f in flows_qs:
+                results.append({
+                    'id': f.id,
+                    'version': f.version, 'version_number': f.version,
+                    'status': f.status,
+                    'change_summary': 'Historical flow record',
+                    'created_by_name': 'Admin',
+                    'created_at': f.created_at.isoformat() if f.created_at else None,
+                    'published_at': f.published_at.isoformat() if f.published_at else None,
+                })
+        return Response(results, status=status.HTTP_200_OK)
+
+
+class AutomationFlowRestoreAPI(APIView):
+    """
+    POST /api/flows/<id>/restore-version/
+    Restores an earlier version into a new editable draft.
+    """
+    permission_classes = [CanManageAutomation]
+
+    def post(self, request, pk):
+        source_version = get_object_or_404(AutomationFlow, pk=pk)
+        latest_flow = AutomationFlow.objects.filter(
+            Q(slug=source_version.slug) | Q(name=source_version.name),
+            business_account=source_version.business_account
+        ).order_by('-version').first()
+        new_version_num = (latest_flow.version + 1) if latest_flow else source_version.version + 1
+
+        new_draft = AutomationFlow.objects.create(
+            business_account=source_version.business_account,
+            name=source_version.name,
+            slug=source_version.slug,
+            version=new_version_num,
+            status=AutomationFlow.STATUS_DRAFT,
+            trigger_type=source_version.trigger_type,
+            trigger_keywords=source_version.trigger_keywords,
+            flow_data=source_version.flow_data,
+            is_active=True
+        )
+        return Response({
+            'message': f'Restored version {source_version.version} as new editable draft v{new_draft.version}.',
+            'flow': AutomationFlowSerializer(new_draft).data
+        }, status=status.HTTP_201_CREATED)
+
+
+class AutomationFlowSimulateAPI(APIView):
+    """
+    POST /api/flows/simulate/ or /api/flows/<id>/simulate/
+    Safe, isolated dry-run simulator for WhatsApp automation flows.
+    Executes purely in-memory with zero Meta API calls, zero WhatsApp messages,
+    and zero CRM lead mutations.
+    """
+    permission_classes = [CanManageAutomation]
+
+    def post(self, request, pk=None):
+        flow_id = pk or request.data.get('flow_id')
+        flow_data = request.data.get('flow_data')
+        if not flow_data and flow_id:
+            flow = get_object_or_404(AutomationFlow, pk=flow_id)
+            flow_data = flow.flow_data
+
+        if not flow_data:
+            return Response({'error': 'flow_data or flow_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        message_text = (request.data.get('message_text') or request.data.get('user_input') or '').strip()
+        current_node_id = request.data.get('current_node_id')
+        collected_data = request.data.get('collected_data') or request.data.get('session_data') or {}
+        interactive_reply = request.data.get('interactive_reply')
+
+        from .automation.engine import AutomationEngine
+        result = AutomationEngine.simulate_step(
+            flow_data=flow_data,
+            current_node_id=current_node_id,
+            message_text=message_text,
+            collected_data=collected_data,
+            interactive_reply=interactive_reply
+        )
+        if 'next_node_id' not in result and 'current_node_id' in result:
+            result['next_node_id'] = result['current_node_id']
+        return Response(result, status=status.HTTP_200_OK)
 
 
 class ResumeAutomationAPI(APIView):
@@ -625,6 +969,8 @@ class ValidateFlowAPI(APIView):
     POST /api/flows/<id>/validate/
     Validates a graph data structure before saving or publishing.
     """
+    permission_classes = [CanManageAutomation]
+
     def post(self, request, pk=None):
         from .automation.validator import validate_flow_graph
         if pk:
@@ -643,6 +989,8 @@ class AIFlowAssistantAPI(APIView):
     Interprets natural language prompts from users and builds a valid, structured
     n8n-style workflow graph with nodes, ports, and explicit edges.
     """
+    permission_classes = [CanManageAutomation]
+
     def post(self, request):
         prompt = request.data.get('prompt', '').strip()
         if not prompt:
@@ -1014,15 +1362,45 @@ class CRMOptionsAPI(APIView):
     def get(self, request):
         from accounts.models import User
         from leads.models import LeadStatus
+        from branches.models import Branch
         telecallers = User.get_telecallers_queryset().select_related('branch').order_by('-is_active', 'first_name', 'username')
+        branches = Branch.objects.all().order_by('name')
         return Response({
             'statuses': [{'value': v, 'label': l} for v, l in LeadStatus.choices],
+            'branches': [{'id': b.id, 'name': b.name} for b in branches],
             'telecallers': [
                 {'id': t.pk, 'name': (t.get_full_name() or t.username) + (f" ({t.branch.name})" if t.branch else ''),
                  'is_active': t.is_active}
                 for t in telecallers
             ],
         })
+
+
+class BranchListAPI(APIView):
+    """
+    GET /api/branches/
+    Returns active CRM branches for the visual flow builder and dropdowns.
+    """
+    permission_classes = [CanManageAutomation]
+
+    def get(self, request):
+        from branches.models import Branch
+        # Branch uses status='Active'
+        if hasattr(Branch, 'Status'):
+            branches = Branch.objects.filter(status=Branch.Status.ACTIVE).order_by('name')
+        elif hasattr(Branch, 'is_active'):
+            branches = Branch.objects.filter(is_active=True).order_by('name')
+        else:
+            branches = Branch.objects.all().order_by('name')
+        return Response([
+            {
+                'id': b.id,
+                'name': b.name,
+                'phone': getattr(b, 'phone', '') or '',
+                'address': getattr(b, 'address', '') or '',
+            }
+            for b in branches
+        ])
 
 
 # ==========================================

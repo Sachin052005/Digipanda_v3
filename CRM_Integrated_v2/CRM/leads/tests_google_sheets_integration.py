@@ -287,6 +287,12 @@ class GoogleSheetsRestApiTests(TestCase):
 
     def setUp(self):
         self.client = Client()
+        from accounts.models import User, UserRole
+        self.admin_user, _ = User.objects.get_or_create(
+            username="admin_gsheet_test",
+            defaults={"role": UserRole.ADMIN, "is_staff": True, "is_active": True}
+        )
+        self.client.force_login(self.admin_user)
         self.branch = Branch.objects.get_or_create(name="Velachery", defaults={"status": "Active"})[0]
         self.connection = GoogleSheetConnection.objects.create(
             name="Existing Sheet",
@@ -296,6 +302,11 @@ class GoogleSheetsRestApiTests(TestCase):
             worksheet_name="Sheet1",
             branch=self.branch
         )
+
+    def test_api_unauthenticated_blocked(self):
+        anon_client = Client()
+        resp = anon_client.get(reverse('api_google_sheets_list'))
+        self.assertIn(resp.status_code, [302, 401, 403])
 
     def test_api_list_sheets(self):
         resp = self.client.get(reverse('api_google_sheets_list'))

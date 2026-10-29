@@ -18,35 +18,47 @@ from .models import CallRecording
 logger = logging.getLogger('crm')
 
 
-def find_lead_by_phone(normalized_phone: str):
+def find_lead_by_phone(normalized_phone: str, user=None):
     """
     Searches the CRM Lead database for a lead matching the normalized 10-digit mobile number.
     Checks primary phone and alternate phone.
+    Prioritizes leads assigned to the given user and orders by most recently updated/created.
     """
     if not normalized_phone or len(normalized_phone) < 10:
         return None
 
-    lead = Lead.objects.filter(
+    target_10 = normalized_phone[-10:] if len(normalized_phone) >= 10 else normalized_phone
+    # Query leads matching normalized_phone index, phone, or alternate phone
+    leads_qs = Lead.objects.filter(
+        Q(normalized_phone=target_10) |
         Q(phone=normalized_phone) |
         Q(phone=f"+91{normalized_phone}") |
         Q(phone=f"+91 {normalized_phone}") |
         Q(phone=f"0{normalized_phone}") |
         Q(phone__endswith=normalized_phone) |
         Q(alternate_phone=normalized_phone) |
-        Q(alternate_phone__endswith=normalized_phone)
-    ).order_by('pk').first()
-    if lead:
-        return lead
-
-    # Numbers formatted with spaces/dashes
-    candidates = Lead.objects.filter(
+        Q(alternate_phone__endswith=normalized_phone) |
         Q(phone__icontains=normalized_phone[-10:]) |
         Q(alternate_phone__icontains=normalized_phone[-10:])
-    )
-    for c in candidates:
-        if normalize_phone(c.phone) == normalized_phone or normalize_phone(c.alternate_phone) == normalized_phone:
-            return c
-    return None
+    ).order_by('-updated_at', '-pk')
+
+    candidates = [
+        l for l in leads_qs
+        if normalize_phone(l.phone) == normalized_phone or normalize_phone(l.alternate_phone) == normalized_phone
+    ]
+    if not candidates:
+        return None
+
+    # If user provided, prefer lead assigned to this user
+    if user:
+        for c in candidates:
+            if (getattr(c, 'assigned_telecaller_id', None) == user.pk or
+                getattr(c, 'assigned_counselor_id', None) == user.pk or
+                getattr(c, 'assigned_sales_head_id', None) == user.pk or
+                getattr(c, 'assigned_branch_head_id', None) == user.pk):
+                return c
+
+    return candidates[0]
 
 
 def retry_matching_unmatched_recordings(user=None) -> int:
@@ -89,8 +101,10 @@ def get_user_recordings_queryset(user):
             Q(telecaller__branch_id__in=branch_ids)
         ).distinct()
 
-    if user.is_branch_head_user:
-        return base.filter(Q(lead__branch_id=user.branch_id) | Q(telecaller__branch_id=user.branch_id)).distinct()
+    if user.is_branch_head_user or user.role in (UserRole.BRANCH_HEAD, UserRole.BRANCH_ADMIN, UserRole.RECEPTIONIST, UserRole.ACCOUNTANT):
+        if user.branch_id:
+            return base.filter(Q(lead__branch_id=user.branch_id) | Q(telecaller__branch_id=user.branch_id) | Q(telecaller=user)).distinct()
+        return base.all()
 
     if user.is_counselor_user:
         return base.filter(lead__assigned_counselor=user)

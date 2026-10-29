@@ -21,7 +21,7 @@ LEAD_FIELDS = "id,created_time,field_data,form_id,ad_id,ad_name,campaign_name"
 
 # Facebook form field names -> our columns (covers common English names)
 NAME_KEYS = ("full_name", "name", "first_name")
-PHONE_KEYS = ("phone_number", "phone", "mobile_number", "whatsapp_number")
+PHONE_KEYS = ("phone_number", "phone", "mobile_number", "whatsapp_number", "contact_number", "phone_no", "contact", "mobile", "primary_phone")
 EMAIL_KEYS = ("email", "email_address")
 CITY_KEYS = ("city", "location")
 
@@ -83,6 +83,14 @@ def _pick(answers, keys):
     for k in keys:
         if answers.get(k):
             return answers[k]
+    # Fallback to case-insensitive and substring search
+    for ak, val in (answers or {}).items():
+        if not val:
+            continue
+        ak_clean = str(ak).lower().strip()
+        for k in keys:
+            if ak_clean == k or k in ak_clean:
+                return val
     return ""
 
 

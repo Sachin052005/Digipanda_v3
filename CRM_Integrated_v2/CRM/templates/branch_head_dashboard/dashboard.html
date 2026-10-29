@@ -1,118 +1,122 @@
 {% extends 'base.html' %}
-{% block title %}Branch Head Dashboard - TECHPANDA CRM{% endblock %}
+{% block title %}Branch Head Dashboard - DigipandaCRM{% endblock %}
 
 {% block content %}
-<div class="page-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+<div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
   <div class="page-title-group">
-    <div style="display: flex; align-items: center; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
       <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0;">Branch Workspace</h1>
-      <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 4px 8px;">
+      <span class="badge tp-badge" style="background: var(--tp-primary-50); color: var(--tp-primary-700); border: 1px solid var(--tp-primary-200); font-size: 0.82rem; padding: 5px 12px;">
         {{ user.branch.name|default:"General Branch" }}
       </span>
     </div>
-    <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 4px 0 0 0;">
+    <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 6px 0 0 0;">
       Real-time branch analytics, counselor &amp; telecaller performance breakdown, RNR tracking, and pipeline conversions.
     </p>
   </div>
   <div class="page-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-    <a href="{% url 'branch_head_counselors_list' %}" class="btn btn-secondary">Counselors</a>
-    <a href="{% url 'branch_head_telecallers_list' %}" class="btn btn-secondary">Telecallers</a>
-    <a href="{% url 'branch_head_leads_list' %}" class="btn btn-primary">Branch Leads</a>
+    <a href="{% url 'branch_head_counselors_list' %}" class="btn btn-secondary tp-btn-secondary">Counselors</a>
+    <a href="{% url 'branch_head_telecallers_list' %}" class="btn btn-secondary tp-btn-secondary">Telecallers</a>
+    <a href="{% url 'branch_head_leads_list' %}" class="btn btn-primary tp-btn-primary">Branch Leads</a>
+    <a href="{% url 'admin_enrolled_students' %}" class="btn btn-secondary tp-btn-secondary">Enrolled Students</a>
   </div>
 </div>
 
-<!-- PERIOD FILTER BAR (REQ 8: TODAY, WEEK, MONTH, CUSTOM) -->
-<div class="filter-card" style="background: #fff; border-radius: 8px; padding: 14px 18px; border: 1px solid var(--border-color, #e5e7eb); margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+<!-- PERIOD FILTER BAR -->
+<div class="filter-card tp-card" style="padding: 14px 18px; margin-bottom: 24px;">
   <form method="get" class="filter-form" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
     <!-- Preset Period Buttons -->
     <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-      <span style="font-size: 0.8rem; font-weight: 700; color: #4b5563; text-transform: uppercase; margin-right: 4px;">Period:</span>
-      <a href="?period=all" class="btn {% if period == 'all' or not period %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">All Time</a>
-      <a href="?period=today" class="btn {% if period == 'today' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">Today</a>
-      <a href="?period=week" class="btn {% if period == 'week' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Week</a>
-      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Month</a>
+      <span style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-right: 4px;">Period:</span>
+      <a href="?period=all" class="btn {% if period == 'all' or not period %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">All Time</a>
+      <a href="?period=today" class="btn {% if period == 'today' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">Today</a>
+      <a href="?period=week" class="btn {% if period == 'week' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Week</a>
+      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Month</a>
     </div>
 
-    <!-- Custom Date Range -->
-    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-      <input type="hidden" name="period" value="custom">
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: #6b7280;">From</span>
-        <input type="date" name="start_date" class="form-control" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ start_date }}">
-      </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: #6b7280;">To</span>
-        <input type="date" name="end_date" class="form-control" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ end_date }}">
-      </div>
-      {% if period != 'all' and period %}
-        <a href="?period=all" class="btn btn-secondary" style="font-size: 0.8rem; padding: 5px 8px; color: #ef4444;" title="Reset filter">&times;</a>
-      {% endif %}
+    <!-- Custom Date Range (Smart Calendar Popover) -->
+    <div class="tp-smart-date-container">
+      <input type="hidden" name="period" value="{% if period == 'custom' %}custom{% else %}all{% endif %}">
+      <input type="date" name="start_date" value="{{ start_date }}" style="display: none;">
+      <input type="date" name="end_date" value="{{ end_date }}" style="display: none;">
     </div>
   </form>
 </div>
 
 <!-- CLICKABLE KPI CARDS -->
-<div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px;">
+<div class="kpi-grid tp-kpi-grid-6 tp-stagger-container" style="gap: 12px; margin-bottom: 20px;">
   <!-- Total Branch Leads -->
-  <a href="{% url 'branch_head_leads_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; cursor: pointer; display: block;" title="Click to view all branch leads">
+  <a href="{% url 'branch_head_leads_list' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all branch leads">
     <div class="kpi-info">
-      <h4 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Total Leads</h4>
-      <div class="kpi-value" style="font-size: 1.75rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ branch_leads_count }}</div>
+      <h4>Total Leads</h4>
+      <div class="kpi-value" style="color: var(--tp-primary-600);">{{ branch_leads_count }}</div>
     </div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Registered in branch &rarr;</div>
+    <div class="kpi-icon-wrap blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+    </div>
   </a>
 
   <!-- Attended Leads -->
-  <a href="{% url 'branch_head_leads_list' %}?status_group=attended" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; cursor: pointer; display: block;" title="Click to view contacted/attended leads">
+  <a href="{% url 'branch_head_leads_list' %}?status_group=attended" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view contacted/attended leads">
     <div class="kpi-info">
-      <h4 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Attended Leads</h4>
-      <div class="kpi-value" style="font-size: 1.75rem; font-weight: 800; color: #059669; margin: 4px 0;">{{ attended_leads_count }}</div>
+      <h4>Attended Leads</h4>
+      <div class="kpi-value" style="color: #059669;">{{ attended_leads_count }}</div>
     </div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Contacted or in discussion &rarr;</div>
+    <div class="kpi-icon-wrap green">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
   </a>
 
   <!-- Visited Leads -->
-  <a href="{% url 'branch_head_leads_list' %}?status=Visited" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; cursor: pointer; display: block;" title="Click to view center visits">
+  <a href="{% url 'branch_head_leads_list' %}?status=Visited" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view center visits">
     <div class="kpi-info">
-      <h4 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Center Visits</h4>
-      <div class="kpi-value" style="font-size: 1.75rem; font-weight: 800; color: #7c3aed; margin: 4px 0;">{{ visits_count }}</div>
+      <h4>Center Visits</h4>
+      <div class="kpi-value" style="color: #7c3aed;">{{ visits_count }}</div>
     </div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Walk-ins &amp; scheduled visits &rarr;</div>
+    <div class="kpi-icon-wrap purple">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </div>
   </a>
 
-  <!-- Enrolled Leads -->
-  <a href="{% url 'branch_head_leads_list' %}?status=Enrolled" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; cursor: pointer; display: block;" title="Click to view enrolled students">
+  <!-- Enrolled Leads & Students -->
+  <a href="{% url 'admin_enrolled_students' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view enrolled student admissions & fee records">
     <div class="kpi-info">
-      <h4 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Enrolled</h4>
-      <div class="kpi-value" style="font-size: 1.75rem; font-weight: 800; color: #16a34a; margin: 4px 0;">{{ joined_count }}</div>
+      <h4>Enrolled Students</h4>
+      <div class="kpi-value" style="color: #10b981;">{{ joined_count }}</div>
     </div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Successfully enrolled students &rarr;</div>
+    <div class="kpi-icon-wrap green">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+    </div>
   </a>
 
   <!-- RNR Leads -->
-  <a href="{% url 'branch_head_leads_list' %}?status_group=rnr" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; cursor: pointer; display: block;" title="Click to view Ring No Response leads">
+  <a href="{% url 'branch_head_leads_list' %}?status_group=rnr" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view Ring No Response leads">
     <div class="kpi-info">
-      <h4 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">RNR Leads</h4>
-      <div class="kpi-value" style="font-size: 1.75rem; font-weight: 800; color: #dc2626; margin: 4px 0;">{{ rnr_leads_count }}</div>
+      <h4>RNR Leads</h4>
+      <div class="kpi-value" style="color: #dc2626;">{{ rnr_leads_count }}</div>
     </div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Ring No Response / Missed &rarr;</div>
+    <div class="kpi-icon-wrap rose">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
   </a>
 
   <!-- Pending Follow-ups -->
-  <a href="{% url 'branch_head_telecallers_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; cursor: pointer; display: block;" title="Click to view telecallers with pending follow-ups">
+  <a href="{% url 'branch_head_telecallers_list' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view telecallers with pending follow-ups">
     <div class="kpi-info">
-      <h4 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280;">Pending Follow-ups</h4>
-      <div class="kpi-value" style="font-size: 1.75rem; font-weight: 800; color: #d97706; margin: 4px 0;">{{ pending_followups_count }}</div>
+      <h4>Pending Follow-ups</h4>
+      <div class="kpi-value" style="color: #d97706;">{{ pending_followups_count }}</div>
     </div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Active callbacks due &rarr;</div>
+    <div class="kpi-icon-wrap amber">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
   </a>
 </div>
 
-<!-- DETAILED PERFORMANCE TABLES (REQ 8: COUNSELOR & TELECALLER BREAKDOWNS) -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+<!-- DETAILED PERFORMANCE TABLES -->
+<div class="tp-grid-2col" style="gap: 24px; margin-bottom: 24px;">
   <!-- COUNSELOR BREAKDOWN TABLE -->
-  <div class="crm-card">
-    <div class="crm-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+  <div class="crm-card tp-card">
+    <div class="crm-card-header tp-card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Counselor Performance Breakdown</h3>
       <a href="{% url 'branch_head_counselors_list' %}" class="btn btn-secondary btn-sm">All Counselors</a>
     </div>
@@ -161,10 +165,10 @@
   </div>
 
   <!-- TELECALLER BREAKDOWN TABLE -->
-  <div class="crm-card">
-    <div class="crm-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+  <div class="crm-card tp-card">
+    <div class="crm-card-header tp-card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Telecaller Performance Breakdown</h3>
-      <a href="{% url 'branch_head_telecallers_list' %}" class="btn btn-secondary btn-sm">All Telecallers</a>
+      <a href="{% url 'branch_head_telecallers_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">All Telecallers</a>
     </div>
     <div class="table-responsive">
       <table class="crm-table">
@@ -185,18 +189,18 @@
               <strong>{{ t.get_full_name|default:t.username }}</strong>
             </td>
             <td>
-              <span style="font-size: 0.8rem; color: #4b5563;">
+              <span style="font-size: 0.8rem; color: var(--tp-text-muted);">
                 {% if t.counselor %}{{ t.counselor.get_full_name|default:t.counselor.username }}{% else %}-{% endif %}
               </span>
             </td>
-            <td><span class="badge" style="background: #f1f5f9; color: #334155; font-weight: 600;">{{ t.lead_count }}</span></td>
+            <td><span class="badge tp-badge" style="background: var(--tp-primary-50); color: var(--tp-primary-700); font-weight: 600;">{{ t.lead_count }}</span></td>
             <td>{{ t.call_count }}</td>
             <td>{{ t.attended_count }}</td>
             <td>
               {% if t.rnr_count > 0 %}
-                <span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 700;">{{ t.rnr_count }}</span>
+                <span class="badge tp-badge" style="background: #fee2e2; color: #b91c1c; font-weight: 700;">{{ t.rnr_count }}</span>
               {% else %}
-                <span style="color: #9ca3af;">0</span>
+                <span style="color: var(--tp-text-subtle);">0</span>
               {% endif %}
             </td>
           </tr>
@@ -209,11 +213,11 @@
   </div>
 </div>
 
-<!-- RECENT BRANCH LEADS TABLE (REQ 8: DETAILED TABLES) -->
-<div class="crm-card" style="margin-bottom: 24px;">
-  <div class="crm-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+<!-- RECENT BRANCH LEADS TABLE -->
+<div class="crm-card tp-card" style="margin-bottom: 24px;">
+  <div class="crm-card-header tp-card-header" style="display: flex; justify-content: space-between; align-items: center;">
     <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Recent Branch Leads</h3>
-    <a href="{% url 'branch_head_leads_list' %}" class="btn btn-secondary btn-sm">View All Leads &rarr;</a>
+    <a href="{% url 'branch_head_leads_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">View All Leads &rarr;</a>
   </div>
   <div class="table-responsive">
     <table class="crm-table">
@@ -233,12 +237,12 @@
         {% for lead in recent_leads %}
         <tr>
           <td>
-            <strong><a href="{% url 'branch_head_lead_detail' lead.pk %}" style="text-decoration: none; color: #1e40af;">{{ lead.name }}</a></strong>
+            <strong><a href="{% url 'branch_head_lead_detail' lead.pk %}" style="text-decoration: none; color: var(--tp-primary-600);">{{ lead.name }}</a></strong>
           </td>
           <td style="font-family: monospace; font-size: 0.85rem;">{{ lead.phone }}</td>
-          <td><span class="badge" style="background: #e2e8f0; color: #1e293b; font-weight: 600;">{{ lead.status }}</span></td>
+          <td><span class="badge badge-{{ lead.status|lower|slugify }}">{{ lead.status }}</span></td>
           <td>
-            <span class="badge" style="background: {% if lead.category == 'Training' %}#e0e7ff; color: #4338ca;{% else %}#fef3c7; color: #92400e;{% endif %}">
+            <span class="badge tp-badge" style="background: {% if lead.category == 'Training' %}var(--tp-primary-50); color: var(--tp-primary-700);{% else %}#fef3c7; color: #92400e;{% endif %}">
               {{ lead.category|default:"Training" }}
             </span>
           </td>
@@ -246,7 +250,7 @@
           <td>{% if lead.assigned_telecaller %}{{ lead.assigned_telecaller.get_full_name|default:lead.assigned_telecaller.username }}{% else %}-{% endif %}</td>
           <td>{{ lead.created_at|date:"M d, Y" }}</td>
           <td style="text-align: right;">
-            <a href="{% url 'branch_head_lead_detail' lead.pk %}" class="btn btn-secondary btn-sm">Details</a>
+            <a href="{% url 'branch_head_lead_detail' lead.pk %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">Details</a>
           </td>
         </tr>
         {% empty %}
@@ -258,14 +262,12 @@
 </div>
 
 <!-- PIPELINE DISTRIBUTION CHART -->
-<div class="crm-card">
-  <div class="crm-card-header">
-    <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Branch Lead Pipeline Distribution</h3>
+<div class="tp-chart-card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary);">Branch Lead Pipeline Distribution</h3>
   </div>
-  <div class="crm-card-body">
-    <div style="max-height: 280px; position: relative;">
-      <canvas id="branchHeadLeadStatusChart"></canvas>
-    </div>
+  <div style="height: 270px; position: relative;">
+    <canvas id="branchHeadLeadStatusChart"></canvas>
   </div>
 </div>
 {% endblock %}
@@ -278,12 +280,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const rawData = {{ status_dict|safe }};
     const labels = Object.keys(rawData);
     const data = Object.values(rawData);
-    if (labels.length === 0) { labels.push('No Leads Yet'); data.push(0); }
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'] }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-    });
+    if (window.TPCharts) {
+      window.TPCharts.createDoughnut(ctx, {
+        labels: labels,
+        data: data,
+        centerLabel: 'BRANCH LEADS',
+        cutout: '74%',
+        legendPosition: 'bottom'
+      });
+    } else {
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['No Leads Yet'],
+          datasets: [{
+            data: data.length ? data : [0],
+            backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { position: 'bottom' } } }
+      });
+    }
   }
 });
 </script>

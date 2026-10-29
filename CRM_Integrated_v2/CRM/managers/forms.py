@@ -59,10 +59,20 @@ class AdminManagerCreateForm(forms.ModelForm):
                 role=UserRole.SALES_HEAD,
                 email=user.email
             )
-        user.set_unusable_password()
-        user.must_change_password = True
-        user.is_active = False
-        user.invitation_status = 'PENDING'
+        password = self.data.get('password')
+        if password:
+            user.set_password(password)
+            user.must_change_password = False
+            user.invitation_status = 'ACCEPTED'
+        else:
+            user.set_unusable_password()
+            user.must_change_password = True
+            user.invitation_status = 'PENDING'
+
+        if 'is_active' in self.cleaned_data:
+            user.is_active = self.cleaned_data['is_active']
+        elif user.is_active is None:
+            user.is_active = True
         if commit:
             user.save()
             from branches.models import SalesHeadBranchAccess

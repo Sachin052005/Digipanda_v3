@@ -10,7 +10,7 @@ from products.models import Product
 from branches.models import Branch
 from activities.utils import log_activity
 from .assignment import assign_lead_automatically
-from .duplicates import find_duplicate_lead, handle_incoming_lead_duplicate
+from .duplicates import find_duplicate_lead, handle_incoming_lead_duplicate, normalize_phone, normalize_email
 
 def import_leads_file(uploaded_file, user):
     """
@@ -62,91 +62,119 @@ def import_leads_file(uploaded_file, user):
 
     with transaction.atomic():
         for idx, r in enumerate(rows, start=1):
-            clean_row = {str(k).strip().lower(): str(v).strip() for k, v in r.items() if k}
-            name = clean_row.get('name') or clean_row.get('lead name') or clean_row.get('full name')
-            phone = clean_row.get('phone') or clean_row.get('mobile') or clean_row.get('phone number')
-            email = clean_row.get('email', '')
-            alt_phone = clean_row.get('alternate_phone') or clean_row.get('alt_phone', '')
-            notes = clean_row.get('notes') or clean_row.get('remarks', '')
+            sp = transaction.savepoint()
+            try:
+                clean_row = {str(k).strip().lower(): str(v).strip() for k, v in r.items() if k}
+                name = clean_row.get('name') or clean_row.get('lead name') or clean_row.get('full name')
+                phone = clean_row.get('phone') or clean_row.get('mobile') or clean_row.get('phone number')
+                email = clean_row.get('email', '')
+                alt_phone = clean_row.get('alternate_phone') or clean_row.get('alt_phone', '')
+                notes = clean_row.get('notes') or clean_row.get('remarks', '')
 
-            if not name or not phone:
-                failed += 1
-                errors.append(f"Row {idx}: Name and Phone are required.")
-                continue
+                if not name or not phone:
+                    failed += 1
+                    errors.append(f"Row {idx}: Name and Phone are required.")
+                    transaction.savepoint_rollback(sp)
+                    continue
 
-            channel_name = clean_row.get('channel') or 'Offline'
-            channel_obj = Channel.objects.filter(name__iexact=channel_name).first() if channel_name else None
+                clean_phone = normalize_phone(phone)
+                clean_alt_phone = normalize_phone(alt_phone) if alt_phone else ''
+                clean_email = normalize_email(email) if email else ''
 
-            product_name = clean_row.get('product') or clean_row.get('course')
-            product_obj = Product.objects.filter(name__iexact=product_name).first() if product_name else None
+                if not clean_phone and not clean_email:
+                    failed += 1
+                    errors.append(f"Row {idx}: A valid phone number or email is required.")
+                    transaction.savepoint_rollback(sp)
+                    continue
 
-            branch_name = clean_row.get('branch')
-            if branch_name:
-                branch_obj = Branch.objects.filter(name__iexact=branch_name).first() or default_branch
-            else:
-                branch_obj = default_branch
+                channel_name = clean_row.get('channel') or 'Offline'
+                channel_obj = Channel.objects.filter(name__iexact=channel_name).first() if channel_name else None
 
-            # Check duplicate in DB (by phone, email, or normalized details)
-            existing_lead = find_duplicate_lead(phone=phone, email=email, name=name)
+                product_name = clean_row.get('product') or clean_row.get('course')
+                product_obj = Product.objects.filter(name__iexact=product_name).first() if product_name else None
 
-            if existing_lead:
-                # Update existing lead and register branch without creating duplicate
-                handle_incoming_lead_duplicate(
-                    existing_lead=existing_lead,
-                    incoming_data={
-                        'name': name,
-                        'email': email,
-                        'alternate_phone': alt_phone,
-                        'product': product_obj,
-                        'channel': channel_obj,
-                        'notes': notes
-                    },
+                branch_name = clean_row.get('branch')
+                if branch_name:
+                    branch_obj = Branch.objects.filter(name__iexact=branch_name).first() or default_branch
+                else:
+                    branch_obj = default_branch
+
+                # Check duplicate in DB (by normalized phone, email, or details)
+                search_phone = clean_phone if (clean_phone and not clean_phone.startswith('NoPhone-')) else phone
+                existing_lead = find_duplicate_lead(phone=search_phone, email=clean_email or email, name=name)
+
+                if existing_lead:
+                    # Update existing lead and register branch without creating duplicate
+                    handle_incoming_lead_duplicate(
+                        existing_lead=existing_lead,
+                        incoming_data={
+                            'name': name,
+                            'phone': search_phone,
+                            'email': clean_email or email,
+                            'alternate_phone': clean_alt_phone or alt_phone,
+                            'product': product_obj,
+                            'channel': channel_obj,
+                            'notes': notes
+                        },
+                        branch=branch_obj,
+                        user=user,
+                        source_label=f"File Import '{filename}'"
+                    )
+                    transaction.savepoint_commit(sp)
+                    successful += 1
+                    continue
+
+                # New Lead creation with normalized contact details
+                new_lead = Lead(
+                    name=name,
+                    phone=search_phone,
+                    email=clean_email or email,
+                    alternate_phone=clean_alt_phone or alt_phone,
+                    channel=channel_obj,
+                    product=product_obj,
                     branch=branch_obj,
-                    user=user,
-                    source_label=f"File Import '{filename}'"
+                    status=LeadStatus.NEW,
+                    notes=notes
                 )
+
+                if user.is_telecaller_user:
+                    new_lead.assigned_telecaller = assigned_telecaller
+                    new_lead.assigned_sales_head = assigned_sales_head
+                    new_lead.branch = branch_obj or default_branch
+                elif user.is_sales_head_user:
+                    new_lead.assigned_sales_head = assigned_sales_head
+                    # Auto-assign an active telecaller within this sales head's accessible branches
+                    from accounts.permissions import get_accessible_branch_ids
+                    tc_qs = User.objects.filter(role=UserRole.TELECALLER, branch_id__in=get_accessible_branch_ids(user), is_active=True)
+                    if branch_obj:
+                        branch_tcs = tc_qs.filter(branch=branch_obj)
+                        if branch_tcs.exists():
+                            tc_qs = branch_tcs
+                    new_lead.assigned_telecaller = tc_qs.annotate(cnt=Count('telecaller_leads')).order_by('cnt', 'id').first() if tc_qs.exists() else None
+                    new_lead.branch = branch_obj or default_branch
+                else:
+                    # Admin or batch import: auto-assign manager and telecaller
+                    assign_lead_automatically(
+                        new_lead,
+                        branch=branch_obj,
+                        source=f"File Import '{filename}'",
+                        triggered_by=user
+                    )
+
+                new_lead.save()
+                transaction.savepoint_commit(sp)
                 successful += 1
-                continue
+            except Exception as e:
+                transaction.savepoint_rollback(sp)
+                failed += 1
+                errors.append(f"Row {idx}: {str(e)}")
 
-            # New Lead creation
-            new_lead = Lead(
-                name=name,
-                phone=phone,
-                email=email,
-                alternate_phone=alt_phone,
-                channel=channel_obj,
-                product=product_obj,
-                branch=branch_obj,
-                status=LeadStatus.NEW,
-                notes=notes
-            )
-
-            if user.is_telecaller_user:
-                new_lead.assigned_telecaller = assigned_telecaller
-                new_lead.assigned_sales_head = assigned_sales_head
-                new_lead.branch = branch_obj or default_branch
-            elif user.is_sales_head_user:
-                new_lead.assigned_sales_head = assigned_sales_head
-                # Auto-assign an active telecaller within this sales head's accessible branches
-                from accounts.permissions import get_accessible_branch_ids
-                tc_qs = User.objects.filter(role=UserRole.TELECALLER, branch_id__in=get_accessible_branch_ids(user), is_active=True)
-                if branch_obj:
-                    branch_tcs = tc_qs.filter(branch=branch_obj)
-                    if branch_tcs.exists():
-                        tc_qs = branch_tcs
-                new_lead.assigned_telecaller = tc_qs.annotate(cnt=Count('telecaller_leads')).order_by('cnt', 'id').first() if tc_qs.exists() else None
-                new_lead.branch = branch_obj or default_branch
-            else:
-                # Admin or batch import: auto-assign manager and telecaller
-                assign_lead_automatically(
-                    new_lead,
-                    branch=branch_obj,
-                    source=f"File Import '{filename}'",
-                    triggered_by=user
-                )
-
-            new_lead.save()
-            successful += 1
+    if failed == 0:
+        import_status = "Completed"
+    elif successful > 0:
+        import_status = "Completed with Errors"
+    else:
+        import_status = "Failed"
 
     # Record history
     history = LeadImportHistory.objects.create(
@@ -155,8 +183,8 @@ def import_leads_file(uploaded_file, user):
         records=total_records,
         successful=successful,
         failed=failed,
-        status="Completed" if failed == 0 else "Completed with Errors",
-        error_log="\n".join(errors[:50])
+        status=import_status,
+        error_log="\n".join(errors[:100])
     )
 
     log_activity(
@@ -168,3 +196,51 @@ def import_leads_file(uploaded_file, user):
     )
 
     return successful, failed, errors
+
+
+def get_user_assigned_leads(user):
+    """
+    Authoritative ownership queryset for a user's 'My Leads'.
+    My Leads = leads currently assigned directly to the authenticated user,
+    according to the application's authoritative current-assignment relationship.
+    Being part of a team, branch, department, or reporting hierarchy must not
+    automatically make another person's leads part of My Leads.
+    """
+    from .models import Lead, LeadOwnerType
+
+    if not getattr(user, 'is_authenticated', False):
+        return Lead.objects.none()
+
+    if getattr(user, 'role', None) == UserRole.COUNSELOR:
+        return Lead.objects.filter(
+            assigned_counselor=user
+        ).exclude(
+            current_owner_type=LeadOwnerType.TELECALLER
+        ).exclude(
+            current_owner_type=LeadOwnerType.SALES_HEAD
+        ).exclude(
+            current_owner_type=LeadOwnerType.BRANCH_HEAD
+        ).distinct()
+
+    if getattr(user, 'role', None) == UserRole.TELECALLER:
+        return Lead.objects.filter(
+            assigned_telecaller=user
+        ).exclude(
+            current_owner_type=LeadOwnerType.COUNSELOR
+        ).exclude(
+            current_owner_type=LeadOwnerType.SALES_HEAD
+        ).exclude(
+            current_owner_type=LeadOwnerType.BRANCH_HEAD
+        ).distinct()
+
+    if getattr(user, 'role', None) == UserRole.BRANCH_HEAD:
+        return Lead.objects.filter(
+            assigned_branch_head=user
+        ).distinct()
+
+    if getattr(user, 'role', None) == UserRole.SALES_HEAD:
+        return Lead.objects.filter(
+            assigned_sales_head=user
+        ).distinct()
+
+    return Lead.objects.none()

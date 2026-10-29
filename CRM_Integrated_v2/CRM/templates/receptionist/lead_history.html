@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}{{ student.name }} - Lead History - TECHPANDA CRM{% endblock %}
+{% block title %}{{ student.name }} - Lead History - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
@@ -274,10 +274,10 @@
           <div style="font-size: 0.775rem; color: #475569; margin-top: 4px;">Row Index: #{{ s.row_index }} &bull; Row ID: {{ s.row_identifier }}</div>
           <div style="font-size: 0.775rem; color: #475569; margin-top: 2px;">Mapped on: {{ s.mapped_at }}</div>
           <div style="font-size: 0.775rem; color: #166534; margin-top: 2px;">Sync Status: {{ s.last_sync_status }} ({{ s.last_sync_time }})</div>
-          {% if s.spreadsheet_url %}
+          {% if s.spreadsheet_url and user.is_superuser %}
           <div style="margin-top: 6px;">
             <a href="{{ s.spreadsheet_url }}" target="_blank" rel="noopener noreferrer" style="color: #059669; font-size: 0.775rem; text-decoration: underline;">
-              Open Source Spreadsheet &rarr;
+              Open Source Spreadsheet (Admin) &rarr;
             </a>
           </div>
           {% endif %}

@@ -6,6 +6,9 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    extra_site = r"D:\CRM_Integrated_v2\CRM_Integrated_v2\.venv\Lib\site-packages"
+    if os.path.exists(extra_site) and extra_site not in sys.path:
+        sys.path.insert(0, extra_site)
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:
         from django.core.management import execute_from_command_line

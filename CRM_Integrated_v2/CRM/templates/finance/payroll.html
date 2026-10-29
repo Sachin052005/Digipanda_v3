@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Monthly Payroll - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <!-- Top Page Header -->
+  <div class="tp-page-header" style="margin-bottom: 22px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <h1 style="font-size: 1.55rem; font-weight: 800; color: var(--tp-text-primary); margin: 0; letter-spacing: -0.02em;">Payroll Management</h1>
+      <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">MONTHLY</span>
+    </div>
+    <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Monthly branch salary runs, statutory deductions (PF / ESI / Professional Tax), and automatic salary arrear deferrals.
+    </p>
+  </div>
+
+  <!-- Generate Payroll Run Card -->
+  <div class="card tp-card-glass" style="margin-bottom: 28px; padding: 24px; border-top: 3px solid #059669;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+        <span>Generate New Payroll Run</span>
+      </h3>
+      <div style="font-size: 0.78rem; color: var(--tp-text-muted); background: rgba(0,0,0,0.03); padding: 4px 10px; border-radius: 6px;">
+        Cycle: 26th of previous month &rarr; 25th of current month
+      </div>
+    </div>
+
+    <form method="POST" id="payroll-run-form">
+      {% csrf_token %}
+      <input type="hidden" name="generate_payroll" value="1">
+
+      <div style="display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 18px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Pay Period Month</label>
+          <select name="month" class="form-select tp-custom-select" style="height: 38px; font-size: 0.84rem; min-width: 120px; font-weight: 600;">
+            <option value="1" {% if curr_month == 1 %}selected{% endif %}>January</option>
+            <option value="2" {% if curr_month == 2 %}selected{% endif %}>February</option>
+            <option value="3" {% if curr_month == 3 %}selected{% endif %}>March</option>
+            <option value="4" {% if curr_month == 4 %}selected{% endif %}>April</option>
+            <option value="5" {% if curr_month == 5 %}selected{% endif %}>May</option>
+            <option value="6" {% if curr_month == 6 %}selected{% endif %}>June</option>
+            <option value="7" {% if curr_month == 7 %}selected{% endif %}>July</option>
+            <option value="8" {% if curr_month == 8 %}selected{% endif %}>August</option>
+            <option value="9" {% if curr_month == 9 %}selected{% endif %}>September</option>
+            <option value="10" {% if curr_month == 10 %}selected{% endif %}>October</option>
+            <option value="11" {% if curr_month == 11 %}selected{% endif %}>November</option>
+            <option value="12" {% if curr_month == 12 %}selected{% endif %}>December</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Year</label>
+          <input type="number" name="year" value="{{ curr_year }}" class="form-input" style="height: 38px; font-size: 0.84rem; width: 100px; font-weight: 600;">
+        </div>
+
+        <button type="submit" class="btn btn-primary tp-glossy-btn" style="height: 38px; font-weight: 700; font-size: 0.86rem; padding: 0 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border: none; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Generate Run</span>
+        </button>
+      </div>
+
+      <!-- Interactive Employee Multi-Select Checklist with Live Net Total -->
+      <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; background: var(--bg-card); margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="selected-emp-count" style="font-size: 0.84rem; font-weight: 800; color: var(--tp-text-primary);">
+              {{ employees|length }} of {{ employees|length }} selected
+            </span>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="btn-select-all-emp" class="btn btn-sm btn-secondary" style="font-size: 0.72rem; padding: 2px 8px;">Select All</button>
+              <button type="button" id="btn-deselect-all-emp" class="btn btn-sm btn-secondary" style="font-size: 0.72rem; padding: 2px 8px;">Deselect All</button>
+            </div>
+          </div>
+          <div style="font-size: 0.84rem; font-weight: 700;">
+            <span style="color: var(--tp-text-muted); font-size: 0.76rem; text-transform: uppercase; margin-right: 6px;">ESTIMATED TOTAL NET:</span>
+            <strong id="live-net-payout-total" style="color: #059669; font-size: 1.05rem;">₹0.00</strong>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% for emp in employees %}
+          <label class="emp-row-item" data-salary="{{ emp.net_salary }}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: 8px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.15s ease;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <input type="checkbox" name="selected_employees" value="{{ emp.id }}" checked class="emp-checkbox" style="width: 17px; height: 17px; accent-color: #059669; cursor: pointer;">
+              <div>
+                <div style="font-weight: 700; font-size: 0.88rem; color: var(--tp-text-primary);">{{ emp.full_name }}</div>
+                <div style="font-size: 0.75rem; color: var(--tp-text-muted);">
+                  <code>{{ emp.employee_code }}</code> &bull; {{ emp.role_title }} ({{ emp.department }})
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div class="emp-net-display" style="font-weight: 800; font-size: 0.92rem; color: #059669;">
+                ₹{{ emp.net_salary|floatformat:2 }}
+              </div>
+              <div class="emp-defer-badge" style="display: none; font-size: 0.7rem; color: #d97706; font-weight: 600;">
+                Deferred to Arrears
+              </div>
+            </div>
+          </label>
+          {% empty %}
+          <div style="font-size: 0.84rem; color: var(--tp-text-muted); text-align: center; padding: 24px;">
+            No active employee profiles found in this branch directory.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--tp-text-muted); background: rgba(16, 185, 129, 0.08); padding: 8px 14px; border-radius: 8px; border-left: 3px solid #10b981;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>
+          <strong>Automated Arrear Handling:</strong> Anyone left unchecked will have their earned net pay automatically deferred as a <em>Salary Arrear</em>, and folded into their subsequent payroll run.
+        </span>
+      </div>
+    </form>
+  </div>
+
+  <!-- Historical Payroll Runs Table -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Payroll Run History</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 2px 0 0 0;">Historical branch payroll runs, approval logs, and disbursement dates</p>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px;">Run Number</th>
+            <th style="padding: 10px 12px;">Period</th>
+            <th style="padding: 10px 12px;">Branch</th>
+            <th style="padding: 10px 12px; text-align: right;">Gross Pay</th>
+            <th style="padding: 10px 12px; text-align: right;">Deductions</th>
+            <th style="padding: 10px 12px; text-align: right;">Net Payable</th>
+            <th style="padding: 10px 12px; text-align: center;">Status</th>
+            <th style="padding: 10px 12px;">Disbursed On</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in runs %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;" class="tp-table-row-hover">
+            <td style="padding: 12px; font-weight: 700; font-family: monospace;">{{ run.run_number }}</td>
+            <td style="padding: 12px; font-weight: 600;">{{ run.month }}/{{ run.year }}</td>
+            <td style="padding: 12px;">{{ run.branch.name }}</td>
+            <td style="padding: 12px; text-align: right;">₹{{ run.total_gross|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; color: #dc2626;">₹{{ run.total_deductions|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; font-weight: 800; color: #059669; font-size: 0.92rem;">
+              ₹{{ run.total_net|floatformat:2 }}
+            </td>
+            <td style="padding: 12px; text-align: center;">
+              <span class="badge" style="{% if run.status == 'Approved' or run.status == 'Paid' %}background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3);{% else %}background: rgba(217, 119, 6, 0.15); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.3);{% endif %} font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">
+                {{ run.status }}
+              </span>
+            </td>
+            <td style="padding: 12px; font-size: 0.8rem; color: var(--tp-text-muted);">
+              {{ run.paid_at|date:"d M Y"|default:"Pending Payout" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding: 36px; text-align: center; color: var(--tp-text-muted);">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.4;"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+              <div>No payroll runs generated yet for this branch.</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var checkboxes = document.querySelectorAll('.emp-checkbox');
+  var countDisplay = document.getElementById('selected-emp-count');
+  var totalDisplay = document.getElementById('live-net-payout-total');
+  var btnSelectAll = document.getElementById('btn-select-all-emp');
+  var btnDeselectAll = document.getElementById('btn-deselect-all-emp');
+
+  function updatePayrollCalculations() {
+    var total = 0;
+    var selected = 0;
+    var totalCount = checkboxes.length;
+
+    checkboxes.forEach(function (cb) {
+      var row = cb.closest('.emp-row-item');
+      var netDisplay = row ? row.querySelector('.emp-net-display') : null;
+      var deferBadge = row ? row.querySelector('.emp-defer-badge') : null;
+      var salary = parseFloat(row.getAttribute('data-salary') || 0);
+
+      if (cb.checked) {
+        selected++;
+        total += salary;
+        if (row) {
+          row.style.opacity = '1';
+          row.style.borderColor = 'var(--border-color)';
+        }
+        if (netDisplay) netDisplay.style.textDecoration = 'none';
+        if (deferBadge) deferBadge.style.display = 'none';
+      } else {
+        if (row) {
+          row.style.opacity = '0.55';
+          row.style.borderColor = 'rgba(217, 119, 6, 0.4)';
+        }
+        if (netDisplay) netDisplay.style.textDecoration = 'line-through';
+        if (deferBadge) deferBadge.style.display = 'block';
+      }
+    });
+
+    if (countDisplay) {
+      countDisplay.textContent = selected + ' of ' + totalCount + ' selected';
+    }
+    if (totalDisplay) {
+      totalDisplay.textContent = '₹' + total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+  }
+
+  checkboxes.forEach(function (cb) {
+    cb.addEventListener('change', updatePayrollCalculations);
+  });
+
+  if (btnSelectAll) {
+    btnSelectAll.addEventListener('click', function () {
+      checkboxes.forEach(function (cb) { cb.checked = true; });
+      updatePayrollCalculations();
+    });
+  }
+
+  if (btnDeselectAll) {
+    btnDeselectAll.addEventListener('click', function () {
+      checkboxes.forEach(function (cb) { cb.checked = false; });
+      updatePayrollCalculations();
+    });
+  }
+
+  // Initial calculation on load
+  updatePayrollCalculations();
+});
+</script>
+{% endblock %}

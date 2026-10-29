@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}{{ accountant.get_full_name|default:accountant.username }} - Accountant Profile{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">
+      STAFF &rsaquo; ACCOUNTANT PROFILE
+    </div>
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px;">
+      <span>{{ accountant.get_full_name|default:accountant.username }}</span>
+      {% if accountant.is_active %}
+      <span class="badge badge-active" style="font-size: 0.75rem;">Active</span>
+      {% else %}
+      <span class="badge badge-inactive" style="font-size: 0.75rem;">Inactive</span>
+      {% endif %}
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 4px 0 0;">
+      Accountant &bull; @{{ accountant.username }} &bull; Branch: <strong>{{ branch.name|default:"Head Office / Central" }}</strong>
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <a href="{% url 'accountant_dashboard' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+      Finance Desk &rarr;
+    </a>
+    <a href="{% url 'admin_set_user_password' accountant.pk %}" class="btn btn-warning" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      Set Password
+    </a>
+    <form method="POST" action="{% url 'admin_accountant_toggle_status' accountant.pk %}" style="display: inline-block;">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if accountant.is_active %}btn-secondary{% else %}btn-success{% endif %}">
+        {% if accountant.is_active %}Deactivate{% else %}Activate{% endif %}
+      </button>
+    </form>
+    <a href="{% url 'admin_accountants_list' %}" class="btn btn-secondary">Back to List</a>
+  </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Verified Payments</h4>
+      <div class="kpi-value">{{ verified_count }}</div>
+    </div>
+    <div class="kpi-icon-wrap green">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Total Verified Sum</h4>
+      <div class="kpi-value">₹{{ verified_amount|floatformat:2 }}</div>
+    </div>
+    <div class="kpi-icon-wrap blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Rejected Payments</h4>
+      <div class="kpi-value">{{ rejected_count }}</div>
+    </div>
+    <div class="kpi-icon-wrap rose">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Pending in Queue</h4>
+      <div class="kpi-value">{{ pending_queue_count }}</div>
+    </div>
+    <div class="kpi-icon-wrap amber">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Accountant Details Card -->
+  <div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+      <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700;">
+        {{ accountant.username|slice:":1"|upper }}
+      </div>
+      <div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">
+          {{ accountant.get_full_name|default:accountant.username }}
+        </h3>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-size: 0.75rem; margin-top: 4px;">
+          Finance &bull; Accountant
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.875rem;">
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Username:</span>
+        <strong style="color: var(--text-main); font-family: monospace;">{{ accountant.username }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Email:</span>
+        <strong style="color: var(--text-main);">{{ accountant.email|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Phone:</span>
+        <strong style="color: var(--text-main);">{{ accountant.phone|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Assigned Branch:</span>
+        <strong style="color: var(--text-main);">{{ branch.name|default:"Head Office / Central" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Member Since:</span>
+        <strong style="color: var(--text-main);">{{ accountant.date_joined|date:"M d, Y" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Last Login:</span>
+        <strong style="color: var(--text-main);">{{ accountant.last_login|date:"M d, Y H:i"|default:"Never" }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Verifications Table -->
+  <div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0;">Recent Reviewed Transactions</h3>
+      <a href="{% url 'accountant_dashboard' %}" style="font-size: 0.8rem; color: var(--primary); font-weight: 600; text-decoration: none;">View Accounting Queue &rarr;</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="crm-table" style="font-size: 0.85rem;">
+        <thead>
+          <tr>
+            <th>Receipt #</th>
+            <th>Student / Enrollment</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Reviewed Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pt in recent_verifications %}
+          <tr>
+            <td>
+              <strong style="font-family: monospace;">{{ pt.receipt_number }}</strong>
+            </td>
+            <td>
+              {% if pt.enrollment and pt.enrollment.lead %}
+              <a href="{% url 'lead_detail' pt.enrollment.lead.pk %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+                {{ pt.enrollment.student_name }}
+              </a>
+              {% else %}
+              <strong>{{ pt.enrollment.student_name|default:"-" }}</strong>
+              {% endif %}
+            </td>
+            <td style="font-weight: 700;">₹{{ pt.amount|floatformat:2 }}</td>
+            <td>{{ pt.get_payment_method_display|default:pt.payment_method }}</td>
+            <td>
+              {% if pt.status == 'APPROVED' or pt.status == 'SUCCESS' %}
+              <span class="badge badge-active" style="font-size: 0.72rem;">Approved</span>
+              {% elif pt.status == 'REJECTED' %}
+              <span class="badge badge-inactive" style="font-size: 0.72rem;">Rejected</span>
+              {% else %}
+              <span class="badge badge-warning" style="font-size: 0.72rem;">{{ pt.status }}</span>
+              {% endif %}
+            </td>
+            <td style="color: var(--text-muted); font-size: 0.78rem;">
+              {{ pt.reviewed_at|date:"M d, H:i"|default:pt.updated_at|date:"M d, H:i" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+              No payment transactions verified or reviewed yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity Log -->
+<div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+  <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 16px;">Audit &amp; Activity Log</h3>
+  <div class="table-responsive">
+    <table class="crm-table" style="font-size: 0.85rem;">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Description</th>
+          <th>Date &amp; Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for act in recent_activities %}
+        <tr>
+          <td><strong style="color: var(--primary);">{{ act.action }}</strong></td>
+          <td>{{ act.description }}</td>
+          <td style="color: var(--text-muted);">{{ act.timestamp|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">
+            No recent activity recorded for this accountant.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -531,6 +531,29 @@
                     <img src="${msg.media_url}" alt="Image" loading="lazy">
                 </div>
             `;
+        } else if (msg.message_type === 'audio' && msg.media_url) {
+            contentHtml += `
+                <div class="message-audio-player" data-audio-src="${escapeHtml(msg.media_url)}">
+                    <button type="button" class="audio-play-btn" aria-label="Play audio" onclick="toggleAudioPlayback(this)">
+                        <svg class="icon-play" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                        <svg class="icon-pause" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    </button>
+                    <div class="audio-waveform-bars">
+                        <span class="waveform-bar" style="height: 8px;"></span>
+                        <span class="waveform-bar" style="height: 14px;"></span>
+                        <span class="waveform-bar" style="height: 20px;"></span>
+                        <span class="waveform-bar" style="height: 10px;"></span>
+                        <span class="waveform-bar" style="height: 16px;"></span>
+                        <span class="waveform-bar" style="height: 22px;"></span>
+                        <span class="waveform-bar" style="height: 12px;"></span>
+                        <span class="waveform-bar" style="height: 18px;"></span>
+                        <span class="waveform-bar" style="height: 8px;"></span>
+                        <span class="waveform-bar" style="height: 15px;"></span>
+                    </div>
+                    <span class="audio-time-label">Voice</span>
+                    <audio src="${escapeHtml(msg.media_url)}" preload="metadata" onended="onAudioEnded(this)"></audio>
+                </div>
+            `;
         } else if (msg.message_type === 'document' && msg.media_url) {
             const filename = msg.media_filename || 'Document';
             contentHtml += `
@@ -1388,3 +1411,54 @@
     }
 
 })();
+
+// Global Audio Player Helpers
+window.toggleAudioPlayback = function(btn) {
+    const player = btn.closest('.message-audio-player');
+    if (!player) return;
+    const audio = player.querySelector('audio');
+    const playIcon = btn.querySelector('.icon-play');
+    const pauseIcon = btn.querySelector('.icon-pause');
+    if (!audio) return;
+
+    document.querySelectorAll('.message-audio-player.playing').forEach(p => {
+        if (p !== player) {
+            const a = p.querySelector('audio');
+            if (a) a.pause();
+            p.classList.remove('playing');
+            const b = p.querySelector('.audio-play-btn');
+            if (b) {
+                const pi = b.querySelector('.icon-play');
+                const pui = b.querySelector('.icon-pause');
+                if (pi) pi.style.display = 'block';
+                if (pui) pui.style.display = 'none';
+            }
+        }
+    });
+
+    if (audio.paused) {
+        audio.play().then(() => {
+            player.classList.add('playing');
+            if (playIcon) playIcon.style.display = 'none';
+            if (pauseIcon) pauseIcon.style.display = 'block';
+        }).catch(e => console.warn('Audio play prevented:', e));
+    } else {
+        audio.pause();
+        player.classList.remove('playing');
+        if (playIcon) playIcon.style.display = 'block';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+    }
+};
+
+window.onAudioEnded = function(audio) {
+    const player = audio.closest('.message-audio-player');
+    if (!player) return;
+    player.classList.remove('playing');
+    const btn = player.querySelector('.audio-play-btn');
+    if (btn) {
+        const playIcon = btn.querySelector('.icon-play');
+        const pauseIcon = btn.querySelector('.icon-pause');
+        if (playIcon) playIcon.style.display = 'block';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+    }
+};

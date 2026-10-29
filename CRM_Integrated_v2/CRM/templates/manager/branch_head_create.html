@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Create Branch Head - TECHPANDA CRM{% endblock %}
+{% block title %}Create Branch Head - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -30,15 +30,7 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label class="form-label" style="margin-bottom: 0;">Username / Login ID</label>
-            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.72rem; font-weight: 600;">Auto-generated</span>
-          </div>
-          {{ form.username }}
-          {% if form.username.errors %}<div class="form-error">{{ form.username.errors.0 }}</div>{% endif %}
-          <div class="form-text" id="username-preview-hint" style="color: #64748b; font-size: 0.775rem;">Generated automatically from First &amp; Last Name</div>
-        </div>
+        {{ form.username.as_hidden }}
 
         <div class="form-group">
           <label class="form-label">Email Address <span class="required">*</span></label>

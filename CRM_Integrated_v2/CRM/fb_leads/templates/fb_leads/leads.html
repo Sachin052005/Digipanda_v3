@@ -22,31 +22,93 @@
 </div>
 {% endif %}
 
-<div class="kpi-grid">
-  <div class="kpi-card">
-    <div class="kpi-info"><h4>Facebook leads received</h4><div class="kpi-value">{{ total }}</div></div>
-    <div class="kpi-icon-wrap blue"><circle cx="12" cy="12" r="10"></circle></div>
-  </div>
-  <div class="kpi-card">
-    <div class="kpi-info"><h4>Not added to CRM</h4>
-      <div class="kpi-value" {% if errors %}style="color: var(--danger);"{% endif %}>{{ errors }}</div>
+<div class="kpi-grid" style="margin-bottom: 20px;">
+  <a href="?{% if selected_form %}form={{ selected_form|urlencode }}&{% endif %}{% if selected_ad %}ad={{ selected_ad|urlencode }}&{% endif %}{% if q %}q={{ q|urlencode }}{% endif %}" class="kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; border-radius: 12px; {% if not crm_filter %}box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.15); border-left: 4px solid #2563eb;{% endif %}" title="Click to view all Facebook leads (preserves active form/ad filters)">
+    <div class="kpi-info">
+      <h4>Facebook leads received</h4>
+      <div class="kpi-value" style="color: #2563eb;">{{ total }}</div>
+      <span style="font-size: 0.78rem; color: var(--tp-text-muted);">{% if selected_form or selected_ad %}Matching current filter criteria{% else %}All inbound campaigns{% endif %}</span>
     </div>
-    <div class="kpi-icon-wrap rose"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon></div>
-  </div>
+    <div class="kpi-icon-wrap blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+    </div>
+  </a>
+
+  <a href="?crm=error{% if selected_form %}&form={{ selected_form|urlencode }}{% endif %}{% if selected_ad %}&ad={{ selected_ad|urlencode }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}" class="kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; border-radius: 12px; {% if crm_filter == 'error' %}background: #fff5f5; border: 2px solid #ef4444; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);{% else %}border-left: 4px solid #ef4444;{% endif %}" title="Click to view leads with sync errors">
+    <div class="kpi-info">
+      <h4>Not added to CRM</h4>
+      <div class="kpi-value" style="color: {% if errors %}#dc2626{% else %}#10b981{% endif %};">{{ errors }}</div>
+      <span style="font-size: 0.78rem; color: {% if errors %}#dc2626{% else %}var(--tp-text-muted){% endif %};">{% if errors %}Requires manual investigation{% else %}All leads synced{% endif %}</span>
+    </div>
+    <div class="kpi-icon-wrap rose">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+  </a>
 </div>
 
-<div class="filter-card">
-  <form method="get" class="filter-form">
-    <div class="filter-col">
-      <label>Search</label>
-      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Name, phone, email, form, ad or campaign">
+<div class="filter-card" style="margin-bottom: 20px; padding: 16px 20px;">
+  <form method="get" class="filter-form" style="display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;">
+    <div class="filter-col" style="flex: 2; min-width: 220px;">
+      <label style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Search</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Name, phone, email, form...">
     </div>
-    <div style="display: flex; gap: 8px;">
-      <button type="submit" class="btn btn-primary">Search</button>
-      {% if errors %}<a href="?crm=error" class="btn btn-secondary">Show errors</a>{% endif %}
-      <a href="{% url 'fb_leads:facebook_leads' %}" class="btn btn-secondary">Reset</a>
+
+    <div class="filter-col" style="flex: 2; min-width: 200px;">
+      <label style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Instant Form</label>
+      <select name="form" class="form-select" onchange="this.form.submit()" style="border-radius: 8px;">
+        <option value="">All Facebook Forms ({{ available_forms|length }})</option>
+        {% for f in available_forms %}
+        <option value="{{ f }}" {% if selected_form == f %}selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="filter-col" style="flex: 2; min-width: 200px;">
+      <label style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-bottom: 4px; display: block;">Ad Creative</label>
+      <select name="ad" class="form-select" onchange="this.form.submit()" style="border-radius: 8px;">
+        <option value="">All Ad Creatives ({{ available_ads|length }})</option>
+        {% for a in available_ads %}
+        <option value="{{ a }}" {% if selected_ad == a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if crm_filter == 'error' %}
+    <input type="hidden" name="crm" value="error">
+    {% endif %}
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button type="submit" class="btn btn-primary" style="padding: 7px 18px; font-weight: 600;">Filter</button>
+      <a href="{% url 'fb_leads:facebook_leads' %}" class="btn btn-secondary" style="padding: 7px 14px;" title="Reset all filters">Reset</a>
     </div>
   </form>
+
+  {% if selected_form or selected_ad or crm_filter == 'error' %}
+  <!-- Active Filter Pills -->
+  <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--tp-surface-border, #e2e8f0); display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <span style="font-size: 0.78rem; font-weight: 700; color: var(--tp-text-muted);">Active Filters:</span>
+    {% if selected_form %}
+    <span class="badge" style="background: #e0f2fe; color: #0369a1; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px;">
+      Form: {{ selected_form }}
+      <a href="?{% if selected_ad %}ad={{ selected_ad|urlencode }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}{% if crm_filter %}crm={{ crm_filter }}{% endif %}" style="color: #0369a1; text-decoration: none; font-weight: 800;">&times;</a>
+    </span>
+    {% endif %}
+
+    {% if selected_ad %}
+    <span class="badge" style="background: #f3e8ff; color: #7e22ce; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px;">
+      Ad: {{ selected_ad }}
+      <a href="?{% if selected_form %}form={{ selected_form|urlencode }}&{% endif %}{% if q %}q={{ q|urlencode }}&{% endif %}{% if crm_filter %}crm={{ crm_filter }}{% endif %}" style="color: #7e22ce; text-decoration: none; font-weight: 800;">&times;</a>
+    </span>
+    {% endif %}
+
+    {% if crm_filter == 'error' %}
+    <span class="badge" style="background: #fee2e2; color: #b91c1c; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px;">
+      Status: Error Only
+      <a href="?{% if selected_form %}form={{ selected_form|urlencode }}&{% endif %}{% if selected_ad %}ad={{ selected_ad|urlencode }}&{% endif %}{% if q %}q={{ q|urlencode }}{% endif %}" style="color: #b91c1c; text-decoration: none; font-weight: 800;">&times;</a>
+    </span>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
 
 <div class="crm-card">
@@ -100,11 +162,21 @@
         </tbody>
       </table>
     </div>
-    {% if page.has_other_pages %}
-    <div style="display: flex; gap: 8px; justify-content: center; padding: 12px 0;">
-      {% if page.has_previous %}<a class="btn btn-sm btn-secondary" href="?q={{ q|urlencode }}&page={{ page.previous_page_number }}">← Previous</a>{% endif %}
-      <span style="align-self: center;">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
-      {% if page.has_next %}<a class="btn btn-sm btn-secondary" href="?q={{ q|urlencode }}&page={{ page.next_page_number }}">Next →</a>{% endif %}
+        {% if page.has_other_pages %}
+    <div style="display: flex; gap: 8px; justify-content: center; padding: 14px 0; align-items: center;">
+      {% if page.has_previous %}
+      <a class="btn btn-sm btn-secondary" href="?page={{ page.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_form %}&form={{ selected_form|urlencode }}{% endif %}{% if selected_ad %}&ad={{ selected_ad|urlencode }}{% endif %}{% if crm_filter %}&crm={{ crm_filter }}{% endif %}">
+        &larr; Previous
+      </a>
+      {% endif %}
+      <span style="font-size: 0.85rem; font-weight: 600; color: var(--tp-text-muted); padding: 0 10px;">
+        Page {{ page.number }} of {{ page.paginator.num_pages }} ({{ page.paginator.count }} leads)
+      </span>
+      {% if page.has_next %}
+      <a class="btn btn-sm btn-secondary" href="?page={{ page.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}{% if selected_form %}&form={{ selected_form|urlencode }}{% endif %}{% if selected_ad %}&ad={{ selected_ad|urlencode }}{% endif %}{% if crm_filter %}&crm={{ crm_filter }}{% endif %}">
+        Next &rarr;
+      </a>
+      {% endif %}
     </div>
     {% endif %}
     {% else %}
@@ -120,7 +192,7 @@
 (function() {
   // Safe local polling for incoming Facebook leads (Issue 2)
   // Polls ONLY local CRM database every 3 seconds - never calls external Graph API!
-  const pollUrl = "{% url 'fb_leads:facebook_leads_recent_api' %}?q={{ q|urlencode }}{% if request.GET.crm == 'error' %}&crm=error{% endif %}";
+  const pollUrl = "{% url 'fb_leads:facebook_leads_recent_api' %}?q={{ q|urlencode }}{% if selected_form %}&form={{ selected_form|urlencode }}{% endif %}{% if selected_ad %}&ad={{ selected_ad|urlencode }}{% endif %}{% if crm_filter %}&crm={{ crm_filter }}{% endif %}";
   let isPolling = false;
 
   function pollLocalLeads() {

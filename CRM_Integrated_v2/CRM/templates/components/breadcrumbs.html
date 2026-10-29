@@ -1,0 +1,30 @@
+{% if breadcrumbs and breadcrumbs|length > 0 %}
+<nav class="tp-breadcrumb-nav" aria-label="Breadcrumb">
+  <ol class="tp-breadcrumb-list">
+    {% for item in breadcrumbs %}
+      <li class="tp-breadcrumb-item{% if forloop.last %} active{% endif %}"{% if forloop.last %} aria-current="page"{% endif %}>
+        {% if not forloop.last and item.url %}
+          <a href="{{ item.url }}" class="tp-breadcrumb-link">
+            {% if forloop.first %}
+              <svg class="tp-breadcrumb-home-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            {% endif %}
+            <span class="tp-breadcrumb-text">{{ item.label }}</span>
+          </a>
+          <span class="tp-breadcrumb-separator" aria-hidden="true">/</span>
+        {% else %}
+          {% if forloop.first %}
+            <svg class="tp-breadcrumb-home-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: var(--tp-text-muted);">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          {% endif %}
+          <span class="tp-breadcrumb-current" title="{{ item.label }}">{{ item.label }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}

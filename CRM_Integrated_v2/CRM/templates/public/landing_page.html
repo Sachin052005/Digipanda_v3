@@ -1,0 +1,797 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Primary SEO Meta Tags -->
+  <title>DigiPanda CRM | Next-Gen Admissions &amp; Sales Management Platform</title>
+  <meta name="title" content="DigiPanda CRM | Next-Gen Admissions &amp; Sales Management Platform">
+  <meta name="description" content="DigiPanda CRM is the premier lead management, WhatsApp admissions automation, and multi-branch student enrollment platform engineered for high-growth coaching academies, training institutes, and sales teams.">
+  <meta name="keywords" content="DigiPanda CRM, DigiPanda, education CRM, admissions CRM, WhatsApp CRM, lead management software, coaching institute CRM, student enrollment, telecaller management, branch management">
+  <meta name="author" content="DigiPanda CRM">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ canonical_url|default:'https://digipandacrm.in/' }}">
+
+  <!-- Open Graph / Social Meta -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://digipandacrm.in/">
+  <meta property="og:title" content="DigiPanda CRM | The Complete Admissions Platform">
+  <meta property="og:description" content="Capture leads in real-time, automate WhatsApp touchpoints, allocate students to counselors, and manage multi-branch fee collections.">
+  <meta property="og:image" content="{% static 'images/digipanda_logo.png' %}">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+
+  <!-- Google Fonts: Plus Jakarta Sans, Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Theme Manager & Core Tokens -->
+  <script src="{% static 'js/theme-manager.js' %}?v=20261025"></script>
+  <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=20261027_tokens">
+  <link rel="stylesheet" href="{% static 'css/landing-page.css' %}?v=20261027_radiant">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DigiPanda CRM",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web, Cloud",
+    "description": "Enterprise admissions CRM and sales automation system built for coaching academies, training institutes, and sales organizations.",
+    "url": "https://digipandacrm.in/",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "INR"
+    }
+  }
+  </script>
+</head>
+<body class="lp-body">
+
+  <!-- ==========================================================================
+       HEADER & NAVIGATION
+       ========================================================================== -->
+  <header class="lp-header" role="banner">
+    <div class="lp-container">
+      <div class="lp-header-inner">
+        
+        <!-- Brand Wordmark -->
+        <a href="/" class="lp-brand-link" aria-label="DigiPanda CRM Homepage">
+          <span class="brand-wordmark-colored theme-light" style="font-size: 1.35rem;">
+            <span class="part-digi">Digi</span><span class="part-p">p</span><span class="part-anda">anda</span><span class="part-crm">CRM</span>
+          </span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="lp-nav" id="lpNav" role="navigation" aria-label="Main Navigation">
+          <a href="#features" class="lp-nav-link">Features</a>
+          <a href="#solutions" class="lp-nav-link">Solutions</a>
+          <a href="#showcase" class="lp-nav-link">Showcase</a>
+          <a href="#calculator" class="lp-nav-link">Calculator</a>
+          <a href="#faq" class="lp-nav-link">FAQ</a>
+        </nav>
+
+        <!-- Header Actions -->
+        <div class="lp-header-actions">
+          <a href="{% url 'public_student_enquiry_form' %}" class="lp-btn lp-btn-sm lp-btn-secondary" title="Student Campus Walk-in Desk">
+            <span>Walk-in Desk</span>
+          </a>
+          {% if is_authenticated %}
+            <a href="{% url 'login_redirect' %}" class="lp-btn lp-btn-sm lp-btn-primary">
+              <span>Workspace</span> &rarr;
+            </a>
+          {% else %}
+            <a href="{% url 'login' %}" class="lp-btn lp-btn-sm lp-btn-primary">
+              <span>Access Live Portal</span> &rarr;
+            </a>
+          {% endif %}
+          <button type="button" class="lp-mobile-menu-btn" id="lpMobileMenuBtn" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="lpNav">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <main role="main">
+    <!-- ==========================================================================
+         HERO SECTION
+         ========================================================================== -->
+    <section class="lp-hero">
+      <div class="lp-container">
+        <div class="lp-hero-content">
+          
+          <div class="lp-pill-badge">
+            <span class="lp-pulse-dot"></span>
+            <span>Admissions Management • Lead Automation • Multi-Branch CRM</span>
+          </div>
+
+          <h1 class="lp-hero-title">
+            The Complete Admissions CRM for Modern <span class="text-indigo">Academies</span> &amp; <span class="text-emerald">Sales Teams</span>
+          </h1>
+
+          <p class="lp-hero-desc">
+            Capture every lead in real-time, deliver instant WhatsApp course brochures, allocate students to counselors by capacity, and manage multi-branch fee collections in one unified platform.
+          </p>
+
+          <div class="lp-hero-actions">
+            {% if is_authenticated %}
+              <a href="{% url 'login_redirect' %}" class="lp-btn lp-btn-lg lp-btn-primary">
+                <span>Access Live Workspace</span> &rarr;
+              </a>
+            {% else %}
+              <a href="{% url 'login' %}" class="lp-btn lp-btn-lg lp-btn-primary">
+                <span>Access Live Portal</span> &rarr;
+              </a>
+            {% endif %}
+            <a href="{% url 'public_student_enquiry_form' %}" class="lp-btn lp-btn-lg lp-btn-secondary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7.5" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+              <span>Student Walk-in Desk</span>
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Hero Cockpit Mockup (The Real Product Visual) -->
+        <div class="lp-cockpit-wrapper">
+          <div class="lp-cockpit-frame">
+            <div class="lp-cockpit-titlebar">
+              <div class="lp-titlebar-dots">
+                <span class="lp-dot lp-dot-red"></span>
+                <span class="lp-dot lp-dot-yellow"></span>
+                <span class="lp-dot lp-dot-green"></span>
+              </div>
+              <div class="lp-titlebar-url">app.digipandacrm.in/dashboard</div>
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--lp-emerald);">● Live System Active</div>
+            </div>
+
+            <div class="lp-cockpit-body">
+              <!-- Top Metrics Cards -->
+              <div class="lp-mockup-kpis">
+                <div class="lp-mockup-kpi">
+                  <div class="lp-mockup-kpi-lbl">Total Inquiries</div>
+                  <div class="lp-mockup-kpi-val">1,482</div>
+                  <div class="lp-mockup-kpi-trend">↑ 24% this month</div>
+                </div>
+                <div class="lp-mockup-kpi">
+                  <div class="lp-mockup-kpi-lbl">Admissions Confirmed</div>
+                  <div class="lp-mockup-kpi-val" style="color: var(--lp-emerald);">284</div>
+                  <div class="lp-mockup-kpi-trend">↑ 18.5% conversion</div>
+                </div>
+                <div class="lp-mockup-kpi">
+                  <div class="lp-mockup-kpi-lbl">Follow-ups Due Today</div>
+                  <div class="lp-mockup-kpi-val" style="color: var(--lp-cyan);">42</div>
+                  <div class="lp-mockup-kpi-trend">All counselors active</div>
+                </div>
+                <div class="lp-mockup-kpi">
+                  <div class="lp-mockup-kpi-lbl">Fee Collections</div>
+                  <div class="lp-mockup-kpi-val">₹28.4L</div>
+                  <div class="lp-mockup-kpi-trend">GST Invoices verified</div>
+                </div>
+              </div>
+
+              <!-- Live Inquiries Table Preview -->
+              <div class="lp-mockup-table-card">
+                <div class="lp-mockup-table-header">
+                  <div class="lp-mockup-table-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                    <span>Real-Time Ingestion Queue (Sample Preview)</span>
+                  </div>
+                  <span class="lp-pill-badge" style="margin: 0; padding: 3px 10px; font-size: 0.72rem;">100% Anti-Dupe Active</span>
+                </div>
+                <table class="lp-mockup-table" aria-label="Sample Inquiries Table">
+                  <thead>
+                    <tr>
+                      <th>Candidate Name</th>
+                      <th>Course / Program</th>
+                      <th>Channel</th>
+                      <th>Assigned Counselor</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Pooja Sundaram</strong></td>
+                      <td>Full-Stack Python</td>
+                      <td>Meta Lead Ads</td>
+                      <td>Counselor Arun</td>
+                      <td><span class="lp-badge-status new">● New Lead</span></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Karthik Raja</strong></td>
+                      <td>Data Science &amp; AI</td>
+                      <td>Website Webhook</td>
+                      <td>Counselor Deepa</td>
+                      <td><span class="lp-badge-status contacted">● Contacted</span></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Sneha Murali</strong></td>
+                      <td>UI/UX Design</td>
+                      <td>Campus QR Desk</td>
+                      <td>Front Desk #TK-108</td>
+                      <td><span class="lp-badge-status walkin">● Walk-in Active</span></td>
+                    </tr>
+                    <tr>
+                      <td><strong>M. Deepak Roshan</strong></td>
+                      <td>Cloud &amp; DevOps</td>
+                      <td>WhatsApp Bot</td>
+                      <td>Counselor Priya</td>
+                      <td><span class="lp-badge-status enrolled">● Enrolled</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         TRUST & CAPABILITIES STRIP
+         ========================================================================== -->
+    <section class="lp-trust-strip">
+      <div class="lp-container">
+        <h3 class="lp-trust-title">Everything Your Admissions Team Needs in One Workspace</h3>
+        <div class="lp-trust-grid">
+          <div class="lp-trust-card">
+            <div class="lp-trust-stat">&lt; 5s</div>
+            <div class="lp-trust-label">Instant Response SLA</div>
+            <div class="lp-trust-sub">Automated WhatsApp touchpoints</div>
+          </div>
+          <div class="lp-trust-card">
+            <div class="lp-trust-stat emerald">100%</div>
+            <div class="lp-trust-label">Deduplication Protection</div>
+            <div class="lp-trust-sub">Cross-channel phone matching</div>
+          </div>
+          <div class="lp-trust-card">
+            <div class="lp-trust-stat cyan">Multi-Branch</div>
+            <div class="lp-trust-label">Campus-Level Controls</div>
+            <div class="lp-trust-sub">Granular role &amp; ledger boundaries</div>
+          </div>
+          <div class="lp-trust-card">
+            <div class="lp-trust-stat amber">Zero</div>
+            <div class="lp-trust-label">Manual Spreadsheets</div>
+            <div class="lp-trust-sub">Automated counseling &amp; invoicing</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         ROLE-BASED SOLUTIONS SECTION
+         ========================================================================== -->
+    <section id="solutions" class="lp-solutions-section">
+      <div class="lp-container">
+        <div class="lp-section-header">
+          <span class="lp-section-tag">Role-Based Intelligence</span>
+          <h2 class="lp-section-title">Built for Every Stakeholder in Your Academy</h2>
+          <p class="lp-section-desc">From front-desk campus tokens to executive revenue reconciliations, every team member works in a tailored, distraction-free cockpit.</p>
+        </div>
+
+        <div class="lp-roles-grid">
+          <!-- Role 1: Directors & Admins -->
+          <div class="lp-role-card">
+            <div class="lp-role-icon">🏛️</div>
+            <h3 class="lp-role-title">Academy Directors</h3>
+            <p class="lp-role-desc">Gain complete operational visibility across branches, counselor conversion benchmarks, and financial collections in real-time.</p>
+            <ul class="lp-role-list">
+              <li>Cross-branch executive analytics</li>
+              <li>Lead leakage prevention alerts</li>
+              <li>Capacity-based allocation rules</li>
+            </ul>
+          </div>
+
+          <!-- Role 2: Telecallers & BDEs -->
+          <div class="lp-role-card">
+            <div class="lp-role-icon">📞</div>
+            <h3 class="lp-role-title">Telecalling Teams</h3>
+            <p class="lp-role-desc">Focus on student engagement without manual dialing friction, lost notes, or duplicate lead arguments.</p>
+            <ul class="lp-role-list">
+              <li>Click-to-dial call logging</li>
+              <li>Automated follow-up reminders</li>
+              <li>Audio waveform recording review</li>
+            </ul>
+          </div>
+
+          <!-- Role 3: Educational Counselors -->
+          <div class="lp-role-card">
+            <div class="lp-role-icon">🎓</div>
+            <h3 class="lp-role-title">Student Counselors</h3>
+            <p class="lp-role-desc">Manage 1-on-1 consultations, schedule course demos, and track student enrollment progress seamlessly.</p>
+            <ul class="lp-role-list">
+              <li>Detailed candidate profiles</li>
+              <li>Integrated walk-in queue tokens</li>
+              <li>Direct WhatsApp messaging</li>
+            </ul>
+          </div>
+
+          <!-- Role 4: Accountants & Cashiers -->
+          <div class="lp-role-card">
+            <div class="lp-role-icon">💰</div>
+            <h3 class="lp-role-title">Accounts &amp; Finance</h3>
+            <p class="lp-role-desc">Record partial payments, generate compliant GST Tax Invoices, and track outstanding installment dues accurately.</p>
+            <ul class="lp-role-list">
+              <li>GST invoice generation (PDF)</li>
+              <li>Installment due dates tracking</li>
+              <li>Payment verification queues</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         FEATURE BENTO GRID
+         ========================================================================== -->
+    <section id="features" class="lp-bento-section">
+      <div class="lp-container">
+        <div class="lp-section-header">
+          <span class="lp-section-tag">Enterprise Capabilities</span>
+          <h2 class="lp-section-title">Engineered to Solve Real Academy Bottlenecks</h2>
+          <p class="lp-section-desc">Six high-impact operational engines working in harmony to accelerate inquiry-to-enrollment velocity.</p>
+        </div>
+
+        <div class="lp-bento-grid">
+          
+          <!-- Card 1 (Wide): Lead Capture & Deduplication -->
+          <div class="lp-bento-card highlight">
+            <div class="lp-bento-header">
+              <h3 class="lp-bento-title">1. Real-Time Ingestion &amp; Anti-Dupe Engine</h3>
+              <p class="lp-bento-desc">Consolidate Meta Lead Ads, Google Sheets, landing page forms, and WhatsApp chats instantly. When an existing lead submits another form, their activity history is enriched rather than generating conflicting duplicate allocations.</p>
+            </div>
+            <div class="lp-bento-snippet">
+              <div class="lp-card-snippet">
+                <span style="color: var(--lp-emerald); font-weight: 700;">✓ Duplicate Resolved:</span> +91 98401 XXXXX matched to existing lead. History updated with <em>"Inquired for Python Fast-Track"</em>.
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: WhatsApp Automation -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-header">
+              <h3 class="lp-bento-title">2. WhatsApp Cloud Automation</h3>
+              <p class="lp-bento-desc">Deploy official Meta Cloud API chatbots to answer course questions, dispatch syllabus PDFs, and collect student preferences 24/7.</p>
+            </div>
+            <div class="lp-bento-snippet">
+              <div class="lp-card-snippet">
+                ⚡ Avg. Response Time: <strong>4.2 seconds</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Campus Walk-in Desk -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-header">
+              <h3 class="lp-bento-title">3. Touchless Campus Walk-in Desk</h3>
+              <p class="lp-bento-desc">Display campus QR codes at your reception. Visiting students scan, fill essential details on mobile, and receive an instant queue token.</p>
+            </div>
+            <div class="lp-bento-snippet">
+              <div class="lp-card-snippet">
+                🎫 Token <strong>#TK-108</strong> assigned to Counselor Deepa
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4 (Wide): Student Enrollment & Fee Ledger -->
+          <div class="lp-bento-card highlight">
+            <div class="lp-bento-header">
+              <h3 class="lp-bento-title">4. Student Enrollment &amp; GST Tax Invoices</h3>
+              <p class="lp-bento-desc">Transition admitted leads directly into student enrollments. Calculate CGST, SGST, or IGST dynamically, record partial cash/UPI/bank payments, and dispatch branded Tax Invoices with PDF attachments via email.</p>
+            </div>
+            <div class="lp-bento-snippet">
+              <div class="lp-card-snippet">
+                📄 Tax Invoice <strong>#TP12519</strong> generated with full payment breakdown &amp; remaining balance.
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 5: Smart Allocation -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-header">
+              <h3 class="lp-bento-title">5. Capacity Round-Robin Allocation</h3>
+              <p class="lp-bento-desc">Distribute leads fairly to active telecallers and counselors based on branch assignments, working shifts, and current workload capacity.</p>
+            </div>
+            <div class="lp-bento-snippet">
+              <div class="lp-card-snippet">
+                ⚖️ 100% Equalized workload across 12 branch counselors
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 6: Telephony & Call History -->
+          <div class="lp-bento-card">
+            <div class="lp-bento-header">
+              <h3 class="lp-bento-title">6. Telephony &amp; Audio Audit Logs</h3>
+              <p class="lp-bento-desc">Synchronize incoming and outgoing counselor calls, view audio waveform playback, track call durations, and review follow-up outcomes.</p>
+            </div>
+            <div class="lp-bento-snippet">
+              <div class="lp-card-snippet">
+                🎙️ Audio waveform player with duration tracking
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         INTERACTIVE FEATURE SHOWCASE TABS
+         ========================================================================== -->
+    <section id="showcase" class="lp-showcase-section">
+      <div class="lp-container">
+        
+        <div class="lp-section-header">
+          <span class="lp-section-tag">Interactive Preview</span>
+          <h2 class="lp-section-title">Experience the Platform in Action</h2>
+          <p class="lp-section-desc">Test-drive the admissions chatbot, lead deduplication mechanism, and walk-in token generation live.</p>
+        </div>
+
+        <!-- Showcase Tabs Navigation -->
+        <div class="lp-tabs-nav" role="tablist" aria-label="Feature Showcase Tabs">
+          <button type="button" class="lp-tab-btn is-active" role="tab" aria-selected="true" data-tab-target="tab-whatsapp">
+            <span>💬 WhatsApp Admissions Bot</span>
+          </button>
+          <button type="button" class="lp-tab-btn" role="tab" aria-selected="false" data-tab-target="tab-antidupe">
+            <span>🛡️ Anti-Dupe Engine</span>
+          </button>
+          <button type="button" class="lp-tab-btn" role="tab" aria-selected="false" data-tab-target="tab-walkin">
+            <span>🎫 Walk-in Desk Token</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: WhatsApp Admissions Simulator -->
+        <div class="lp-tab-pane is-active" id="tab-whatsapp" role="tabpanel">
+          <div>
+            <span class="lp-pill-badge">Official Meta Cloud API Simulation</span>
+            <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--lp-text-title); margin: 0 0 16px 0;">Instant Touchpoints That Engage Prospective Students</h3>
+            <p style="color: var(--lp-text-body); font-size: 1rem; line-height: 1.6; margin-bottom: 24px;">
+              When a prospective student inquires on Facebook, Instagram, or your website, DigiPanda triggers an automated WhatsApp welcome message in seconds. Deliver brochures, answer syllabus queries, and schedule counselor calls automatically.
+            </p>
+            <div style="background: var(--lp-canvas-subtle); border: 1px solid var(--lp-border); border-radius: var(--lp-radius-md); padding: 18px;">
+              <div style="font-weight: 700; color: var(--lp-text-title); margin-bottom: 6px;">💡 Try the Interactive Buttons:</div>
+              <p style="font-size: 0.85rem; color: var(--lp-text-muted); margin: 0;">Click any quick-action in the phone simulator on the right to test real-time bot responses.</p>
+            </div>
+          </div>
+
+          <div class="lp-chat-phone-frame">
+            <div class="lp-chat-header">
+              <div class="lp-chat-avatar">TP</div>
+              <div>
+                <div style="font-weight: 700; font-size: 0.9rem;">DigiPanda Admissions Bot ✓</div>
+                <div style="font-size: 0.72rem; opacity: 0.9;">Official Business Account • Online</div>
+              </div>
+            </div>
+            <div class="lp-chat-body" id="lpSimChatBody">
+              <div class="lp-chat-bubble bot">
+                Hello! 👋 Welcome to DigiPanda Academy. How can we assist your technical career goals today?
+              </div>
+            </div>
+            <div class="lp-chat-actions">
+              <button type="button" class="lp-chat-quick-btn" onclick="triggerSimWhatsApp('fees')">
+                <span>💰 Check Course Fees &amp; Discounts</span>
+              </button>
+              <button type="button" class="lp-chat-quick-btn" onclick="triggerSimWhatsApp('syllabus')">
+                <span>📄 Download 2026 Curriculum Syllabus (PDF)</span>
+              </button>
+              <button type="button" class="lp-chat-quick-btn" onclick="triggerSimWhatsApp('counselor')">
+                <span>🎓 Book 1-on-1 Counselor Call</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Anti-Dupe Engine -->
+        <div class="lp-tab-pane" id="tab-antidupe" role="tabpanel">
+          <div>
+            <span class="lp-pill-badge" style="background: var(--lp-emerald-light); color: var(--lp-emerald); border-color: rgba(5, 150, 105, 0.3);">Intelligent Matching</span>
+            <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--lp-text-title); margin: 0 0 16px 0;">Never Lose Existing Student Context to Duplicate Forms</h3>
+            <p style="color: var(--lp-text-body); font-size: 1rem; line-height: 1.6; margin-bottom: 24px;">
+              Students often submit inquiries across multiple channels (Facebook Ad today, Google search tomorrow). DigiPanda matches incoming submissions by normalized phone number, enriching the existing profile rather than distributing duplicates to different counselors.
+            </p>
+            <ul class="lp-role-list" style="font-size: 0.92rem;">
+              <li>Automatic E.164 phone normalization (+91 / 10 digits)</li>
+              <li>Re-enquiry activity timeline logging</li>
+              <li>Preserves original lead ownership and notes</li>
+            </ul>
+          </div>
+          <div style="background: var(--lp-canvas-subtle); border: 1px solid var(--lp-border); border-radius: var(--lp-radius-lg); padding: 24px;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--lp-emerald); text-transform: uppercase; margin-bottom: 12px;">Deduplication Simulation Log</div>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.7; color: var(--lp-text-title);">
+              <div>[10:14:02] Inbound Lead: "Pooja S." (Phone: 9840123456)</div>
+              <div>[10:14:03] Checking normalized index: +919840123456...</div>
+              <div style="color: var(--lp-primary); font-weight: 700;">[10:14:03] Match Found! Lead #1042 assigned to Counselor Arun.</div>
+              <div>[10:14:04] Appending Re-Enquiry event: "Course: Python Web"</div>
+              <div style="color: var(--lp-emerald); font-weight: 700;">[10:14:04] Duplicate avoided. Counselor Arun notified via task list.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Walk-in Token Desk -->
+        <div class="lp-tab-pane" id="tab-walkin" role="tabpanel">
+          <div>
+            <span class="lp-pill-badge" style="background: var(--lp-cyan-light); color: var(--lp-cyan); border-color: rgba(2, 132, 199, 0.3);">Campus Reception</span>
+            <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--lp-text-title); margin: 0 0 16px 0;">Touchless Campus Registration in 30 Seconds</h3>
+            <p style="color: var(--lp-text-body); font-size: 1rem; line-height: 1.6; margin-bottom: 24px;">
+              Visiting students scan a branded QR standee at your institute front desk. They enter their name, phone number, and intended program on their own smartphone, instantly receiving a digital queue token.
+            </p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <a href="{% url 'public_student_enquiry_form' %}" class="lp-btn lp-btn-md lp-btn-emerald">
+                <span>Open Live Walk-in Form</span> &rarr;
+              </a>
+            </div>
+          </div>
+          <div style="background: var(--lp-canvas-subtle); border: 1px solid var(--lp-border); border-radius: var(--lp-radius-lg); padding: 28px; text-align: center;">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--lp-text-muted); text-transform: uppercase; margin-bottom: 8px;">Generated Digital Token</div>
+            <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 3rem; font-weight: 800; color: var(--lp-primary); line-height: 1; margin-bottom: 12px;">#TK-108</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--lp-text-title); margin-bottom: 4px;">Candidate: Sneha Murali</div>
+            <div style="font-size: 0.82rem; color: var(--lp-text-muted); margin-bottom: 16px;">Program: UI/UX Experience Design</div>
+            <span class="lp-badge-status walkin" style="font-size: 0.8rem; padding: 4px 12px;">Counselor Assigned: Deepa (Desk 4)</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         ADMISSIONS GROWTH & RECOVERY CALCULATOR
+         ========================================================================== -->
+    <section id="calculator" class="lp-calculator-section">
+      <div class="lp-container">
+        
+        <div class="lp-section-header">
+          <span class="lp-section-tag">ROI &amp; Revenue Recovery</span>
+          <h2 class="lp-section-title">Calculate Your Recoverable Admissions Revenue</h2>
+          <p class="lp-section-desc">Estimate the additional student admissions and revenue your academy can unlock by eliminating missed inquiries and speeding up response velocity.</p>
+        </div>
+
+        <div class="lp-calc-box">
+          
+          <div class="lp-calc-sliders">
+            
+            <!-- Slider 1: Monthly Leads -->
+            <div class="lp-calc-group">
+              <div class="lp-calc-header-row">
+                <label for="lpCalcLeads" class="lp-calc-label">Monthly Incoming Inquiries</label>
+                <span class="lp-calc-value-display" id="lpDispLeads">500</span>
+              </div>
+              <input type="range" id="lpCalcLeads" class="lp-calc-slider" min="100" max="5000" step="50" value="500" aria-label="Monthly Inquiries Slider">
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--lp-text-muted);">
+                <span>100 leads</span>
+                <span>5,000+ leads</span>
+              </div>
+            </div>
+
+            <!-- Slider 2: Estimated Missed Leads % -->
+            <div class="lp-calc-group">
+              <div class="lp-calc-header-row">
+                <label for="lpCalcMissed" class="lp-calc-label">Estimated Uncontacted / Leaked Leads (%)</label>
+                <span class="lp-calc-value-display" id="lpDispMissed">20%</span>
+              </div>
+              <input type="range" id="lpCalcMissed" class="lp-calc-slider" min="5" max="50" step="1" value="20" aria-label="Estimated Missed Leads Percentage Slider">
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--lp-text-muted);">
+                <span>5% (Low Leakage)</span>
+                <span>50% (High Leakage)</span>
+              </div>
+            </div>
+
+            <!-- Slider 3: Average Course Fee -->
+            <div class="lp-calc-group">
+              <div class="lp-calc-header-row">
+                <label for="lpCalcFee" class="lp-calc-label">Average Program Tuition Fee</label>
+                <span class="lp-calc-value-display" id="lpDispFee">₹35,000</span>
+              </div>
+              <input type="range" id="lpCalcFee" class="lp-calc-slider" min="10000" max="150000" step="2500" value="35000" aria-label="Average Tuition Fee Slider">
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--lp-text-muted);">
+                <span>₹10,000</span>
+                <span>₹1,50,000</span>
+              </div>
+            </div>
+
+            <div style="font-size: 0.78rem; color: var(--lp-text-muted); line-height: 1.5;">
+              * Assumes a conservative 15% conversion rate on recovered inquiries through instantaneous WhatsApp brochures and counselor follow-up workflows.
+            </div>
+
+          </div>
+
+          <!-- Calculated Output Card -->
+          <div class="lp-calc-result-card">
+            <div class="lp-calc-result-lbl">Estimated Recovered Tuition / Month</div>
+            <div class="lp-calc-result-val" id="lpCalcResult">₹5,25,000</div>
+            <div class="lp-calc-result-sub" id="lpCalcAdmissions">+15 Additional Student Admissions / Month</div>
+            <div style="margin-top: 24px;">
+              <a href="{% url 'login' %}" class="lp-btn lp-btn-md" style="background: #ffffff; color: var(--lp-primary); font-weight: 800; border-radius: var(--lp-radius-md);">
+                <span>Unlock This Revenue</span> &rarr;
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         FAQ ACCORDION SECTION
+         ========================================================================== -->
+    <section id="faq" class="lp-faq-section">
+      <div class="lp-container">
+        
+        <div class="lp-section-header">
+          <span class="lp-section-tag">Frequently Answered Questions</span>
+          <h2 class="lp-section-title">Answers for Institute Directors &amp; Admissions Leaders</h2>
+          <p class="lp-section-desc">Clear, operational answers on multi-branch setups, data safety, WhatsApp automation, and student invoicing.</p>
+        </div>
+
+        <div class="lp-faq-accordion">
+          
+          <div class="lp-faq-item is-open">
+            <button type="button" class="lp-faq-trigger" aria-expanded="true">
+              <span>Can DigiPanda CRM manage multiple campus branches independently?</span>
+              <span class="lp-faq-chevron">▼</span>
+            </button>
+            <div class="lp-faq-content">
+              Yes. DigiPanda CRM features dedicated multi-branch architecture. You can create separate branches (e.g. Chennai, Bangalore, Coimbatore), assign Branch Heads, and restrict counselors to their respective campus leads, while top Administrators retain centralized cross-branch reporting.
+            </div>
+          </div>
+
+          <div class="lp-faq-item">
+            <button type="button" class="lp-faq-trigger" aria-expanded="false">
+              <span>How does the WhatsApp Cloud API automation work?</span>
+              <span class="lp-faq-chevron">▼</span>
+            </button>
+            <div class="lp-faq-content">
+              The CRM integrates with the official Meta WhatsApp Cloud API. When a student submits a lead on Facebook Ads or your website, DigiPanda sends a template message with syllabus details and interactive buttons within 5 seconds. Inbound student replies appear directly in your counselor inbox.
+            </div>
+          </div>
+
+          <div class="lp-faq-item">
+            <button type="button" class="lp-faq-trigger" aria-expanded="false">
+              <span>How does duplicate lead detection prevent counselor disputes?</span>
+              <span class="lp-faq-chevron">▼</span>
+            </button>
+            <div class="lp-faq-content">
+              The anti-duplication engine checks normalized phone numbers across all incoming channels. If a student who was assigned to Counselor Arun submits another inquiry, the existing record is updated and Arun is notified, ensuring lead ownership remains clean and transparent.
+            </div>
+          </div>
+
+          <div class="lp-faq-item">
+            <button type="button" class="lp-faq-trigger" aria-expanded="false">
+              <span>Can the CRM track partial fee installments and generate Tax Invoices?</span>
+              <span class="lp-faq-chevron">▼</span>
+            </button>
+            <div class="lp-faq-content">
+              Yes. Once a student is enrolled, the accounts module tracks total tuition, approved payments, pending verifications, and upcoming installments. Branded Tax Invoices with GST breakdown and authorized signatory sections can be generated and emailed as PDFs.
+            </div>
+          </div>
+
+          <div class="lp-faq-item">
+            <button type="button" class="lp-faq-trigger" aria-expanded="false">
+              <span>Can we import our existing student and lead data from Google Sheets?</span>
+              <span class="lp-faq-chevron">▼</span>
+            </button>
+            <div class="lp-faq-content">
+              Yes. The system includes built-in Google Sheets sync and CSV batch import utilities, allowing you to migrate historical inquiries, branch records, and counselor allocations without data loss.
+            </div>
+          </div>
+
+          <div class="lp-faq-item">
+            <button type="button" class="lp-faq-trigger" aria-expanded="false">
+              <span>Is student data secure and role-restricted?</span>
+              <span class="lp-faq-chevron">▼</span>
+            </button>
+            <div class="lp-faq-content">
+              Access is governed by strict role-based authorization (Administrator, Branch Head, Counselor, Telecaller, Accountant, Receptionist). Counselors can only access their allocated leads, and sensitive financial reports are restricted exclusively to authorized accounting and executive roles.
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         FINAL CTA BANNER
+         ========================================================================== -->
+    <section class="lp-cta-banner">
+      <div class="lp-container">
+        <div class="lp-cta-inner">
+          <h2 class="lp-cta-title">Ready to Accelerate Your Academy's Admissions?</h2>
+          <p class="lp-cta-desc">
+            Equip your counselors, telecallers, and directors with the all-in-one admissions operating system built for measurable enrollment growth.
+          </p>
+          <div class="lp-cta-actions">
+            {% if is_authenticated %}
+              <a href="{% url 'login_redirect' %}" class="lp-btn lp-btn-lg lp-btn-primary" style="background: #ffffff; color: var(--lp-primary); border-color: #ffffff;">
+                <span>Access Live Workspace</span> &rarr;
+              </a>
+            {% else %}
+              <a href="{% url 'login' %}" class="lp-btn lp-btn-lg lp-btn-primary" style="background: #ffffff; color: var(--lp-primary); border-color: #ffffff;">
+                <span>Access Live Portal</span> &rarr;
+              </a>
+            {% endif %}
+            <a href="{% url 'public_student_enquiry_form' %}" class="lp-btn lp-btn-lg" style="background: rgba(255, 255, 255, 0.12); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.3);">
+              <span>Open Student Walk-in Desk</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       INSTITUTIONAL FOOTER
+       ========================================================================== -->
+  <footer class="lp-footer" role="contentinfo">
+    <div class="lp-container">
+      
+      <div class="lp-footer-grid">
+        
+        <div>
+          <span class="brand-wordmark-colored theme-light" style="font-size: 1.35rem;">
+            <span class="part-digi">Digi</span><span class="part-p">p</span><span class="part-anda">anda</span><span class="part-crm">CRM</span>
+          </span>
+          <p class="lp-footer-brand-desc">
+            Enterprise Admissions Management &amp; Sales Operations platform designed for academies, coaching institutes, and high-growth education businesses.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="lp-footer-col-title">Platform</h4>
+          <ul class="lp-footer-links">
+            <li><a href="#features">Lead Ingestion</a></li>
+            <li><a href="#showcase">WhatsApp Automation</a></li>
+            <li><a href="{% url 'public_student_enquiry_form' %}">Campus Walk-in Desk</a></li>
+            <li><a href="#solutions">Role Intelligence</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="lp-footer-col-title">Solutions</h4>
+          <ul class="lp-footer-links">
+            <li><a href="#solutions">Training Academies</a></li>
+            <li><a href="#solutions">Multi-Branch Institutes</a></li>
+            <li><a href="#solutions">Telecaller Teams</a></li>
+            <li><a href="#calculator">Admissions ROI</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="lp-footer-col-title">Access</h4>
+          <ul class="lp-footer-links">
+            <li><a href="{% url 'login' %}">Portal Login</a></li>
+            <li><a href="{% url 'public_student_enquiry_form' %}">Student Registration</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="lp-footer-bottom">
+        <div>&copy; {{ current_year|default:'2026' }} DigiPanda CRM / DigiPanda. All rights reserved.</div>
+        <div>Engineered for High-Growth Academies &amp; Multi-Branch Institutes</div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Landing Page Interactions Script -->
+  <script src="{% static 'js/landing-page.js' %}?v=20261027_radiant"></script>
+
+</body>
+</html>

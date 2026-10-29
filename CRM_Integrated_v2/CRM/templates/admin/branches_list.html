@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Branches - TECHPANDA CRM{% endblock %}
+{% block title %}Branches - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -65,10 +65,16 @@
               {% endif %}
             </td>
             <td style="text-align: right;">
-              <a href="{% url 'admin_branch_edit' br.pk %}" class="btn btn-secondary btn-sm">Edit</a>
-              <a href="{% url 'admin_branch_toggle_status' br.pk %}" class="btn btn-sm {% if br.status == 'Active' %}btn-secondary{% else %}btn-success{% endif %}" data-confirm="Are you sure you want to change branch status?">
-                {% if br.status == 'Active' %}Deactivate{% else %}Activate{% endif %}
-              </a>
+              <div style="display: inline-flex; gap: 6px; justify-content: flex-end;">
+                <a href="{% url 'branch_qr_standee' br.pk %}" target="_blank" class="btn btn-secondary btn-sm" title="Print Student Walk-in QR Standee" style="display: inline-flex; align-items: center; gap: 4px;"><span>📷 QR Standee</span></a>
+                <a href="{% url 'admin_branch_edit' br.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+                <a href="{% url 'admin_branch_toggle_status' br.pk %}" class="btn btn-sm {% if br.status == 'Active' %}btn-secondary{% else %}btn-success{% endif %}" data-confirm="Are you sure you want to change branch status?">
+                  {% if br.status == 'Active' %}Deactivate{% else %}Activate{% endif %}
+                </a>
+                <a href="{% url 'admin_branch_delete' br.pk %}" class="btn btn-sm btn-danger" style="background: #dc2626; border-color: #dc2626; color: #ffffff;" data-confirm="Are you sure you want to permanently delete branch '{{ br.name|escapejs }}'? This action cannot be undone.">
+                  Delete
+                </a>
+              </div>
             </td>
           </tr>
           {% empty %}

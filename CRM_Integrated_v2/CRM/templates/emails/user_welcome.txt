@@ -2,7 +2,7 @@ Welcome to {{ company_name }} CRM!
 
 Hello {{ user_name }},
 
-Your CRM account has been successfully created by your administrator. You can now set up your password and access the CRM using your assigned login ID.
+Your CRM account has been successfully created by your administrator. You can now set up your password and access the CRM using your email address.
 
 Your account details
 

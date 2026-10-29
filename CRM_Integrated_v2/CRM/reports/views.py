@@ -1,6 +1,6 @@
 import csv
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Avg, Sum
 from django.utils import timezone
@@ -20,7 +20,7 @@ from activities.models import Activity
 from branches.utils import get_admin_selected_branch
 from .services import (
     get_dashboard_report_data, sync_google_sheets_data,
-    get_telecaller_rnr_report_data, get_management_chart_data
+    get_telecaller_rnr_report_data, get_telecaller_rnr_lead_details, get_management_chart_data
 )
 
 # ==========================================
@@ -38,26 +38,13 @@ def admin_dashboard(request):
     channel_filter = request.GET.get('channel', '').strip()
     product_filter = request.GET.get('product', '').strip()
     status_filter = request.GET.get('status', '').strip()
-    from_date = request.GET.get('from_date', '').strip()
-    to_date = request.GET.get('to_date', '').strip()
-    period = request.GET.get('period', '').strip()
-
-    if period == 'today':
-        from_date = today.strftime('%Y-%m-%d')
-        to_date = today.strftime('%Y-%m-%d')
-    elif period == 'week':
-        start_of_week = today - timedelta(days=today.weekday())
-        from_date = start_of_week.strftime('%Y-%m-%d')
-        to_date = today.strftime('%Y-%m-%d')
-    elif period == 'month':
-        start_of_month = today.replace(day=1)
-        from_date = start_of_month.strftime('%Y-%m-%d')
-        to_date = today.strftime('%Y-%m-%d')
-    elif period == 'all':
-        from_date = ''
-        to_date = ''
-    elif from_date or to_date:
-        period = 'custom'
+    from leads.utils_date_filter import extract_normalized_date_range
+    _date_info = extract_normalized_date_range(request, default_period=None)
+    from_date = _date_info['start_date']
+    to_date = _date_info['end_date']
+    period = _date_info['period']
+    if not from_date and not to_date and not request.GET.get('period'):
+        period = ''
 
     # Base QuerySets
     leads_qs = Lead.objects.all()
@@ -92,16 +79,18 @@ def admin_dashboard(request):
     if from_date:
         try:
             fd = datetime.strptime(from_date, "%Y-%m-%d").date()
-            leads_qs = leads_qs.filter(created_at__date__gte=fd)
-            calls_qs = calls_qs.filter(call_started_at__date__gte=fd)
+            fd_start = timezone.make_aware(datetime.combine(fd, time.min))
+            leads_qs = leads_qs.filter(created_at__gte=fd_start)
+            calls_qs = calls_qs.filter(call_started_at__gte=fd_start)
             followups_qs = followups_qs.filter(follow_up_date__gte=fd)
         except ValueError:
             pass
     if to_date:
         try:
             td = datetime.strptime(to_date, "%Y-%m-%d").date()
-            leads_qs = leads_qs.filter(created_at__date__lte=td)
-            calls_qs = calls_qs.filter(call_started_at__date__lte=td)
+            td_end = timezone.make_aware(datetime.combine(td, time.max))
+            leads_qs = leads_qs.filter(created_at__lte=td_end)
+            calls_qs = calls_qs.filter(call_started_at__lte=td_end)
             followups_qs = followups_qs.filter(follow_up_date__lte=td)
         except ValueError:
             pass
@@ -176,6 +165,18 @@ def admin_dashboard(request):
         enrollments_qs = enrollments_qs.filter(branch_id=branch_filter)
     if product_filter:
         enrollments_qs = enrollments_qs.filter(product_id=product_filter)
+    if from_date:
+        try:
+            fd = datetime.strptime(from_date, "%Y-%m-%d").date()
+            enrollments_qs = enrollments_qs.filter(enrollment_date__gte=fd)
+        except ValueError:
+            pass
+    if to_date:
+        try:
+            td = datetime.strptime(to_date, "%Y-%m-%d").date()
+            enrollments_qs = enrollments_qs.filter(enrollment_date__lte=td)
+        except ValueError:
+            pass
 
     total_enrolled = enrollments_qs.count()
     total_revenue = enrollments_qs.aggregate(s=Sum('total_payable'))['s'] or Decimal('0.00')
@@ -222,6 +223,10 @@ def admin_dashboard(request):
         'status_filter': status_filter,
         'from_date': from_date,
         'to_date': to_date,
+        'start_date': from_date,
+        'end_date': to_date,
+        'date_from': from_date,
+        'date_to': to_date,
         'period': period,
     })
 
@@ -414,6 +419,108 @@ def management_charts_api(request):
     return JsonResponse(chart_data)
 
 
+@login_required
+def telecaller_rnr_lead_drilldown_view(request):
+    """
+    Returns distinct leads drilldown for Telecaller RNR report (Module 2).
+    Accepts:
+    - type: 'unique_rnr' or 'repeat_rnr'
+    - period, start_date, end_date
+    - branch, counselor, telecaller, search, lead_search
+    - export: 'csv'
+    """
+    user = request.user
+    accessible_branches = get_accessible_branch_ids(user)
+    if not accessible_branches:
+        if request.GET.get('export') == 'csv':
+            return HttpResponseForbidden("Permission denied.")
+        return JsonResponse({'error': 'Permission denied.'}, status=403)
+
+    detail_type = request.GET.get('type', 'unique_rnr').strip().lower()
+    period = request.GET.get('period', 'all').strip().lower()
+    start_date_str = request.GET.get('start_date', '').strip()
+    end_date_str = request.GET.get('end_date', '').strip()
+    branch_filter = request.GET.get('branch', '').strip()
+    counselor_filter = request.GET.get('counselor', '').strip()
+    telecaller_filter = request.GET.get('telecaller', '').strip()
+    search_query = request.GET.get('search', '').strip()
+    lead_search = request.GET.get('lead_search', '').strip()
+
+    today = timezone.localdate()
+    start_dt, end_dt = None, None
+
+    if period == 'today':
+        start_dt = timezone.make_aware(datetime.combine(today, time.min))
+        end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    elif period == 'week':
+        start_of_week = today - timedelta(days=today.weekday())
+        start_dt = timezone.make_aware(datetime.combine(start_of_week, time.min))
+        end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    elif period == 'month':
+        start_of_month = today.replace(day=1)
+        start_dt = timezone.make_aware(datetime.combine(start_of_month, time.min))
+        end_dt = timezone.make_aware(datetime.combine(today, time.max))
+    elif period == 'custom' and start_date_str and end_date_str:
+        try:
+            s_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            e_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            start_dt = timezone.make_aware(datetime.combine(s_date, time.min))
+            end_dt = timezone.make_aware(datetime.combine(e_date, time.max))
+        except ValueError:
+            pass
+
+    target_branch_ids = accessible_branches
+    if branch_filter and branch_filter.isdigit():
+        b_id = int(branch_filter)
+        if b_id in accessible_branches:
+            target_branch_ids = [b_id]
+
+    counselor_id = int(counselor_filter) if counselor_filter.isdigit() else None
+    telecaller_id = int(telecaller_filter) if telecaller_filter.isdigit() else None
+
+    drilldown_data = get_telecaller_rnr_lead_details(
+        detail_type=detail_type,
+        branch_ids=target_branch_ids,
+        counselor_id=counselor_id,
+        start_dt=start_dt,
+        end_dt=end_dt,
+        search_query=search_query,
+        telecaller_id=telecaller_id,
+        lead_search=lead_search,
+    )
+
+    if request.GET.get('export') == 'csv':
+        filename = f"{detail_type}_leads_{today.strftime('%Y%m%d')}.csv"
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'Lead ID', 'Lead Name', 'Phone', 'Email', 'Branch',
+            'Assigned Telecaller', 'Assigned Counselor', 'Status',
+            'RNR Attempts in Period', 'Total Attempts in Period',
+            'First RNR At', 'Latest RNR At', 'Latest Outcome'
+        ])
+        for lead in drilldown_data['leads']:
+            writer.writerow([
+                lead['lead_id'],
+                lead['name'],
+                lead['phone'],
+                lead['email'],
+                lead['branch_name'],
+                lead['assigned_telecaller_name'],
+                lead['assigned_counselor_name'],
+                lead['status'],
+                lead['rnr_count'],
+                lead['total_calls_count'],
+                lead['first_rnr_at'],
+                lead['latest_rnr_at'],
+                lead['latest_call_outcome'],
+            ])
+        return response
+
+    return JsonResponse(drilldown_data)
+ 
+ 
 @admin_required
 def trigger_lead_sla_escalation_api(request):
     """

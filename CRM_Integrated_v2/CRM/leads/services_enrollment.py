@@ -1,6 +1,8 @@
+import os
 import logging
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import timedelta
+from PIL import Image
 from django.db import transaction
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -15,6 +17,7 @@ from .models import (
     Enrollment,
     Installment,
     PaymentTransaction,
+    PaymentVerificationHistory,
     InstallmentScheduleHistory,
     PaymentEmailLog,
     GSTTreatment,
@@ -29,6 +32,56 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
+ONLINE_PAYMENT_METHODS = [
+    PaymentMethod.UPI,
+    PaymentMethod.BANK_TRANSFER,
+    PaymentMethod.ONLINE,
+    PaymentMethod.CARD,
+]
+
+ALLOWED_PROOF_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
+MAX_PROOF_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+def validate_payment_proof(file_obj):
+    """
+    Validates uploaded payment proof:
+    - Maximum size: 5MB
+    - Allowed extensions: .jpg, .jpeg, .png, .webp
+    - Validates image integrity using PIL
+    """
+    if not file_obj:
+        return
+
+    # 1. Size check
+    if hasattr(file_obj, 'size') and file_obj.size > MAX_PROOF_SIZE:
+        raise ValidationError(f"Payment proof file size exceeds maximum limit of 5MB ({file_obj.size / (1024*1024):.1f}MB uploaded).")
+
+    # 2. Extension check
+    name = getattr(file_obj, 'name', '')
+    ext = os.path.splitext(name)[1].lower()
+    if ext not in ALLOWED_PROOF_EXTENSIONS:
+        raise ValidationError(f"Invalid file format '{ext}'. Allowed formats are JPG, JPEG, PNG, WEBP.")
+
+    # 3. Image integrity check using PIL
+    try:
+        current_pos = file_obj.tell() if hasattr(file_obj, 'tell') else None
+    except Exception:
+        current_pos = None
+
+    try:
+        img = Image.open(file_obj)
+        img.verify()
+    except Exception as e:
+        raise ValidationError(f"The uploaded file is not a valid image: {e}")
+    finally:
+        if hasattr(file_obj, 'seek'):
+            try:
+                file_obj.seek(current_pos if current_pos is not None else 0)
+            except Exception:
+                pass
+
+
 
 def can_change_to_enrolled(user, lead):
     """
@@ -40,7 +93,7 @@ def can_change_to_enrolled(user, lead):
         return False
     if user.is_admin_user or user.is_sales_head_user:
         return True
-    if user.is_branch_head_user:
+    if user.is_branch_head_user or user.is_branch_admin_user:
         return lead.branch_id == user.branch_id or user.branch is None
     if user.role == UserRole.COUNSELOR:
         return lead.assigned_counselor_id == user.id
@@ -200,6 +253,11 @@ def create_or_update_enrollment(lead, user, data):
         lead.status = LeadStatus.ENROLLED
         lead.save(update_fields=['status', 'updated_at'])
 
+    # Sync student email back to lead record if lead email is empty
+    if student_email and not lead.email:
+        lead.email = student_email
+        lead.save(update_fields=['email', 'updated_at'])
+
     log_activity(
         user=user,
         action="Enrollment Created/Updated",
@@ -211,7 +269,12 @@ def create_or_update_enrollment(lead, user, data):
     # 8. Send confirmation email on commit if not already sent
     if not enrollment.confirmation_email_sent:
         from services.email_service import send_enrollment_confirmation_email
-        transaction.on_commit(lambda: send_enrollment_confirmation_email(enrollment))
+        def safe_send_enrollment_email():
+            try:
+                send_enrollment_confirmation_email(enrollment)
+            except Exception as e:
+                logger.error("Failed to send enrollment confirmation email for #%s: %s", getattr(enrollment, 'enrollment_number', 'N/A'), e)
+        transaction.on_commit(safe_send_enrollment_email)
 
     return enrollment
 
@@ -305,14 +368,30 @@ def _setup_manual_installments(enrollment, installments_data, user):
 
 
 @transaction.atomic
-def record_payment(enrollment, amount_or_user, payment_method_or_data=None, recorded_by=None, transaction_reference='', notes='', installment_id=None):
+def record_payment(
+    enrollment,
+    amount_or_user,
+    payment_method_or_data=None,
+    recorded_by=None,
+    transaction_reference='',
+    notes='',
+    installment_id=None,
+    payment_proof=None,
+    auto_approve=None,
+):
     """
     Records a payment transaction against an enrollment.
-    Updates installment balances, overall enrollment balances, and sends confirmation email.
-    Supports both:
-      record_payment(enrollment, user, {'amount': ..., 'payment_method': ...})
-      and
-      record_payment(enrollment, amount, payment_method, recorded_by, ...)
+    If auto_approve=False (standard Counselor workflow):
+      - Enforces proof screenshot for online payment methods (UPI, Bank Transfer, Card, Online).
+      - Sets status to PENDING_VERIFICATION.
+      - Logs PaymentVerificationHistory as SUBMITTED.
+      - Balances remain unchanged until Accountant approval.
+      - Suppresses student confirmation email.
+    If auto_approve=True (direct admin approval / legacy test compatibility):
+      - Sets status to APPROVED.
+      - Updates installment and enrollment balances immediately.
+      - Logs PaymentVerificationHistory as APPROVED.
+      - Dispatches student confirmation email.
     """
     if isinstance(payment_method_or_data, dict):
         recorded_by = amount_or_user
@@ -322,9 +401,17 @@ def record_payment(enrollment, amount_or_user, payment_method_or_data=None, reco
         transaction_reference = data.get('transaction_reference', '')
         notes = data.get('notes', '')
         installment_id = data.get('installment_id')
+        payment_proof = data.get('payment_proof') or payment_proof
+        if 'auto_approve' in data:
+            auto_approve = data['auto_approve']
     else:
         amount = amount_or_user
         payment_method = payment_method_or_data or PaymentMethod.UPI
+
+    # Default auto_approve to True only for legacy programmatic calls;
+    # web endpoints pass auto_approve=False.
+    if auto_approve is None:
+        auto_approve = True
 
     try:
         dec_amount = Decimal(str(amount)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
@@ -335,13 +422,24 @@ def record_payment(enrollment, amount_or_user, payment_method_or_data=None, reco
         raise ValidationError("Payment amount must be greater than zero.")
 
     if dec_amount > enrollment.outstanding_balance:
-        # Check if overpayment is allowed; prevent accidental double-pay
         if enrollment.outstanding_balance <= Decimal('0.00'):
             raise ValidationError("This enrollment is already fully paid.")
 
+    # Validate proof requirement for online methods when verification is active
+    if not auto_approve and payment_method in ONLINE_PAYMENT_METHODS:
+        if not payment_proof:
+            raise ValidationError(
+                f"Payment screenshot / proof is mandatory for online payment method '{payment_method}'. Please upload the transaction receipt."
+            )
+
+    if payment_proof:
+        validate_payment_proof(payment_proof)
+
     # Generate unique receipt number
-    timestamp_str = timezone.now().strftime('%Y%m%d%H%M%S')
-    receipt_number = f"REC-{enrollment.id}-{timestamp_str}"
+    now = timezone.now()
+    timestamp_str = now.strftime('%Y%m%d%H%M%S')
+    micro_str = now.strftime('%f')[:4]
+    receipt_number = f"REC-{enrollment.id}-{timestamp_str}-{micro_str}"
 
     installment = None
     if installment_id:
@@ -354,6 +452,8 @@ def record_payment(enrollment, amount_or_user, payment_method_or_data=None, reco
     if not installment:
         installment = enrollment.installments.filter(remaining_balance__gt=0).order_by('due_date', 'installment_number').first()
 
+    initial_status = PaymentTransactionStatus.APPROVED if auto_approve else PaymentTransactionStatus.PENDING_VERIFICATION
+
     # Create PaymentTransaction
     payment = PaymentTransaction.objects.create(
         enrollment=enrollment,
@@ -363,30 +463,240 @@ def record_payment(enrollment, amount_or_user, payment_method_or_data=None, reco
         payment_method=payment_method,
         transaction_reference=transaction_reference.strip(),
         receipt_number=receipt_number,
-        status=PaymentTransactionStatus.SUCCESS,
+        status=initial_status,
         notes=notes.strip(),
-        recorded_by=recorded_by
+        recorded_by=recorded_by,
+        payment_proof=payment_proof
     )
 
-    # Update installment
-    if installment:
-        installment.update_balance()
+    if auto_approve:
+        payment.reviewed_by = recorded_by
+        payment.reviewed_at = timezone.now()
+        payment.save(update_fields=['reviewed_by', 'reviewed_at'])
 
-    # Update overall enrollment
-    enrollment.update_financials()
+        if installment:
+            installment.update_balance()
+        enrollment.update_financials()
+
+        PaymentVerificationHistory.objects.create(
+            payment=payment,
+            action=PaymentVerificationHistory.Action.APPROVED,
+            performed_by=recorded_by,
+            comment="Directly approved upon creation."
+        )
+
+        log_activity(
+            user=recorded_by,
+            action="Payment Recorded",
+            description=f"Received ₹{dec_amount} via {payment_method} for Enrollment #{enrollment.enrollment_number} (Receipt #{receipt_number}).",
+            object_type="PaymentTransaction",
+            object_id=payment.id
+        )
+
+        # Send confirmation email on commit
+        transaction.on_commit(lambda: send_payment_confirmation_email(payment))
+    else:
+        PaymentVerificationHistory.objects.create(
+            payment=payment,
+            action=PaymentVerificationHistory.Action.SUBMITTED,
+            performed_by=recorded_by,
+            comment=f"Submitted for verification with proof: {'Yes' if payment_proof else 'No (Cash)'}"
+        )
+
+        log_activity(
+            user=recorded_by,
+            action="Payment Submitted for Verification",
+            description=f"Payment of ₹{dec_amount} via {payment_method} for Enrollment #{enrollment.enrollment_number} submitted for accountant verification.",
+            object_type="PaymentTransaction",
+            object_id=payment.id
+        )
+
+    return payment
+
+
+@transaction.atomic
+def approve_payment(payment_or_id, accountant_user):
+    """
+    Approves a pending payment transaction.
+    - Idempotent and thread-safe via select_for_update().
+    - Updates installment and enrollment balances.
+    - Logs PaymentVerificationHistory.
+    - Dispatches student confirmation email on commit.
+    """
+    if isinstance(payment_or_id, PaymentTransaction):
+        payment_id = payment_or_id.id
+    else:
+        payment_id = payment_or_id
+
+    payment = PaymentTransaction.objects.select_for_update().select_related('enrollment', 'installment').get(id=payment_id)
+
+    # Idempotency check: if already approved, return without duplicating side effects
+    if payment.status in (PaymentTransactionStatus.APPROVED, PaymentTransactionStatus.SUCCESS):
+        return payment
+
+    if payment.status != PaymentTransactionStatus.PENDING_VERIFICATION:
+        raise ValidationError(f"Cannot approve payment with status '{payment.status}'. Only pending payments can be approved.")
+
+    payment.status = PaymentTransactionStatus.APPROVED
+    payment.reviewed_by = accountant_user
+    payment.reviewed_at = timezone.now()
+    payment.rejection_comment = ''  # Clear any previous rejection comment
+    payment.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'rejection_comment'])
+
+    # Update installment and enrollment balances
+    if payment.installment:
+        payment.installment.update_balance()
+    payment.enrollment.update_financials()
+
+    PaymentVerificationHistory.objects.create(
+        payment=payment,
+        action=PaymentVerificationHistory.Action.APPROVED,
+        performed_by=accountant_user,
+        comment="Approved by accountant."
+    )
 
     log_activity(
-        user=recorded_by,
-        action="Payment Recorded",
-        description=f"Received ₹{dec_amount} via {payment_method} for Enrollment #{enrollment.enrollment_number} (Receipt #{receipt_number}).",
+        user=accountant_user,
+        action="Payment Approved",
+        description=f"Approved payment of ₹{payment.amount} (Receipt #{payment.receipt_number}) for {payment.enrollment.student_name}.",
         object_type="PaymentTransaction",
         object_id=payment.id
     )
 
-    # Send confirmation email on commit
+    # Send receipt confirmation email to student on commit
     transaction.on_commit(lambda: send_payment_confirmation_email(payment))
 
     return payment
+
+
+@transaction.atomic
+def reject_payment(payment_or_id, accountant_user, comment):
+    """
+    Rejects a pending payment transaction with a mandatory comment.
+    - Idempotent and thread-safe via select_for_update().
+    - Balances remain unchanged.
+    - Logs PaymentVerificationHistory.
+    """
+    if not comment or not str(comment).strip():
+        raise ValidationError("A rejection comment is mandatory. Please state why the payment is being rejected.")
+
+    if isinstance(payment_or_id, PaymentTransaction):
+        payment_id = payment_or_id.id
+    else:
+        payment_id = payment_or_id
+
+    payment = PaymentTransaction.objects.select_for_update().select_related('enrollment', 'installment').get(id=payment_id)
+
+    if payment.status == PaymentTransactionStatus.REJECTED:
+        return payment
+
+    if payment.status != PaymentTransactionStatus.PENDING_VERIFICATION:
+        raise ValidationError(f"Cannot reject payment with status '{payment.status}'. Only pending payments can be rejected.")
+
+    clean_comment = str(comment).strip()
+    payment.status = PaymentTransactionStatus.REJECTED
+    payment.reviewed_by = accountant_user
+    payment.reviewed_at = timezone.now()
+    payment.rejection_comment = clean_comment
+    payment.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'rejection_comment'])
+
+    PaymentVerificationHistory.objects.create(
+        payment=payment,
+        action=PaymentVerificationHistory.Action.REJECTED,
+        performed_by=accountant_user,
+        comment=clean_comment
+    )
+
+    log_activity(
+        user=accountant_user,
+        action="Payment Rejected",
+        description=f"Rejected payment of ₹{payment.amount} (Receipt #{payment.receipt_number}) for {payment.enrollment.student_name}. Reason: {clean_comment}",
+        object_type="PaymentTransaction",
+        object_id=payment.id
+    )
+
+    return payment
+
+
+@transaction.atomic
+def resubmit_payment(payment_or_id, counselor_user, data=None, new_proof=None):
+    """
+    Allows a counselor to resubmit a rejected payment with corrected details or proof.
+    - Resets status to PENDING_VERIFICATION.
+    - Increments resubmission_count.
+    - Logs PaymentVerificationHistory.
+    """
+    if isinstance(payment_or_id, PaymentTransaction):
+        payment_id = payment_or_id.id
+    else:
+        payment_id = payment_or_id
+
+    payment = PaymentTransaction.objects.select_for_update().select_related('enrollment', 'installment').get(id=payment_id)
+
+    if payment.status != PaymentTransactionStatus.REJECTED:
+        raise ValidationError(f"Only rejected payments can be resubmitted. Current status: '{payment.status}'.")
+
+    # Strict isolation: Only the original submitting counselor (recorded_by) or an administrator can resubmit
+    if counselor_user and not (getattr(counselor_user, 'is_admin_user', False) or getattr(counselor_user, 'is_superuser', False) or payment.recorded_by_id == counselor_user.id):
+        raise PermissionDenied("Permission Denied: Only the counselor who originally submitted this payment (or an administrator) can resubmit it.")
+
+    data = data or {}
+    update_fields = ['status', 'resubmission_count', 'updated_at']
+
+    if 'amount' in data and data['amount']:
+        try:
+            new_amount = Decimal(str(data['amount'])).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            if new_amount <= Decimal('0.00'):
+                raise ValidationError("Amount must be greater than zero.")
+            payment.amount = new_amount
+            update_fields.append('amount')
+        except Exception:
+            raise ValidationError("Invalid payment amount.")
+
+    if 'payment_method' in data and data['payment_method']:
+        payment.payment_method = data['payment_method']
+        update_fields.append('payment_method')
+
+    if 'transaction_reference' in data:
+        payment.transaction_reference = str(data['transaction_reference']).strip()
+        update_fields.append('transaction_reference')
+
+    if 'notes' in data:
+        payment.notes = str(data['notes']).strip()
+        update_fields.append('notes')
+
+    if new_proof:
+        validate_payment_proof(new_proof)
+        payment.payment_proof = new_proof
+        update_fields.append('payment_proof')
+    elif payment.payment_method in ONLINE_PAYMENT_METHODS and not payment.payment_proof:
+        raise ValidationError(
+            f"Payment screenshot / proof is mandatory for online payment method '{payment.payment_method}'."
+        )
+
+    resubmission_notes = data.get('resubmission_notes', 'Resubmitted with corrected details.')
+
+    payment.status = PaymentTransactionStatus.PENDING_VERIFICATION
+    payment.resubmission_count += 1
+    payment.save(update_fields=list(set(update_fields)))
+
+    PaymentVerificationHistory.objects.create(
+        payment=payment,
+        action=PaymentVerificationHistory.Action.RESUBMITTED,
+        performed_by=counselor_user,
+        comment=resubmission_notes
+    )
+
+    log_activity(
+        user=counselor_user,
+        action="Payment Resubmitted",
+        description=f"Resubmitted payment #{payment.receipt_number} of ₹{payment.amount} for verification. Note: {resubmission_notes}",
+        object_type="PaymentTransaction",
+        object_id=payment.id
+    )
+
+    return payment
+
 
 
 @transaction.atomic

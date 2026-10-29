@@ -7,9 +7,12 @@ class UserRole(models.TextChoices):
     ADMIN = 'ADMIN', 'Admin'
     SALES_HEAD = 'SALES_HEAD', 'Sales Head'
     BRANCH_HEAD = 'BRANCH_HEAD', 'Branch Head'
+    BRANCH_ADMIN = 'BRANCH_ADMIN', 'Branch Admin'
     COUNSELOR = 'COUNSELOR', 'Counselor'
     TELECALLER = 'TELECALLER', 'Telecaller'
     RECEPTIONIST = 'RECEPTIONIST', 'Receptionist'
+    ACCOUNTANT = 'ACCOUNTANT', 'Accountant'
+    FINANCE_HEAD = 'FINANCE_HEAD', 'Finance Head'
 
 class CustomUserManager(UserManager):
     """
@@ -97,6 +100,10 @@ class User(AbstractUser):
         return self.role == UserRole.BRANCH_HEAD
 
     @property
+    def is_branch_admin_user(self):
+        return self.role == UserRole.BRANCH_ADMIN
+
+    @property
     def is_counselor_user(self):
         return self.role == UserRole.COUNSELOR
 
@@ -112,6 +119,14 @@ class User(AbstractUser):
     @property
     def is_receptionist_user(self):
         return self.role == UserRole.RECEPTIONIST
+
+    @property
+    def is_accountant_user(self):
+        return self.role == UserRole.ACCOUNTANT
+
+    @property
+    def is_finance_head_user(self):
+        return self.role == UserRole.FINANCE_HEAD
 
     @classmethod
     def get_telecallers_queryset(cls):
@@ -139,7 +154,7 @@ class User(AbstractUser):
 
     def clean(self):
         super().clean()
-        if self.role == UserRole.RECEPTIONIST:
+        if self.role in (UserRole.RECEPTIONIST, UserRole.BRANCH_ADMIN):
             if not self.branch_id:
                 raise ValidationError({'branch': "A Receptionist must be assigned to a branch."})
         if self.role == UserRole.TELECALLER:

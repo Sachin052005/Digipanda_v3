@@ -21,6 +21,7 @@ Rules (carried over from TeleCRM_Integrated, mapped onto CRM models):
 import logging
 import mimetypes
 import os
+import re
 from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.db import IntegrityError, transaction
@@ -71,28 +72,60 @@ def display_name(user):
 
 
 def phone10(raw):
-    """CRM phone format: 10 digits (country code / leading 0 stripped). '' if not a usable number."""
-    digits = normalize_phone(raw)
-    if not digits or not digits.isdigit() or len(digits) < 10:
+    """CRM phone format: 10 digits for Indian numbers, or E.164 with '+' for international."""
+    norm = normalize_phone(raw)
+    if not norm or str(norm).startswith('NoPhone-'):
+        return ''
+    if norm.startswith('+'):
+        return norm
+    digits = re.sub(r'\D', '', norm)
+    if len(digits) < 10:
         return ''
     return digits[-10:] if len(digits) > 10 and digits.startswith('91') else digits
 
 
-def find_lead_by_phone(number):
+def find_lead_by_phone(number, user=None):
     """Same matching as the Drive recordings: phone or alternate phone, any stored format."""
     from drive.services import find_lead_by_phone as _find
-    number = phone10(number)
-    if not number:
+    clean_num = phone10(number)
+    if not clean_num:
         return None
-    lead = _find(number)
+    lead = _find(clean_num, user=user)
     if lead is not None:
         return lead
-    # Numbers saved with spaces/dashes ("+91 98400 12345"): compare normalized digits.
-    tail = number[-4:]
-    for cand in Lead.objects.filter(Q(phone__endswith=tail) | Q(alternate_phone__endswith=tail)).order_by('pk'):
-        if phone10(cand.phone) == number or phone10(cand.alternate_phone) == number:
-            return cand
-    return None
+
+    # 1. High-speed indexed lookup using normalized_phone column
+    if clean_num.startswith('+'):
+        qs = Lead.objects.filter(
+            Q(normalized_phone=clean_num) |
+            Q(phone=clean_num) |
+            Q(alternate_phone=clean_num)
+        ).order_by('-updated_at', '-pk')
+    else:
+        target_10 = clean_num[-10:] if len(clean_num) >= 10 else clean_num
+        qs = Lead.objects.filter(
+            Q(normalized_phone=target_10) |
+            Q(phone=clean_num) |
+            Q(alternate_phone__endswith=target_10)
+        ).order_by('-updated_at', '-pk')
+
+    matched = list(qs[:10])
+    # Fallback to suffix iteration only if no indexed matches found
+    if not matched and not clean_num.startswith('+'):
+        tail = clean_num[-4:]
+        for cand in Lead.objects.filter(Q(phone__endswith=tail) | Q(alternate_phone__endswith=tail)).order_by('-updated_at', '-pk'):
+            if phone10(cand.phone) == clean_num or phone10(cand.alternate_phone) == clean_num:
+                matched.append(cand)
+    if not matched:
+        return None
+    if user:
+        for c in matched:
+            if (getattr(c, 'assigned_telecaller_id', None) == user.pk or
+                getattr(c, 'assigned_counselor_id', None) == user.pk or
+                getattr(c, 'assigned_sales_head_id', None) == user.pk or
+                getattr(c, 'assigned_branch_head_id', None) == user.pk):
+                return c
+    return matched[0]
 
 
 def add_lead_note(lead, text, user=None):
@@ -120,28 +153,36 @@ def device_for_user(user, app_version="", google_sim=None):
 def can_use_app(user):
     if not user or not user.is_active:
         return False
-    if user.is_superuser or user.role in (UserRole.ADMIN, UserRole.SALES_HEAD):
+    allowed = conf.get("APP_LOGIN_ROLES")
+    if allowed in ("ALL", "__all__", "*"):
         return True
-    return user.role in conf.get("APP_LOGIN_ROLES")
+    return user.role in allowed
 
 
 # ------------------------------------------------------------------ assignment
 
 def assign_to_receiver(lead, receiver):
     """
-    Give an UNASSIGNED lead to the telecaller whose phone took the Google call.
-    Falls back to the branch percentage engine when the receiver isn't an active telecaller.
+    Give an UNASSIGNED lead to the telecaller or counselor whose phone took the Google call.
+    Falls back to the branch percentage engine when the receiver isn't an active telecaller/counselor.
     Returns True if the lead ended up assigned.
     """
-    if lead.assigned_telecaller_id:
+    if lead.assigned_telecaller_id or lead.assigned_counselor_id:
         return False
 
-    if receiver is not None and receiver.is_active and receiver.is_telecaller_user:
-        from leads.intake import direct_assign
-        if lead.branch_id is None:
-            lead.branch = receiver.branch
-        return direct_assign(lead, receiver,
-                             reason=f"{conf.get('GOOGLE_CALL_SOURCE')} received on this telecaller's phone")
+    if receiver is not None and receiver.is_active:
+        if receiver.is_telecaller_user:
+            from leads.intake import direct_assign
+            if lead.branch_id is None:
+                lead.branch = receiver.branch
+            return direct_assign(lead, receiver,
+                                 reason=f"{conf.get('GOOGLE_CALL_SOURCE')} received on this telecaller's phone")
+        elif receiver.is_counselor_user:
+            from leads.intake import direct_assign_counselor
+            if lead.branch_id is None:
+                lead.branch = receiver.branch
+            return direct_assign_counselor(lead, receiver,
+                                           reason=f"{conf.get('GOOGLE_CALL_SOURCE')} received on this counselor's phone")
 
     from leads.assignment import assign_new_lead
     branch = lead.branch or getattr(receiver, 'branch', None)
@@ -195,23 +236,27 @@ def _schedule_callback(lead, event):
     if lead.status in CLOSED_STATUSES:
         return None
     due = event.started_at + timedelta(minutes=conf.get("CALLBACK_WITHIN_MINUTES"))
+    local_due = timezone.localtime(due)
     pending = list(FollowUp.objects.filter(lead=lead, status=FollowUpStatus.PENDING))
     sooner = [fu for fu in pending if _followup_due(fu) <= due]
     if sooner:
         followup = min(sooner, key=_followup_due)
     else:
-        local_due = timezone.localtime(due)
-        owner = lead.assigned_telecaller or event.telecaller
-        followup = FollowUp.objects.create(
-            lead=lead,
-            assigned_user=owner,
-            manager=lead.assigned_sales_head,
-            telecaller=owner if (owner and owner.is_telecaller_user) else lead.assigned_telecaller,
-            follow_up_date=local_due.date(),
-            follow_up_time=local_due.time().replace(second=0, microsecond=0),
-            status=FollowUpStatus.PENDING,
-            notes=f"Missed Google call at {timezone.localtime(event.started_at):%d %b %Y, %I:%M %p} — call back",
-        )
+        same_date = next((fu for fu in pending if fu.follow_up_date == local_due.date()), None)
+        if same_date:
+            followup = same_date
+        else:
+            owner = lead.assigned_telecaller or event.telecaller
+            followup = FollowUp.objects.create(
+                lead=lead,
+                assigned_user=owner,
+                manager=lead.assigned_sales_head,
+                telecaller=owner if (owner and owner.is_telecaller_user) else lead.assigned_telecaller,
+                follow_up_date=local_due.date(),
+                follow_up_time=local_due.time().replace(second=0, microsecond=0),
+                status=FollowUpStatus.PENDING,
+                notes=f"Missed Google call at {timezone.localtime(event.started_at):%d %b %Y, %I:%M %p} — call back",
+            )
     event.followup = followup
     event.save(update_fields=['followup'])
     return followup
@@ -288,7 +333,7 @@ def ingest_calls(device, calls):
                 event.is_new_lead = created_lead
                 event.save()
 
-                if not lead.assigned_telecaller_id:
+                if not lead.assigned_telecaller_id and not lead.assigned_counselor_id:
                     assign_to_receiver(lead, receiver)
                     lead.refresh_from_db()
                 if event.needs_callback:
@@ -341,8 +386,10 @@ def leads_with_pending_callback(user):
         return qs
     if user.role == UserRole.SALES_HEAD:
         return qs.filter(branch_id__in=get_accessible_branch_ids(user))
-    if user.role in (UserRole.BRANCH_HEAD, UserRole.COUNSELOR):
-        return qs.filter(branch_id=user.branch_id)
+    if user.role == UserRole.COUNSELOR:
+        return qs.filter(Q(branch_id=user.branch_id) | Q(assigned_counselor=user) | Q(assigned_telecaller__counselor=user))
+    if user.role in (UserRole.BRANCH_HEAD, UserRole.BRANCH_ADMIN, UserRole.RECEPTIONIST, UserRole.ACCOUNTANT):
+        return qs.filter(branch_id=user.branch_id) if user.branch_id else qs
     if user.is_telecaller_user:
         return qs.filter(assigned_telecaller=user)
     return qs.none()
@@ -365,6 +412,43 @@ def match_call_for_recording(phone, recorded_at, tolerance_sec=None):
         started_at__lte=recorded_at + tolerance,
     )
     return min(candidates, key=lambda e: abs(e.started_at - recorded_at), default=None)
+
+
+def find_call_history_for_recording(user, phone, recorded_at, tolerance_sec=None):
+    """
+    Finds the CallHistory row matching an uploaded recording for a user and remote phone.
+    Searches calls conducted or telecalled by this user around recorded_at where the lead's
+    phone or alternate_phone matches the recording's phone.
+    """
+    if not user or not phone:
+        return None
+    phone = phone10(phone)
+    if not phone:
+        return None
+
+    tolerance = timedelta(seconds=tolerance_sec or conf.get("MATCH_WINDOW_SECONDS"))
+    qs = CallHistory.objects.filter(Q(caller=user) | Q(telecaller=user)).select_related('lead')
+    if recorded_at:
+        qs = qs.filter(
+            call_started_at__gte=recorded_at - tolerance,
+            call_started_at__lte=recorded_at + tolerance,
+        )
+    else:
+        qs = qs.order_by('-call_started_at')[:20]
+
+    candidates = []
+    for ch in qs:
+        if not ch.lead:
+            continue
+        if phone10(ch.lead.phone) == phone or phone10(ch.lead.alternate_phone) == phone:
+            candidates.append(ch)
+
+    if not candidates:
+        return None
+
+    if recorded_at:
+        return min(candidates, key=lambda c: abs(c.call_started_at - recorded_at))
+    return candidates[0]
 
 
 def match_call_history(lead, user, recorded_at, tolerance_sec=None):
@@ -430,11 +514,22 @@ def save_recording(device, upload, data):
     user = device.user
 
     # Recordings never create leads: personal calls stay out of the CRM.
-    lead = find_lead_by_phone(phone) if phone else None
-    event = match_call_for_recording(phone, started_at) if phone else None
+    # 1. First priority: match CallHistory directly for this telecaller + remote phone around started_at
+    call_history = find_call_history_for_recording(user, phone, started_at) if phone else None
+    lead = call_history.lead if call_history else None
+
+    # 2. Next priority: match Google Ads incoming CallEvent if applicable
+    event = match_call_for_recording(phone, started_at) if (phone and lead is None) else None
     if lead is None and event is not None:
         lead = event.lead
-    call_history = match_call_history(lead, user, started_at)
+
+    # 3. Next priority: search lead database by phone, prioritizing leads assigned to this telecaller
+    if lead is None and phone:
+        lead = find_lead_by_phone(phone, user=user)
+
+    # 4. If call_history was not found initially, but lead is now known, attempt lead-scoped match
+    if call_history is None and lead is not None:
+        call_history = match_call_history(lead, user, started_at)
 
     if lead is not None:
         match_status, reason = 'MATCHED', ''
@@ -482,9 +577,17 @@ def save_recording(device, upload, data):
     device.last_recording_at = timezone.now()
     device.save(update_fields=["last_recording_at"])
 
-    # The phone's real call length is better than the browser timer when the CRM call shows 0.
-    if call_history is not None and duration > 0 and not call_history.duration:
-        CallHistory.objects.filter(pk=call_history.pk).update(duration=duration, updated_at=timezone.now())
+    # Link recording stream URL and sync duration to CallHistory
+    if call_history is not None:
+        ch_updates = {}
+        if duration > 0 and not call_history.duration:
+            ch_updates['duration'] = duration
+        if not call_history.recording_url:
+            from django.urls import reverse
+            ch_updates['recording_url'] = reverse('drive_stream_recording', args=[rec.pk])
+        if ch_updates:
+            ch_updates['updated_at'] = timezone.now()
+            CallHistory.objects.filter(pk=call_history.pk).update(**ch_updates)
 
     if lead is not None:
         author = display_name(user)

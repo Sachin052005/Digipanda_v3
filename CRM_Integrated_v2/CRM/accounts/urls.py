@@ -3,6 +3,8 @@ from django.contrib.auth import views as auth_views
 from . import views
 from . import hierarchy_views
 from . import receptionist_views
+from . import accountant_views
+from . import branch_admin_views
 
 urlpatterns = [
     path('login/', views.general_login, name='login'),
@@ -25,6 +27,14 @@ urlpatterns = [
         template_name='registration/password_reset_complete.html'
     ), name='password_reset_complete'),
     
+    # User Profile & Self Password Change (All Roles)
+    path('profile/', views.user_profile, name='user_profile'),
+    path('profile/change-password/', views.user_change_password, name='change_password'),
+
+    # Admin Staff Password Operations (Reset Link & Set Password)
+    path('admin/users/<int:pk>/send-reset-link/', views.admin_send_password_reset_link, name='admin_send_password_reset_link'),
+    path('admin/users/<int:pk>/set-password/', views.admin_set_user_password, name='admin_set_user_password'),
+
     # Account Setup & Onboarding (Single-Use Token Link from Welcome Email)
     path('accounts/setup/<uidb64>/<token>/', views.account_setup_view, name='account_setup'),
     path('admin/users/create/', views.create_user_view, name='admin_user_create'),
@@ -48,11 +58,26 @@ urlpatterns = [
 
     path('receptionist/login/', views.receptionist_login, name='receptionist_login'),
 
+    # Universal User Profile Resolver (All Roles)
+    path('users/<int:pk>/profile/', views.universal_user_profile_redirect, name='universal_user_profile'),
+
     # Admin Receptionist Oversight & Management
     path('admin/receptionists/', receptionist_views.admin_receptionists_list, name='admin_receptionists_list'),
     path('admin/receptionists/create/', receptionist_views.admin_receptionist_create, name='admin_receptionist_create'),
+    path('admin/receptionists/<int:pk>/', receptionist_views.admin_receptionist_detail, name='admin_receptionist_detail'),
     path('admin/receptionists/<int:pk>/password/', receptionist_views.admin_receptionist_change_password, name='admin_receptionist_change_password'),
     path('admin/receptionists/<int:pk>/toggle-status/', receptionist_views.admin_receptionist_toggle_status, name='admin_receptionist_toggle_status'),
+
+    # Admin Accountant Management
+    path('admin/accountants/', accountant_views.admin_accountants_list, name='admin_accountants_list'),
+    path('admin/accountants/<int:pk>/', accountant_views.admin_accountant_detail, name='admin_accountant_detail'),
+    path('admin/accountants/<int:pk>/toggle-status/', accountant_views.admin_accountant_toggle_status, name='admin_accountant_toggle_status'),
+    # Admin Branch Admin Oversight & Management
+    path('admin/branch-admins/', branch_admin_views.admin_branch_admins_list, name='admin_branch_admins_list'),
+    path('admin/branch-admins/create/', branch_admin_views.admin_branch_admin_create, name='admin_branch_admin_create'),
+    path('admin/branch-admins/<int:pk>/', branch_admin_views.admin_branch_admin_detail, name='admin_branch_admin_detail'),
+    path('admin/branch-admins/<int:pk>/edit/', branch_admin_views.admin_branch_admin_edit, name='admin_branch_admin_edit'),
+
 
     # Progressive Hierarchy Routes (Levels 1 - 5)
     path('sales-heads/', hierarchy_views.hierarchy_sales_heads_list, name='hierarchy_sales_heads_list'),

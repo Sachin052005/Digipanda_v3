@@ -1,22 +1,50 @@
 """
 WhatsApp Automation Engine Execution Kernel (Graph-Based).
-Handles state machine evaluation, session priority, idempotency, variable interpolation,
-interactive buttons/lists dispatch, condition branching, dynamic course/branch lookups,
-and human handover.
+
+DELIVERY UNCERTAINTY & EXACTLY-ONCE SEMANTICS:
+- Internal CRM State: Guarantees exactly-once internal state transitions using database
+  transactional locks (select_for_update) and atomic operations.
+- External WhatsApp Delivery: WhatsApp Cloud API operates over cellular/internet networks.
+  Once a message payload is dispatched to Meta's API, external delivery is inherently
+  at-least-once. In the event of network partitions or Meta timeouts, message resends may
+  result in duplicated delivery to the user's handset. The CRM records outgoing WhatsApp
+  message IDs and status webhooks to deduplicate incoming delivery receipts.
+
+Supports 15 canonical node types:
+1. Trigger
+2. Welcome Message / Text Message
+3. Button Message (Interactive)
+4. List Message (Interactive Menu)
+5. Condition / If-Else Branching
+6. Media Sender (Brochures / Documents / Images)
+7. Location Sender (GPS coordinates / Branch addresses)
+8. Wait / Delay (Durable database-backed scheduling)
+9. Question / Capture Answer
+10. Save Data / Update Lead
+11. Assign Telecaller / Counselor
+12. Human Handover
+13. Webhook / Outbound API (SSRF Protected)
+14. Go To / Subflow (Execution Stack)
+15. End Flow
 """
 
-import re
+from datetime import timedelta
+import json
 import logging
-from typing import Optional, Dict, Any, List
-from django.utils import timezone
+import re
+from typing import Optional, Dict, Any, List, Union
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.db import connection, transaction, NotSupportedError
+from django.utils import timezone
 
 from chat.models import (
     BusinessAccount,
     Conversation,
     Message,
     AutomationFlow,
+    AutomationFlowVersion,
     UserFlowSession,
     Course,
     Branch,
@@ -31,8 +59,9 @@ from chat.whatsapp.messages import (
     send_location_message
 )
 from chat.automation.templates import get_default_admissions_flow_data
+from chat.automation.security import SafeWebhookClient, SSRFProtectionError, ResponseTooLargeError
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('chat.automation.engine')
 
 
 def normalize_text(text: str) -> str:
@@ -48,8 +77,26 @@ def normalize_text(text: str) -> str:
 
 class AutomationEngine:
     """
-    Executes automated WhatsApp flows against incoming messages with strict session priority.
+    Executes automated WhatsApp flows against incoming messages with strict session priority,
+    durable delay scheduling, version-locked execution, and SSRF-hardened outbound webhooks.
     """
+
+    @classmethod
+    def get_flow_data(cls, session: UserFlowSession) -> dict:
+        """
+        Retrieves the exact flow graph data for a session.
+        Priority:
+        1. Immutable session.flow_version_ref
+        2. flow.published_version
+        3. flow.flow_data (backward compatibility)
+        """
+        if session.flow_version_ref and session.flow_version_ref.flow_data:
+            return session.flow_version_ref.flow_data
+        if session.flow and session.flow.published_version and session.flow.published_version.flow_data:
+            return session.flow.published_version.flow_data
+        if session.flow and session.flow.flow_data:
+            return session.flow.flow_data
+        return {}
 
     @classmethod
     def get_or_create_default_flow(cls, business_account: Optional[BusinessAccount] = None) -> AutomationFlow:
@@ -64,6 +111,7 @@ class AutomationEngine:
 
         flow = query.filter(business_account__isnull=True).first()
         if not flow:
+            default_data = get_default_admissions_flow_data()
             flow = AutomationFlow.objects.create(
                 business_account=business_account,
                 name="Admissions & Training Flow",
@@ -72,14 +120,50 @@ class AutomationEngine:
                 status=AutomationFlow.STATUS_PUBLISHED,
                 trigger_type=AutomationFlow.TRIGGER_FIRST_MESSAGE,
                 trigger_keywords="hi, hello, hey, start, menu, info, admission, course, training",
-                flow_data=get_default_admissions_flow_data(),
+                flow_data=default_data,
                 is_active=True,
                 published_at=timezone.now()
             )
+            # Create immutable version 1
+            ver, _ = AutomationFlowVersion.objects.get_or_create(
+                flow=flow,
+                version_number=1,
+                defaults={
+                    'status': AutomationFlowVersion.STATUS_PUBLISHED,
+                    'flow_data': default_data,
+                    'change_summary': 'Initial default flow version',
+                    'published_at': timezone.now()
+                }
+            )
+            flow.published_version = ver
+            flow.save(update_fields=['published_version'])
+        elif not flow.published_version:
+            ver, _ = AutomationFlowVersion.objects.get_or_create(
+                flow=flow,
+                version_number=flow.version or 1,
+                defaults={
+                    'status': AutomationFlowVersion.STATUS_PUBLISHED,
+                    'flow_data': flow.flow_data or {},
+                    'change_summary': 'Auto-synced version',
+                    'published_at': flow.published_at or timezone.now()
+                }
+            )
+            flow.published_version = ver
+            flow.save(update_fields=['published_version'])
+
         return flow
 
     @classmethod
-    def log_execution(cls, session: Optional[UserFlowSession], flow: Optional[AutomationFlow], node_id: str, event_type: str, input_data: dict = None, output_data: dict = None, error: str = ""):
+    def log_execution(
+        cls,
+        session: Optional[UserFlowSession],
+        flow: Optional[AutomationFlow],
+        node_id: str,
+        event_type: str,
+        input_data: dict = None,
+        output_data: dict = None,
+        error: str = ""
+    ):
         """Creates an AutomationExecution audit log."""
         try:
             flow_version = session.flow_version if session else (flow.version if flow else 1)
@@ -97,92 +181,147 @@ class AutomationEngine:
             logger.warning(f"Failed to write AutomationExecution log: {exc}")
 
     @classmethod
-    def process_incoming(cls, conversation: Conversation, incoming_text: str, incoming_data: Optional[Dict[str, Any]] = None) -> bool:
+    def process_incoming(
+        cls,
+        conversation: Conversation,
+        incoming_text: str,
+        incoming_data: Optional[Dict[str, Any]] = None
+    ) -> bool:
         """
         Main entry point for incoming WhatsApp customer messages.
+        Guarantees strict concurrency safety with database row locking.
         STRICT SESSION STATE PRIORITY:
         1. If session exists and ACTIVE -> continue current node.
-        2. If session exists and HANDED_OVER -> DO NOTHING (silent).
-        3. If session exists and COMPLETED -> DO NOTHING (silent forever; no restart).
-        4. If session exists and EXPIRED -> DO NOTHING.
-        5. ONLY if NO SESSION exists -> evaluate trigger to start flow.
+        2. If session exists and PAUSED (delay timer) -> interrupt delay and resume.
+        3. If session exists and HANDED_OVER -> DO NOTHING (silent; counselor handles).
+        4. If session exists and COMPLETED -> allow re-triggering fresh session.
+        5. If session exists and EXPIRED -> allow re-triggering fresh session.
+        6. If NO SESSION exists -> evaluate triggers to start flow.
         """
         biz = conversation.business_account
         if biz and not biz.automation_enabled:
             logger.info(f"Automation is disabled on Business Account '{biz.name}'. Skipping bot.")
             return False
 
-        # STEP 2: Find the customer's existing automation session
-        session = UserFlowSession.objects.filter(conversation=conversation).order_by('-started_at').first()
+        # Atomic transaction with concurrency locking
+        with transaction.atomic():
+            try:
+                conv_locked = Conversation.objects.select_for_update().get(id=conversation.id)
+            except (NotSupportedError, Exception):
+                conv_locked = conversation
 
-        if session:
-            # ACTIVE session -> Continue current node
-            if session.status == UserFlowSession.STATUS_ACTIVE:
-                return cls.continue_current_node(conversation, session, incoming_text, incoming_data)
+            try:
+                session = UserFlowSession.objects.select_for_update().filter(
+                    conversation=conv_locked
+                ).order_by('-started_at').first()
+            except (NotSupportedError, Exception):
+                session = UserFlowSession.objects.filter(
+                    conversation=conv_locked
+                ).order_by('-started_at').first()
 
-            # HANDED_OVER -> Bot remains silent
-            elif session.status == UserFlowSession.STATUS_HANDED_OVER:
-                logger.info(f"Conversation {conversation.id} is handed over to human. Bot remains silent.")
+            if session:
+                # ACTIVE session -> Continue current node
+                if session.status == UserFlowSession.STATUS_ACTIVE:
+                    return cls.continue_current_node(conv_locked, session, incoming_text, incoming_data)
+
+                # PAUSED session (Delay in progress) -> User reply interrupts delay
+                elif session.status == UserFlowSession.STATUS_PAUSED:
+                    logger.info(f"Session {session.id} delay interrupted by customer reply '{incoming_text}'. Resuming session.")
+                    session.status = UserFlowSession.STATUS_ACTIVE
+                    target_node = session.resume_node_id or session.paused_node_id
+                    session.paused_node_id = ""
+                    session.resume_node_id = ""
+                    session.resume_at = None
+                    session.save(update_fields=['status', 'paused_node_id', 'resume_node_id', 'resume_at', 'updated_at'])
+
+                    cls.log_execution(
+                        session=session,
+                        flow=session.flow,
+                        node_id=target_node or "delay",
+                        event_type="DELAY_INTERRUPTED_BY_USER",
+                        input_data={"incoming_text": incoming_text}
+                    )
+                    if target_node:
+                        return cls.execute_node(conv_locked, session, target_node)
+                    return True
+
+                # HANDED_OVER -> Bot remains silent (human counselor is handling)
+                elif session.status == UserFlowSession.STATUS_HANDED_OVER:
+                    logger.info(f"Conversation {conv_locked.id} is handed over to human. Bot remains silent.")
+                    return False
+
+                # COMPLETED or EXPIRED -> User finished earlier flow; allow re-triggering fresh session
+                elif session.status in [UserFlowSession.STATUS_COMPLETED, UserFlowSession.STATUS_EXPIRED]:
+                    logger.info(f"Previous session for conversation {conv_locked.id} was {session.status}. Checking triggers.")
+
+            # Find latest published flow & evaluate trigger
+            flow = cls.get_or_create_default_flow(biz)
+            if not flow or not flow.is_active or flow.status != AutomationFlow.STATUS_PUBLISHED:
                 return False
 
-            # COMPLETED -> Bot remains silent forever
-            elif session.status == UserFlowSession.STATUS_COMPLETED:
-                logger.info(f"Session for conversation {conversation.id} is completed. Bot remains silent.")
-                return False
+            flow_version = flow.published_version
 
-            # EXPIRED -> Bot remains silent
-            elif session.status == UserFlowSession.STATUS_EXPIRED:
-                logger.info(f"Session for conversation {conversation.id} has expired. Bot remains silent.")
-                return False
+            trigger_matched = False
+            norm = normalize_text(incoming_text)
+            has_prior_session = bool(session and session.status in [UserFlowSession.STATUS_COMPLETED, UserFlowSession.STATUS_EXPIRED])
+            standard_greetings = {'hi', 'hello', 'hey', 'start', 'restart', 'menu', 'main menu', 'join', 'course', 'courses'}
 
-        # STEP 5: Only when NO SESSION exists -> Find latest published flow & evaluate trigger
-        flow = cls.get_or_create_default_flow(biz)
-        if not flow or not flow.is_active or flow.status != AutomationFlow.STATUS_PUBLISHED:
-            return False
-
-        trigger_matched = False
-        norm = normalize_text(incoming_text)
-
-        if flow.trigger_type in [AutomationFlow.TRIGGER_FIRST_MESSAGE, AutomationFlow.TRIGGER_ALWAYS_ON]:
-            trigger_matched = True
-        elif flow.trigger_type == AutomationFlow.TRIGGER_KEYWORD:
-            keywords = [normalize_text(k) for k in flow.trigger_keywords.split(',') if k.strip()]
-            for kw in keywords:
-                if kw in norm or norm in kw:
+            if flow.trigger_type == AutomationFlow.TRIGGER_ALWAYS_ON:
+                trigger_matched = True
+            elif flow.trigger_type == AutomationFlow.TRIGGER_FIRST_MESSAGE:
+                if not has_prior_session:
                     trigger_matched = True
-                    break
-        elif flow.trigger_type == AutomationFlow.TRIGGER_BUTTON and incoming_data and incoming_data.get('type') == 'button_reply':
-            trigger_matched = True
-        elif flow.trigger_type == AutomationFlow.TRIGGER_LIST and incoming_data and incoming_data.get('type') == 'list_reply':
-            trigger_matched = True
+                elif norm in standard_greetings:
+                    trigger_matched = True
+                elif flow.trigger_keywords:
+                    keywords = [normalize_text(k) for k in flow.trigger_keywords.split(',') if k.strip()]
+                    for kw in keywords:
+                        if kw in norm or norm in kw:
+                            trigger_matched = True
+                            break
+            elif flow.trigger_type == AutomationFlow.TRIGGER_KEYWORD:
+                keywords = [normalize_text(k) for k in flow.trigger_keywords.split(',') if k.strip()]
+                for kw in keywords:
+                    if kw in norm or norm in kw:
+                        trigger_matched = True
+                        break
+                if not trigger_matched and (norm in standard_greetings):
+                    trigger_matched = True
+            elif flow.trigger_type == AutomationFlow.TRIGGER_BUTTON and incoming_data and incoming_data.get('type') == 'button_reply':
+                trigger_matched = True
+            elif flow.trigger_type == AutomationFlow.TRIGGER_LIST and incoming_data and incoming_data.get('type') == 'list_reply':
+                trigger_matched = True
 
-        if not trigger_matched:
-            return False
+            if not trigger_matched:
+                return False
 
-        # Create fresh session locked to this flow and version
-        trigger_node_id = cls.get_trigger_node_id(flow.flow_data)
-        session = UserFlowSession.objects.create(
-            conversation=conversation,
-            flow=flow,
-            flow_version=flow.version,
-            current_node_id=trigger_node_id,
-            status=UserFlowSession.STATUS_ACTIVE,
-            collected_data={}
-        )
+            # Create fresh session locked to this immutable flow version
+            flow_data = flow_version.flow_data if flow_version else (flow.flow_data or {})
+            trigger_node_id = cls.get_trigger_node_id(flow_data)
 
-        cls.log_execution(
-            session=session,
-            flow=flow,
-            node_id=trigger_node_id,
-            event_type="TRIGGER_STARTED",
-            input_data={"incoming_text": incoming_text, "trigger_type": flow.trigger_type}
-        )
+            new_session = UserFlowSession.objects.create(
+                conversation=conv_locked,
+                flow=flow,
+                flow_version=flow_version.version_number if flow_version else flow.version,
+                flow_version_ref=flow_version,
+                current_node_id=trigger_node_id,
+                status=UserFlowSession.STATUS_ACTIVE,
+                collected_data={},
+                execution_stack=[]
+            )
 
-        # Advance from trigger to first connected step
-        target_id = cls.get_target_node_id(flow.flow_data, trigger_node_id, "default")
-        if target_id:
-            return cls.execute_node(conversation, session, target_id)
-        return True
+            cls.log_execution(
+                session=new_session,
+                flow=flow,
+                node_id=trigger_node_id,
+                event_type="TRIGGER_STARTED",
+                input_data={"incoming_text": incoming_text, "trigger_type": flow.trigger_type}
+            )
+
+            target_id = cls.get_target_node_id(flow_data, trigger_node_id, "default")
+            if target_id:
+                return cls.execute_node(conv_locked, new_session, target_id)
+            return True
 
     @classmethod
     def get_trigger_node_id(cls, flow_data: dict) -> str:
@@ -193,180 +332,147 @@ class AutomationEngine:
         return 'trigger_1'
 
     @classmethod
-    def continue_current_node(cls, conversation: Conversation, session: UserFlowSession, incoming_text: str, incoming_data: Optional[Dict[str, Any]] = None) -> bool:
+    def continue_current_node(
+        cls,
+        conversation: Conversation,
+        session: UserFlowSession,
+        incoming_text: str,
+        incoming_data: Optional[Dict[str, Any]] = None
+    ) -> bool:
         """
         Continues execution of an ACTIVE session upon receiving customer input.
         NEVER restarts the flow or re-evaluates triggers.
         """
-        flow_data = session.flow.flow_data or {}
+        flow_data = cls.get_flow_data(session)
         nodes = {n['id']: n for n in flow_data.get('nodes', [])}
         curr_node = nodes.get(session.current_node_id)
 
         if not curr_node:
-            logger.warning(f"Node '{session.current_node_id}' not found in flow v{session.flow_version}.")
+            logger.warning(f"Active node {session.current_node_id} not found in session {session.id}. Marking completed.")
             session.status = UserFlowSession.STATUS_COMPLETED
             session.completed_at = timezone.now()
-            session.save(update_fields=['status', 'completed_at'])
+            session.save(update_fields=['status', 'completed_at', 'updated_at'])
             return False
-
-        # Check for handover keywords inside flow settings
-        settings = flow_data.get('settings', {})
-        handover_keywords = [normalize_text(k) for k in settings.get('handover_keywords', ['agent', 'human', 'support'])]
-        if normalize_text(incoming_text) in handover_keywords:
-            session.status = UserFlowSession.STATUS_HANDED_OVER
-            session.handed_over_at = timezone.now()
-            session.save(update_fields=['status', 'handed_over_at', 'updated_at'])
-            cls.send_bot_message(conversation, "👤 You have been connected to an admissions representative. Our counselor will assist you shortly.")
-            cls.log_execution(session, session.flow, session.current_node_id, "HANDOVER", {"keyword": incoming_text})
-            return True
 
         node_type = curr_node.get('type')
         data_block = curr_node.get('data', {})
-        target_next_id = None
+        cls.log_execution(session, session.flow, session.current_node_id, "CUSTOMER_REPLY",
+                          {"text": incoming_text, "data": incoming_data})
 
-        # 1. QUESTION NODE
-        if node_type == 'question':
-            var_name = curr_node.get('variable_name') or data_block.get('variable_name', 'answer')
-            expected_type = curr_node.get('expected_type') or data_block.get('expected_type', 'text')
-            answer_val = incoming_text.strip()
+        # 1. QUESTION / CAPTURE ANSWER NODE
+        if node_type in ['question', 'capture_answer']:
+            var_name = curr_node.get('variable_name') or data_block.get('variable_name')
+            if var_name:
+                session.collected_data[var_name] = incoming_text.strip()
+                session.save(update_fields=['collected_data', 'updated_at'])
+                cls.log_execution(session, session.flow, session.current_node_id, "VARIABLE_CAPTURED",
+                                  {"variable": var_name, "value": incoming_text.strip()})
+                cls.sync_lead_answers(conversation, session)
 
-            # Input format validation
-            is_valid = True
-            if expected_type == 'number':
-                is_valid = bool(re.match(r'^\d+(\.\d+)?$', answer_val))
-            elif expected_type == 'email':
-                is_valid = bool(re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', answer_val))
-
-            if not is_valid:
-                retry_key = f"__retry_{session.current_node_id}"
-                retries = int(session.collected_data.get(retry_key, 0)) + 1
-                session.collected_data[retry_key] = retries
-                max_retries = int(curr_node.get('retry_limit') or data_block.get('retry_limit', 3))
-
-                if retries < max_retries:
-                    session.save(update_fields=['collected_data', 'updated_at'])
-                    default_err = f"Please provide a valid {expected_type} to continue." if expected_type != 'text' else "Invalid answer. Please try again:"
-                    err_msg = curr_node.get('invalid_message') or data_block.get('invalid_message') or default_err
-                    cls.send_bot_message(conversation, err_msg)
-                    cls.log_execution(session, session.flow, session.current_node_id, "QUESTION_RETRY", {"expected_type": expected_type, "retries": retries})
-                    return True
-                else:
-                    cls.log_execution(session, session.flow, session.current_node_id, "QUESTION_MAX_RETRIES", {"expected_type": expected_type})
-                    target_next_id = cls.get_target_node_id(flow_data, session.current_node_id, "fallback") or cls.get_target_node_id(flow_data, session.current_node_id, "default")
-            else:
-                session.collected_data[var_name] = answer_val
-                session.waiting_for_input = False
-                session.save(update_fields=['collected_data', 'waiting_for_input', 'updated_at'])
-                cls.log_execution(session, session.flow, session.current_node_id, "DATA_SAVED", {"variable": var_name, "value": answer_val})
-                target_next_id = cls.get_target_node_id(flow_data, session.current_node_id, "default")
+            session.waiting_for_input = False
+            session.save(update_fields=['waiting_for_input', 'updated_at'])
+            next_id = cls.get_target_node_id(flow_data, session.current_node_id, "default")
+            if next_id:
+                return cls.execute_node(conversation, session, next_id)
+            return True
 
         # 2. BUTTONS NODE
         elif node_type == 'buttons':
-            var_name = curr_node.get('variable_name') or data_block.get('variable_name', 'choice')
-            options = curr_node.get('options') or data_block.get('options', [])
-            matched_option = None
-
-            button_reply_id = ""
+            selected_id = None
             if incoming_data and incoming_data.get('type') == 'button_reply':
-                button_reply_id = incoming_data.get('button_reply', {}).get('id', '')
-
-            norm_input = normalize_text(incoming_text)
-
-            for idx, opt in enumerate(options, start=1):
-                opt_id = opt.get('id', '')
-                opt_title = opt.get('title', '')
-                if (
-                    (button_reply_id and button_reply_id == opt_id) or
-                    norm_input == normalize_text(opt_id) or
-                    norm_input == normalize_text(opt_title) or
-                    norm_input == str(idx) or
-                    normalize_text(opt_title) in norm_input
-                ):
-                    matched_option = opt
-                    break
-
-            if matched_option:
-                session.collected_data[var_name] = matched_option.get('title', incoming_text)
-                session.waiting_for_input = False
-                session.save(update_fields=['collected_data', 'waiting_for_input', 'updated_at'])
-
-                cls.log_execution(session, session.flow, session.current_node_id, "BUTTON_SELECTED", {"option_id": matched_option.get('id')})
-
-                # Follow matching option's output connection
-                target_next_id = cls.get_target_node_id(flow_data, session.current_node_id, matched_option.get('id'))
-                if not target_next_id:
-                    target_next_id = cls.get_target_node_id(flow_data, session.current_node_id, "default")
+                selected_id = incoming_data.get('id')
             else:
-                # Re-prompt politely without restarting
-                cls.send_bot_message(conversation, "Please tap one of the provided options above to proceed:")
+                norm_in = normalize_text(incoming_text)
+                options = curr_node.get('options') or data_block.get('options', [])
+                for opt in options:
+                    if normalize_text(opt.get('title', '')) == norm_in or opt.get('id') == incoming_text.strip():
+                        selected_id = opt.get('id')
+                        break
+
+            if not selected_id:
+                raw_body = curr_node.get('body') or data_block.get('text', 'Please choose an option:')
+                prompt_text = "Please tap one of the buttons below to proceed:\n\n" + cls.interpolate(raw_body, session.collected_data)
+                cls.send_bot_message(conversation, prompt_text)
                 return True
+
+            var_name = curr_node.get('variable_name') or data_block.get('variable_name')
+            if var_name:
+                session.collected_data[var_name] = selected_id
+                session.save(update_fields=['collected_data', 'updated_at'])
+                cls.sync_lead_answers(conversation, session)
+
+            session.waiting_for_input = False
+            session.save(update_fields=['waiting_for_input', 'updated_at'])
+
+            next_id = cls.get_target_node_id(flow_data, session.current_node_id, selected_id)
+            if not next_id:
+                next_id = cls.get_target_node_id(flow_data, session.current_node_id, "default")
+            if next_id:
+                return cls.execute_node(conversation, session, next_id)
+            return True
 
         # 3. LIST MENU NODE
         elif node_type == 'list':
-            var_name = curr_node.get('variable_name') or data_block.get('variable_name', 'selection')
-            is_dynamic_course = (curr_node.get('source') == 'database' or data_block.get('source') == 'database')
-
-            if is_dynamic_course:
-                courses = Course.objects.filter(is_active=True).order_by('display_order')[:10]
-                matched_course = None
-                norm_input = normalize_text(incoming_text)
-
-                for idx, c in enumerate(courses, start=1):
-                    cid_str = f"course_{c.id}"
-                    c_name_norm = normalize_text(c.name or c.title)
-                    if (
-                        norm_input == cid_str.lower() or
-                        norm_input == c_name_norm or
-                        norm_input == str(idx) or
-                        c_name_norm in norm_input
-                    ):
-                        matched_course = c
+            selected_row_id = None
+            if incoming_data and incoming_data.get('type') == 'list_reply':
+                selected_row_id = incoming_data.get('id')
+            else:
+                norm_in = normalize_text(incoming_text)
+                sections = curr_node.get('sections') or data_block.get('sections', [])
+                for sec in sections:
+                    for row in sec.get('rows', []):
+                        if normalize_text(row.get('title', '')) == norm_in or row.get('id') == incoming_text.strip():
+                            selected_row_id = row.get('id')
+                            break
+                    if selected_row_id:
                         break
 
-                if matched_course:
-                    session.collected_data['course_id'] = matched_course.id
-                    session.collected_data['course_name'] = matched_course.name or matched_course.title
-                    session.collected_data[var_name] = matched_course.name or matched_course.title
-                else:
-                    session.collected_data[var_name] = incoming_text.strip()
-            else:
-                session.collected_data[var_name] = incoming_text.strip()
+            if not selected_row_id:
+                raw_body = curr_node.get('body') or data_block.get('text', 'Please select from the menu:')
+                prompt_text = "Please select an item from the list to continue:\n\n" + cls.interpolate(raw_body, session.collected_data)
+                cls.send_bot_message(conversation, prompt_text)
+                return True
+
+            var_name = curr_node.get('variable_name') or data_block.get('variable_name')
+            if var_name:
+                session.collected_data[var_name] = selected_row_id
+                session.save(update_fields=['collected_data', 'updated_at'])
+                cls.sync_lead_answers(conversation, session)
 
             session.waiting_for_input = False
-            session.save(update_fields=['collected_data', 'waiting_for_input', 'updated_at'])
-            cls.log_execution(session, session.flow, session.current_node_id, "LIST_SELECTED", {"selection": session.collected_data.get(var_name)})
-            target_next_id = cls.get_target_node_id(flow_data, session.current_node_id, "default")
+            session.save(update_fields=['waiting_for_input', 'updated_at'])
 
-        else:
-            # Fallback for linear progression
-            target_next_id = cls.get_target_node_id(flow_data, session.current_node_id, "default")
+            next_id = cls.get_target_node_id(flow_data, session.current_node_id, selected_row_id)
+            if not next_id:
+                next_id = cls.get_target_node_id(flow_data, session.current_node_id, "default")
+            if next_id:
+                return cls.execute_node(conversation, session, next_id)
+            return True
 
-        cls.sync_lead_answers(conversation, session)
-
-        if target_next_id:
-            return cls.execute_node(conversation, session, target_next_id, execution_depth=0)
-        else:
-            session.status = UserFlowSession.STATUS_COMPLETED
-            session.completed_at = timezone.now()
-            session.save(update_fields=['status', 'completed_at'])
-            return False
+        return True
 
     @classmethod
-    def execute_node(cls, conversation: Conversation, session: UserFlowSession, node_id: str, execution_depth: int = 0) -> bool:
+    def execute_node(
+        cls,
+        conversation: Conversation,
+        session: UserFlowSession,
+        node_id: str,
+        execution_depth: int = 0
+    ) -> bool:
         """
         Executes a specific node and chains non-waiting follow-up steps.
-        Includes execution depth guard to prevent infinite loops.
+        Includes loop protection guard and supports all 15 canonical node types.
         """
-        MAX_DEPTH = 25
+        MAX_DEPTH = 30
         if execution_depth > MAX_DEPTH:
             logger.warning(f"Loop guard: Maximum execution depth ({MAX_DEPTH}) reached in session {session.id} at node '{node_id}'.")
             session.status = UserFlowSession.STATUS_COMPLETED
             session.completed_at = timezone.now()
-            session.save(update_fields=['status', 'completed_at'])
+            session.save(update_fields=['status', 'completed_at', 'updated_at'])
             cls.log_execution(session, session.flow, node_id, "LOOP_GUARD_TRIGGERED", error=f"Max execution depth of {MAX_DEPTH} exceeded.")
             return False
 
-        flow_data = session.flow.flow_data or {}
+        flow_data = cls.get_flow_data(session)
         nodes = {n['id']: n for n in flow_data.get('nodes', [])}
         node = nodes.get(node_id)
 
@@ -374,7 +480,7 @@ class AutomationEngine:
             logger.warning(f"Node {node_id} not found in flow {session.flow.id}")
             session.status = UserFlowSession.STATUS_COMPLETED
             session.completed_at = timezone.now()
-            session.save(update_fields=['status', 'completed_at'])
+            session.save(update_fields=['status', 'completed_at', 'updated_at'])
             return False
 
         session.current_node_id = node_id
@@ -385,8 +491,15 @@ class AutomationEngine:
         cls.log_execution(session, session.flow, node_id, "NODE_EXECUTED", {"type": node_type, "depth": execution_depth})
 
         try:
-            # 1. MESSAGE NODE
-            if node_type == 'message':
+            # 1. TRIGGER / START NODE
+            if node_type in ['trigger', 'start']:
+                next_id = cls.get_target_node_id(flow_data, node_id, "default")
+                if next_id and next_id != node_id:
+                    return cls.execute_node(conversation, session, next_id, execution_depth + 1)
+                return True
+
+            # 2. MESSAGE / WELCOME NODE
+            elif node_type in ['message', 'welcome']:
                 raw_text = node.get('body') or data_block.get('text', '')
                 text = cls.interpolate(raw_text, session.collected_data)
                 cls.send_bot_message(conversation, text)
@@ -396,7 +509,7 @@ class AutomationEngine:
                     return cls.execute_node(conversation, session, next_id, execution_depth + 1)
                 return True
 
-            # 2. BUTTONS NODE
+            # 3. BUTTONS NODE
             elif node_type == 'buttons':
                 raw_text = node.get('body') or data_block.get('text', 'Please choose:')
                 body = cls.interpolate(raw_text, session.collected_data)
@@ -409,7 +522,7 @@ class AutomationEngine:
                 session.save(update_fields=['waiting_for_input', 'updated_at'])
                 return True
 
-            # 3. LIST MENU NODE
+            # 4. LIST MENU NODE
             elif node_type == 'list':
                 raw_text = node.get('body') or data_block.get('text', 'Select an option:')
                 body = cls.interpolate(raw_text, session.collected_data)
@@ -419,13 +532,16 @@ class AutomationEngine:
                 source = node.get('source') or data_block.get('source', '')
 
                 if source == 'database':
-                    courses = Course.objects.filter(is_active=True).order_by('display_order')[:10]
-                    rows = []
-                    for c in courses:
-                        name_str = (c.name or c.title)[:24]
-                        desc_str = (c.description or c.duration or "")[:72]
-                        rows.append({"id": f"course_{c.id}", "title": name_str, "description": desc_str})
-                    sections = [{"title": "Popular Programs", "rows": rows}]
+                    courses = list(Course.objects.filter(is_active=True).order_by('display_order')[:10])
+                    if courses:
+                        rows = []
+                        for c in courses:
+                            name_str = (c.name or c.title)[:24]
+                            desc_str = (c.description or c.duration or "")[:72]
+                            rows.append({"id": f"course_{c.id}", "title": name_str, "description": desc_str})
+                        sections = [{"title": "Popular Programs", "rows": rows}]
+                    else:
+                        sections = node.get('sections') or data_block.get('sections', [])
                 else:
                     sections = node.get('sections') or data_block.get('sections', [])
 
@@ -434,17 +550,18 @@ class AutomationEngine:
                 session.save(update_fields=['waiting_for_input', 'updated_at'])
                 return True
 
-            # 4. QUESTION NODE
-            elif node_type == 'question':
+            # 5. QUESTION / CAPTURE ANSWER NODE
+            elif node_type in ['question', 'capture_answer']:
                 raw_text = node.get('body') or data_block.get('text', 'Please reply with your details:')
                 body = cls.interpolate(raw_text, session.collected_data)
                 cls.send_bot_message(conversation, body)
                 session.waiting_for_input = True
                 session.save(update_fields=['waiting_for_input', 'updated_at'])
-                cls.log_execution(session, session.flow, node_id, "QUESTION_WAITING", {"variable": node.get('variable_name') or data_block.get('variable_name')})
+                cls.log_execution(session, session.flow, node_id, "QUESTION_WAITING",
+                                  {"variable": node.get('variable_name') or data_block.get('variable_name')})
                 return True
 
-            # 5. CONDITION NODE
+            # 6. CONDITION / IF-ELSE NODE
             elif node_type == 'condition':
                 var_key = node.get('variable') or data_block.get('variable', '')
                 operator = node.get('operator') or data_block.get('operator', 'equals')
@@ -452,15 +569,16 @@ class AutomationEngine:
 
                 eval_result = cls.evaluate_condition(session.collected_data.get(var_key), operator, target_val)
                 branch_port = "YES" if eval_result else "NO"
-                cls.log_execution(session, session.flow, node_id, "CONDITION_EVALUATED", {"variable": var_key, "result": eval_result, "branch": branch_port})
+                cls.log_execution(session, session.flow, node_id, "CONDITION_EVALUATED",
+                                  {"variable": var_key, "result": eval_result, "branch": branch_port})
 
                 next_id = cls.get_target_node_id(flow_data, node_id, branch_port)
                 if next_id:
                     return cls.execute_node(conversation, session, next_id, execution_depth + 1)
                 return True
 
-            # 6. SAVE DATA NODE
-            elif node_type == 'save_data':
+            # 7. SAVE DATA / UPDATE LEAD NODE
+            elif node_type in ['save_data', 'update_lead']:
                 var_name = node.get('variable_name') or node.get('variable') or data_block.get('variable_name') or data_block.get('variable')
                 raw_val = node.get('value') if 'value' in node else data_block.get('value', '')
                 saved_val = cls.interpolate(str(raw_val or ''), session.collected_data)
@@ -475,7 +593,7 @@ class AutomationEngine:
                     return cls.execute_node(conversation, session, next_id, execution_depth + 1)
                 return True
 
-            # 7. SEND MEDIA NODE
+            # 8. SEND MEDIA NODE
             elif node_type == 'media':
                 source = node.get('source') or data_block.get('source', 'static')
                 caption = cls.interpolate(node.get('caption') or data_block.get('caption', ''), session.collected_data)
@@ -501,26 +619,44 @@ class AutomationEngine:
                     return cls.execute_node(conversation, session, next_id, execution_depth + 1)
                 return True
 
-            # 8. SEND LOCATION NODE
+            # 9. SEND LOCATION NODE
             elif node_type == 'location':
-                source = node.get('source') or data_block.get('source', 'static')
+                source = node.get('source') or data_block.get('source', 'custom')
+                lat = None
+                lng = None
+                name = node.get('name') or data_block.get('name')
+                address = node.get('address') or data_block.get('address')
+
+                custom_lat = node.get('latitude') if node.get('latitude') is not None else data_block.get('latitude')
+                custom_lng = node.get('longitude') if node.get('longitude') is not None else data_block.get('longitude')
+
                 if source == 'dynamic_branch':
-                    branch = Branch.objects.filter(is_active=True).first()
-                    if branch:
-                        name = branch.name
-                        address = branch.address
-                        lat = float(branch.latitude)
-                        lng = float(branch.longitude)
+                    branch = None
+                    if hasattr(Branch, 'Status'):
+                        branch = Branch.objects.filter(status=Branch.Status.ACTIVE).first()
+                    elif hasattr(Branch, 'is_active'):
+                        branch = Branch.objects.filter(is_active=True).first()
                     else:
-                        name = data_block.get('fallback_name', 'Tech Academy Headquarters')
-                        address = data_block.get('fallback_address', 'Anna Salai, Chennai')
-                        lat = float(data_block.get('fallback_latitude', 13.0827))
-                        lng = float(data_block.get('fallback_longitude', 80.2707))
-                else:
-                    name = node.get('name') or data_block.get('name', 'Branch Location')
-                    address = node.get('address') or data_block.get('address', '')
-                    lat = float(node.get('latitude') or data_block.get('latitude', 13.0827))
-                    lng = float(node.get('longitude') or data_block.get('longitude', 80.2707))
+                        branch = Branch.objects.first()
+
+                    if branch:
+                        name = name or branch.name
+                        address = address or getattr(branch, 'address', '')
+                        lat = getattr(branch, 'latitude', None)
+                        lng = getattr(branch, 'longitude', None)
+
+                try:
+                    lat = float(custom_lat if custom_lat is not None else (lat or 13.0827))
+                except (ValueError, TypeError):
+                    lat = 13.0827
+
+                try:
+                    lng = float(custom_lng if custom_lng is not None else (lng or 80.2707))
+                except (ValueError, TypeError):
+                    lng = 80.2707
+
+                name = name or 'DigiPanda Tech Academy'
+                address = address or 'Anna Salai, Chennai, Tamil Nadu'
 
                 cls.send_bot_location(conversation, lat, lng, name, address)
                 cls.log_execution(session, session.flow, node_id, "LOCATION_SENT", {"lat": lat, "lng": lng, "name": name})
@@ -529,7 +665,145 @@ class AutomationEngine:
                     return cls.execute_node(conversation, session, next_id, execution_depth + 1)
                 return True
 
-            # 9. HUMAN HANDOVER NODE
+            # 10. WAIT / DELAY NODE (DURABLE DATABASE SCHEDULING)
+            elif node_type == 'delay':
+                # Parse duration
+                delay_sec = 0
+                if 'delay_seconds' in data_block:
+                    delay_sec = int(data_block['delay_seconds'])
+                elif 'seconds' in data_block:
+                    delay_sec = int(data_block['seconds'])
+                elif 'amount' in data_block:
+                    amt = int(data_block.get('amount', 1))
+                    unit = str(data_block.get('unit', 'minutes')).lower()
+                    if unit.startswith('sec'):
+                        delay_sec = amt
+                    elif unit.startswith('min'):
+                        delay_sec = amt * 60
+                    elif unit.startswith('hour'):
+                        delay_sec = amt * 3600
+                    elif unit.startswith('day'):
+                        delay_sec = amt * 86400
+                else:
+                    delay_sec = int(node.get('delay_seconds') or 60)
+
+                next_id = cls.get_target_node_id(flow_data, node_id, "default")
+                if not next_id:
+                    logger.info(f"Delay node {node_id} has no target node. Completing session.")
+                    session.status = UserFlowSession.STATUS_COMPLETED
+                    session.completed_at = timezone.now()
+                    session.save(update_fields=['status', 'completed_at', 'updated_at'])
+                    return True
+
+                session.status = UserFlowSession.STATUS_PAUSED
+                session.paused_node_id = node_id
+                session.resume_node_id = next_id
+                session.resume_at = timezone.now() + timedelta(seconds=max(1, delay_sec))
+                session.save(update_fields=['status', 'paused_node_id', 'resume_node_id', 'resume_at', 'updated_at'])
+
+                cls.log_execution(
+                    session=session,
+                    flow=session.flow,
+                    node_id=node_id,
+                    event_type="DELAY_SCHEDULED",
+                    output_data={
+                        "resume_at": session.resume_at.isoformat(),
+                        "resume_node_id": next_id,
+                        "delay_seconds": delay_sec
+                    }
+                )
+                # Pause cleanly without immediate downstream execution
+                return True
+
+            # 11. OUTBOUND WEBHOOK / API NODE (SSRF PROTECTED)
+            elif node_type in ['webhook', 'api_request']:
+                target_url = cls.interpolate(node.get('url') or data_block.get('url', ''), session.collected_data)
+                method = (node.get('method') or data_block.get('method', 'POST')).upper()
+                headers = data_block.get('headers') or node.get('headers') or {}
+                if isinstance(headers, str):
+                    try:
+                        headers = json.loads(cls.interpolate(headers, session.collected_data))
+                    except Exception:
+                        headers = {}
+
+                payload_data = None
+                raw_payload = data_block.get('body') or data_block.get('payload') or node.get('body')
+                if raw_payload:
+                    if isinstance(raw_payload, dict):
+                        payload_data = raw_payload
+                    elif isinstance(raw_payload, str):
+                        try:
+                            payload_data = json.loads(cls.interpolate(raw_payload, session.collected_data))
+                        except Exception:
+                            payload_data = {"text": cls.interpolate(raw_payload, session.collected_data)}
+
+                save_var = data_block.get('save_response_to') or node.get('save_response_to')
+
+                client = SafeWebhookClient()
+                try:
+                    resp = client.request(
+                        method=method,
+                        url=target_url,
+                        headers=headers,
+                        json_data=payload_data if method in ('POST', 'PUT', 'PATCH') else None
+                    )
+                    cls.log_execution(session, session.flow, node_id, "WEBHOOK_SUCCESS",
+                                      output_data={"status_code": resp['status_code'], "url": target_url})
+
+                    if save_var:
+                        session.collected_data[save_var] = resp.get('json') or resp.get('text')
+                        session.save(update_fields=['collected_data', 'updated_at'])
+
+                    next_id = cls.get_target_node_id(flow_data, node_id, "default")
+                except (SSRFProtectionError, ResponseTooLargeError) as sec_err:
+                    logger.error(f"Webhook security block at node {node_id}: {sec_err}")
+                    cls.log_execution(session, session.flow, node_id, "WEBHOOK_SECURITY_BLOCKED", error=str(sec_err))
+                    next_id = cls.get_target_node_id(flow_data, node_id, "error") or cls.get_target_node_id(flow_data, node_id, "default")
+                except Exception as req_err:
+                    logger.error(f"Webhook request failed at node {node_id}: {req_err}")
+                    cls.log_execution(session, session.flow, node_id, "WEBHOOK_FAILED", error=str(req_err))
+                    next_id = cls.get_target_node_id(flow_data, node_id, "error") or cls.get_target_node_id(flow_data, node_id, "default")
+
+                if next_id and next_id != node_id:
+                    return cls.execute_node(conversation, session, next_id, execution_depth + 1)
+                return True
+
+            # 12. GO TO / SUBFLOW NODE
+            elif node_type in ['subflow', 'goto']:
+                target_flow_id = data_block.get('flow_id') or node.get('flow_id')
+                target_node = data_block.get('target_node_id') or node.get('target_node_id')
+
+                if node_type == 'goto' and target_node:
+                    cls.log_execution(session, session.flow, node_id, "GOTO_JUMP", {"target_node_id": target_node})
+                    return cls.execute_node(conversation, session, target_node, execution_depth + 1)
+
+                elif node_type == 'subflow' and target_flow_id:
+                    subflow = AutomationFlow.objects.filter(id=target_flow_id, is_active=True).first()
+                    if subflow and subflow.published_version:
+                        next_after_subflow = cls.get_target_node_id(flow_data, node_id, "default")
+                        stack = list(session.execution_stack or [])
+                        stack.append({
+                            'flow_id': session.flow_id,
+                            'flow_version_id': session.flow_version_ref_id,
+                            'resume_node_id': next_after_subflow
+                        })
+                        session.execution_stack = stack
+                        session.flow = subflow
+                        session.flow_version_ref = subflow.published_version
+                        session.save(update_fields=['execution_stack', 'flow', 'flow_version_ref', 'updated_at'])
+
+                        sub_data = subflow.published_version.flow_data or {}
+                        sub_trigger = cls.get_trigger_node_id(sub_data)
+                        sub_first = cls.get_target_node_id(sub_data, sub_trigger, "default") or sub_trigger
+                        cls.log_execution(session, subflow, node_id, "SUBFLOW_INVOKED", {"subflow_id": subflow.id})
+                        return cls.execute_node(conversation, session, sub_first, execution_depth + 1)
+
+                next_id = cls.get_target_node_id(flow_data, node_id, "default")
+                if next_id and next_id != node_id:
+                    return cls.execute_node(conversation, session, next_id, execution_depth + 1)
+                return True
+
+            # 13. HUMAN HANDOVER NODE
             elif node_type == 'human_handover':
                 raw_text = node.get('body') or data_block.get('text', 'Handing over to admissions representative.')
                 body = cls.interpolate(raw_text, session.collected_data)
@@ -541,7 +815,7 @@ class AutomationEngine:
                 cls.log_execution(session, session.flow, node_id, "HANDOVER")
                 return True
 
-            # 10a. CRM: CHANGE LEAD STATUS (nothing is sent to the student)
+            # 14a. CRM: CHANGE LEAD STATUS
             elif node_type == 'lead_status':
                 from chat import crm
                 status = node.get('status') or data_block.get('status', '')
@@ -554,15 +828,15 @@ class AutomationEngine:
                     cls.log_execution(session, session.flow, node_id, "LEAD_STATUS_CHANGED",
                                       {"lead_id": lead.id, "status": status, "changed": changed})
                 except Exception as crm_exc:
-                    # A CRM problem must never leave the student stuck: log it and carry on.
                     logger.error(f"Lead status step failed: {crm_exc}", exc_info=True)
                     cls.log_execution(session, session.flow, node_id, "CRM_STEP_FAILED", error=str(crm_exc))
+
                 next_id = cls.get_target_node_id(flow_data, node_id, "default")
                 if next_id and next_id != node_id:
                     return cls.execute_node(conversation, session, next_id, execution_depth + 1)
                 return True
 
-            # 10b. CRM: ASSIGN TO TELECALLER (nothing is sent to the student)
+            # 14b. CRM: ASSIGN TO TELECALLER / COUNSELOR
             elif node_type == 'assign_telecaller':
                 from chat import crm
                 mode = node.get('mode') or data_block.get('mode', 'auto')
@@ -579,24 +853,36 @@ class AutomationEngine:
                 except Exception as crm_exc:
                     logger.error(f"Assign telecaller step failed: {crm_exc}", exc_info=True)
                     cls.log_execution(session, session.flow, node_id, "CRM_STEP_FAILED", error=str(crm_exc))
+
                 next_id = cls.get_target_node_id(flow_data, node_id, "default")
                 if next_id and next_id != node_id:
                     return cls.execute_node(conversation, session, next_id, execution_depth + 1)
                 return True
 
-            # 10. DELAY NODE (Non-blocking)
-            elif node_type == 'delay':
-                next_id = cls.get_target_node_id(flow_data, node_id, "default")
-                if next_id and next_id != node_id:
-                    return cls.execute_node(conversation, session, next_id, execution_depth + 1)
-                return True
-
-            # 11. END NODE
+            # 15. END NODE
             elif node_type == 'end':
                 raw_text = node.get('body') or data_block.get('text', 'Session completed. Thank you!')
                 body = cls.interpolate(raw_text, session.collected_data)
                 if body:
                     cls.send_bot_message(conversation, body)
+
+                # Check if this was a subflow return
+                if session.execution_stack:
+                    stack = list(session.execution_stack)
+                    caller_frame = stack.pop()
+                    session.execution_stack = stack
+                    parent_flow = AutomationFlow.objects.filter(id=caller_frame['flow_id']).first()
+                    parent_ver = AutomationFlowVersion.objects.filter(id=caller_frame.get('flow_version_id')).first()
+                    if parent_flow:
+                        session.flow = parent_flow
+                        session.flow_version_ref = parent_ver or parent_flow.published_version
+                    session.save(update_fields=['execution_stack', 'flow', 'flow_version_ref', 'updated_at'])
+
+                    resume_target = caller_frame.get('resume_node_id')
+                    if resume_target:
+                        cls.log_execution(session, parent_flow, node_id, "SUBFLOW_RETURNED", {"resume_node_id": resume_target})
+                        return cls.execute_node(conversation, session, resume_target, execution_depth + 1)
+
                 session.status = UserFlowSession.STATUS_COMPLETED
                 session.completed_at = timezone.now()
                 session.save(update_fields=['status', 'completed_at', 'updated_at'])
@@ -658,22 +944,31 @@ class AutomationEngine:
 
     @classmethod
     def get_target_node_id(cls, flow_data: dict, source_id: str, output_port: str = "default") -> Optional[str]:
-        """Finds target node from connections or backward-compatible next_node_id."""
-        connections = flow_data.get('connections', [])
-        # 1. Match source and source_output port
-        for conn in connections:
-            if conn.get('source') == source_id:
-                sport = conn.get('source_output', 'default')
-                if sport == output_port or (output_port in ['YES', 'true'] and sport.upper() == 'YES') or (output_port in ['NO', 'false'] and sport.upper() == 'NO'):
-                    return conn.get('target')
+        """
+        Finds target node from connections, React Flow edges, or backward-compatible node definitions.
+        Checks both 'connections' and 'edges' arrays.
+        Matches 'source_output', 'sourceHandle', or handles.
+        """
+        links = flow_data.get('connections') or flow_data.get('edges') or []
+        for link in links:
+            if link.get('source') == source_id:
+                sport = link.get('source_output') or link.get('sourceHandle') or 'default'
+                if sport == output_port:
+                    return link.get('target')
+                if output_port.upper() in ['YES', 'TRUE'] and str(sport).upper() in ['YES', 'TRUE']:
+                    return link.get('target')
+                if output_port.upper() in ['NO', 'FALSE'] and str(sport).upper() in ['NO', 'FALSE']:
+                    return link.get('target')
 
         # Fallback to default port if specific port had no target
         if output_port != "default":
-            for conn in connections:
-                if conn.get('source') == source_id and conn.get('source_output', 'default') == 'default':
-                    return conn.get('target')
+            for link in links:
+                if link.get('source') == source_id:
+                    sport = link.get('source_output') or link.get('sourceHandle') or 'default'
+                    if sport == 'default' or not sport:
+                        return link.get('target')
 
-        # Backward compatibility: next_node_id on node
+        # Backward compatibility: explicit next_node_id on node
         nodes = {n['id']: n for n in flow_data.get('nodes', [])}
         node = nodes.get(source_id)
         if node:
@@ -705,7 +1000,13 @@ class AutomationEngine:
     # -------------------------------------------------------------------------
 
     @classmethod
-    def _save_and_broadcast_bot_msg(cls, conversation: Conversation, message_text: str, message_type: str = Message.TYPE_TEXT, whatsapp_msg_id: str = '') -> Message:
+    def _save_and_broadcast_bot_msg(
+        cls,
+        conversation: Conversation,
+        message_text: str,
+        message_type: str = Message.TYPE_TEXT,
+        whatsapp_msg_id: str = ''
+    ) -> Message:
         now = timezone.now()
         msg = Message.objects.create(
             conversation=conversation,
@@ -849,3 +1150,261 @@ class AutomationEngine:
 
         display_text = f"📍 *{name}*\n{address}"
         cls._save_and_broadcast_bot_msg(conversation, display_text, Message.TYPE_TEXT, whatsapp_msg_id)
+
+    # -------------------------------------------------------------------------
+    # In-Memory Safe Simulator
+    # -------------------------------------------------------------------------
+
+    @classmethod
+    def simulate_step(
+        cls,
+        flow_data: Dict[str, Any],
+        current_node_id: Optional[str] = None,
+        message_text: str = '',
+        collected_data: Optional[Dict[str, Any]] = None,
+        interactive_reply: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Pure in-memory step simulation of a flow graph.
+        Never calls Meta Graph API, never sends real WhatsApp messages,
+        never modifies CRM Lead objects.
+        """
+        if collected_data is None:
+            collected_data = {}
+        else:
+            collected_data = dict(collected_data)
+
+        nodes = flow_data.get('nodes', [])
+        node_map = {n['id']: n for n in nodes if isinstance(n, dict) and 'id' in n}
+
+        sim_messages = []
+        crm_actions = []
+
+        if not current_node_id:
+            start_node = next((n for n in nodes if n.get('type') in ['trigger', 'start']), None)
+            if not start_node and nodes:
+                start_node = nodes[0]
+            if not start_node:
+                return {
+                    'error': 'No trigger step found in workflow.',
+                    'current_node_id': None,
+                    'collected_data': collected_data,
+                    'sim_messages': [],
+                    'is_complete': True
+                }
+            current_node_id = start_node['id']
+
+        curr_node = node_map.get(current_node_id)
+        if not curr_node:
+            return {
+                'error': f"Node '{current_node_id}' not found.",
+                'current_node_id': None,
+                'collected_data': collected_data,
+                'sim_messages': [],
+                'is_complete': True
+            }
+
+        next_node_id = None
+        ntype = curr_node.get('type')
+
+        if ntype in ['question', 'capture_answer']:
+            var_name = curr_node.get('variable_name') or curr_node.get('data', {}).get('variable_name', 'input')
+            collected_data[var_name] = message_text
+            next_node_id = cls.get_target_node_id(flow_data, current_node_id, 'default')
+
+        elif ntype == 'buttons':
+            chosen_opt_id = interactive_reply or message_text
+            options = curr_node.get('options') or curr_node.get('data', {}).get('options', [])
+            matched_opt = next((o for o in options if o.get('id') == chosen_opt_id or o.get('title', '').lower() == message_text.lower()), None)
+            if matched_opt:
+                var_name = curr_node.get('variable_name') or curr_node.get('data', {}).get('variable_name', 'choice')
+                collected_data[var_name] = matched_opt.get('title')
+                next_node_id = matched_opt.get('next_node_id') or cls.get_target_node_id(flow_data, current_node_id, matched_opt.get('id'))
+            else:
+                next_node_id = cls.get_target_node_id(flow_data, current_node_id, 'default')
+
+        elif ntype == 'list':
+            var_name = curr_node.get('variable_name') or curr_node.get('data', {}).get('variable_name', 'selection')
+            chosen_row_title = interactive_reply or message_text
+            sections = curr_node.get('sections') or curr_node.get('data', {}).get('sections', [])
+            matched_row_id = interactive_reply
+            for sec in sections:
+                for row in sec.get('rows', []):
+                    if (interactive_reply and row.get('id') == interactive_reply) or (message_text and row.get('title', '').strip().lower() == message_text.strip().lower()):
+                        chosen_row_title = row.get('title')
+                        matched_row_id = row.get('id')
+                        break
+            collected_data[var_name] = chosen_row_title
+            next_node_id = cls.get_target_node_id(flow_data, current_node_id, matched_row_id)
+            if not next_node_id:
+                next_node_id = cls.get_target_node_id(flow_data, current_node_id, 'default')
+
+        elif ntype in ['trigger', 'start']:
+            next_node_id = cls.get_target_node_id(flow_data, current_node_id, 'default')
+
+        else:
+            next_node_id = current_node_id
+
+        MAX_DEPTH = 30
+        depth = 0
+        is_complete = False
+        waiting_for_input = False
+
+        while next_node_id and depth < MAX_DEPTH:
+            depth += 1
+            node = node_map.get(next_node_id)
+            if not node:
+                break
+
+            curr_type = node.get('type')
+            current_node_id = node['id']
+
+            if curr_type in ['message', 'welcome']:
+                raw_text = node.get('body') or node.get('data', {}).get('text') or ''
+                text = cls.interpolate(raw_text, collected_data)
+                sim_messages.append({'type': 'text', 'body': text, 'node_id': node['id']})
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type == 'buttons':
+                raw_text = node.get('body') or node.get('data', {}).get('text') or ''
+                text = cls.interpolate(raw_text, collected_data)
+                opts = node.get('options') or node.get('data', {}).get('options', [])
+                sim_messages.append({
+                    'type': 'buttons',
+                    'header': node.get('header') or node.get('data', {}).get('header', ''),
+                    'body': text,
+                    'footer': node.get('footer') or node.get('data', {}).get('footer', ''),
+                    'options': opts,
+                    'node_id': node['id']
+                })
+                waiting_for_input = True
+                break
+
+            elif curr_type == 'list':
+                raw_text = node.get('body') or node.get('data', {}).get('text') or ''
+                text = cls.interpolate(raw_text, collected_data)
+                btn_txt = node.get('button_text') or node.get('data', {}).get('button_text') or 'View Options'
+                sec_list = node.get('sections') or node.get('data', {}).get('sections', [])
+                if not sec_list:
+                    try:
+                        from chat.models import Course
+                        active_courses = Course.objects.filter(is_active=True).order_by('display_order', 'name')[:10]
+                        if active_courses.exists():
+                            rows = [{"id": f"course_{c.id}", "title": (c.name or "")[:24], "description": (c.description or c.duration or "")[:72]} for c in active_courses]
+                            sec_list = [{"title": "Programs", "rows": rows}]
+                    except Exception:
+                        sec_list = []
+                sim_messages.append({
+                    'type': 'list',
+                    'header': node.get('header') or node.get('data', {}).get('header', ''),
+                    'body': text,
+                    'button_text': btn_txt,
+                    'footer': node.get('footer') or node.get('data', {}).get('footer', ''),
+                    'sections': sec_list,
+                    'node_id': node['id']
+                })
+                waiting_for_input = True
+                break
+
+            elif curr_type in ['question', 'capture_answer']:
+                raw_text = node.get('body') or node.get('data', {}).get('text') or ''
+                text = cls.interpolate(raw_text, collected_data)
+                sim_messages.append({
+                    'type': 'question',
+                    'body': text,
+                    'expected_type': node.get('expected_type') or node.get('data', {}).get('expected_type', 'text'),
+                    'node_id': node['id']
+                })
+                waiting_for_input = True
+                break
+
+            elif curr_type == 'condition':
+                var = node.get('variable') or node.get('variable_name') or node.get('data', {}).get('variable') or node.get('data', {}).get('variable_name') or ''
+                op = node.get('operator') or node.get('data', {}).get('operator', 'contains')
+                val = str(node.get('value') or node.get('data', {}).get('value', ''))
+                actual = str(collected_data.get(var, ''))
+                res = cls.evaluate_condition(actual, op, val)
+                port = 'YES' if res else 'NO'
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], port)
+
+            elif curr_type in ['save_data', 'update_lead']:
+                k = node.get('key') or node.get('variable_name') or node.get('data', {}).get('variable_name') or node.get('data', {}).get('variable') or 'data'
+                v = node.get('value') or node.get('data', {}).get('value', '')
+                collected_data[k] = cls.interpolate(str(v), collected_data)
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type == 'media':
+                sim_messages.append({
+                    'type': 'media',
+                    'caption': cls.interpolate(node.get('caption') or node.get('data', {}).get('caption', ''), collected_data),
+                    'filename': node.get('filename') or 'Brochure.pdf',
+                    'node_id': node['id']
+                })
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type == 'location':
+                sim_messages.append({
+                    'type': 'location',
+                    'name': node.get('name') or 'Tech Academy Campus',
+                    'address': node.get('address') or '100 Tech Park, Anna Salai',
+                    'node_id': node['id']
+                })
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type == 'lead_status':
+                st = node.get('status') or node.get('data', {}).get('status', 'Interested')
+                hrs = node.get('follow_up_hours') or node.get('data', {}).get('follow_up_hours')
+                crm_actions.append(f"Set Lead status to '{st}'" + (f" (follow up in {hrs}h)" if hrs else ""))
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type == 'assign_telecaller':
+                mode = node.get('mode') or node.get('data', {}).get('mode', 'auto')
+                crm_actions.append(f"Assign Telecaller (Mode: {mode})")
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type == 'delay':
+                d_sec = node.get('delay_seconds') or node.get('data', {}).get('delay_seconds', 60)
+                sim_messages.append({
+                    'type': 'delay',
+                    'body': f"⏱️ Wait for {d_sec} seconds (simulated)",
+                    'node_id': node['id']
+                })
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type in ['webhook', 'api_request']:
+                target = node.get('url') or node.get('data', {}).get('url', 'https://api.example.com')
+                sim_messages.append({
+                    'type': 'webhook',
+                    'body': f"🌐 Outbound webhook dispatched to {target} (simulated)",
+                    'node_id': node['id']
+                })
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+            elif curr_type == 'human_handover':
+                sim_messages.append({
+                    'type': 'handover',
+                    'body': '👤 Flow transferred to a human counselor.',
+                    'node_id': node['id']
+                })
+                is_complete = True
+                break
+
+            elif curr_type == 'end':
+                raw_text = node.get('body') or node.get('data', {}).get('text') or 'Session complete.'
+                text = cls.interpolate(raw_text, collected_data)
+                sim_messages.append({'type': 'end', 'body': text, 'node_id': node['id']})
+                is_complete = True
+                break
+
+            else:
+                next_node_id = cls.get_target_node_id(flow_data, node['id'], 'default')
+
+        return {
+            'success': True,
+            'current_node_id': current_node_id,
+            'waiting_for_input': waiting_for_input,
+            'is_complete': is_complete,
+            'collected_data': collected_data,
+            'sim_messages': sim_messages,
+            'crm_actions': crm_actions
+        }

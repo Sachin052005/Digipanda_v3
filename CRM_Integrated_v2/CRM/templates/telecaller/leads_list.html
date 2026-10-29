@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}MY LEADS - TECHPANDA CRM{% endblock %}
+{% block title %}MY LEADS - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
@@ -99,7 +99,7 @@
     <table class="crm-table tp-table">
       <thead>
         <tr>
-          <th style="width: 80px;">ID</th>
+          <th style="width: 80px;">Sl No</th>
           <th>Lead Name</th>
           <th>Phone</th>
           <th>Branch</th>
@@ -111,7 +111,7 @@
         {% for ld in page_obj %}
         <tr>
           <td>
-            <span style="font-family: monospace; font-weight: 700; color: var(--tp-text-muted);">#{{ ld.id }}</span>
+            <span style="font-family: monospace; font-weight: 700; color: var(--tp-text-muted);" title="Database ID: #{{ ld.id }}">{% if page_obj.start_index %}{{ forloop.counter0|add:page_obj.start_index }}{% else %}{{ forloop.counter }}{% endif %}</span>
           </td>
           <td>
             <strong><a href="{% url 'telecaller_lead_detail' ld.pk %}" style="color: var(--tp-text-primary); text-decoration: none;">{{ ld.name }}</a></strong>

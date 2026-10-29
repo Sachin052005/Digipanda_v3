@@ -1,16 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}Counselors - TECHPANDA CRM{% endblock %}
+{% block title %}Counselors - DigipandaCRM{% endblock %}
 
 {% block content %}
-<!-- Progressive Hierarchy Breadcrumbs -->
-<div class="hierarchy-breadcrumbs">
-  <a href="{% url 'hierarchy_sales_heads_list' %}">Sales Heads</a>
-  <span class="separator">&gt;</span>
-  <a href="{% url 'admin_branch_heads_list' %}">Branch Heads</a>
-  <span class="separator">&gt;</span>
-  <span class="current">Counselors</span>
-</div>
-
 <div class="page-header">
   <div class="page-title-group">
     <h1>Counselors</h1>
@@ -74,7 +65,7 @@
         {% for c in page_obj %}
         <tr>
           <td>
-            <strong><a href="{% url 'counselor_telecallers' c.pk %}" style="color: var(--primary); text-decoration: none;">{{ c.get_full_name|default:c.username }}</a></strong>
+            <strong><a href="{% url 'admin_counselor_detail' c.pk %}" style="color: var(--primary); text-decoration: none;">{{ c.get_full_name|default:c.username }}</a></strong>
             <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ c.username }}</div>
           </td>
           <td>{{ c.email }}</td>

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Branch Admin Detail - {{ target_user.get_full_name|default:target_user.username }} - DigipandaCRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <h1>{{ target_user.get_full_name|default:target_user.username }}</h1>
+    <p style="color: var(--text-muted); font-size: 0.85rem;">Branch Administrator &bull; {{ target_user.branch.name|default:"Unassigned" }}</p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px;">
+    <a href="{% url 'admin_branch_admins_list' %}" class="btn btn-secondary">Back to List</a>
+    <a href="{% url 'admin_branch_admin_edit' target_user.pk %}" class="btn btn-primary">Edit Details</a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+  <div class="crm-card" style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; padding: 20px;">
+    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--text-main);">User Profile</h3>
+    <table class="crm-table" style="width: 100%;">
+      <tr>
+        <td style="font-weight: 600; width: 140px; color: var(--text-muted);">Role</td>
+        <td><span class="badge" style="background: #e0e7ff; color: #4338ca;">Branch Admin</span></td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Username</td>
+        <td><code>@{{ target_user.username }}</code></td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Email</td>
+        <td>{{ target_user.email }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Phone</td>
+        <td>{{ target_user.phone|default:"-" }}</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Branch</td>
+        <td><strong>{{ target_user.branch.name|default:"-" }}</strong></td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Account Status</td>
+        <td>
+          {% if target_user.is_active %}
+          <span class="badge badge-active" style="background: #dcfce7; color: #15803d;">Active</span>
+          {% else %}
+          <span class="badge badge-inactive" style="background: #fee2e2; color: #b91c1c;">Inactive</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight: 600; color: var(--text-muted);">Joined Date</td>
+        <td>{{ target_user.date_joined|date:"M d, Y H:i" }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="crm-card" style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; padding: 20px;">
+    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: var(--text-main);">Branch Statistics</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+      <div style="padding: 16px; background: rgba(37, 99, 235, 0.05); border-radius: 8px; border: 1px solid rgba(37, 99, 235, 0.15);">
+        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #2563eb;">Enrolled Students</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ enrolled_count }}</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Branch students enrolled</div>
+      </div>
+      <div style="padding: 16px; background: rgba(16, 185, 129, 0.05); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.15);">
+        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #059669;">Total Branch Leads</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #059669; margin: 4px 0;">{{ leads_count }}</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Total leads at branch</div>
+      </div>
+    </div>
+
+    <div>
+      {% if target_user.branch %}
+      <a href="{% url 'admin_enrolled_students' %}?branch={{ target_user.branch.id }}" class="btn btn-primary" style="width: 100%; text-align: center; justify-content: center; display: flex;">
+        View {{ target_user.branch.name }} Enrolled Students &rarr;
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

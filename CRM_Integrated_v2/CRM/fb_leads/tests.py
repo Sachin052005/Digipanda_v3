@@ -23,10 +23,11 @@ SECRET = "app-secret-123"
 FB = dict(FB_VERIFY_TOKEN="verify-me", FB_APP_SECRET=SECRET, FB_PAGE_TOKEN="page-token", FB_PAGE_ID="PAGE1")
 
 
-def graph_lead(lead_id="L1", phone="+91 98765 11111", name="Priya S", extra=None, form_id="F1"):
+def graph_lead(lead_id="L1", phone="+91 98765 11111", name="Priya S", extra=None, form_id="F1", email=None):
+    lead_email = email if email is not None else (f"{lead_id.lower()}@example.com" if lead_id != "L1" else "priya@example.com")
     fields = [{"name": "full_name", "values": [name]},
               {"name": "phone_number", "values": [phone]},
-              {"name": "email", "values": ["priya@example.com"]}]
+              {"name": "email", "values": [lead_email]}]
     for k, v in (extra or {}).items():
         fields.append({"name": k, "values": [v]})
     return {"id": lead_id, "created_time": "2026-10-10T09:30:00+0000", "field_data": fields,
@@ -37,7 +38,7 @@ def fake_graph(leads, form_name="Data Science Enquiry"):
     """Stand-in for fb_leads.facebook._get (Graph API)."""
     by_id = {l["id"]: l for l in leads}
 
-    def _get(path, params=None):
+    def _get(path, params=None, page_id=None, token=None, *args, **kwargs):
         if path in by_id:
             return by_id[path]
         if path.endswith("/leadgen_forms"):
@@ -195,3 +196,66 @@ class FacebookToCRMTests(TestCase):
         r = self.client.get(reverse("admin_lead_detail", args=[lead.pk]))
         self.assertContains(r, "Facebook Lead Ad")
         self.assertContains(r, "Data Science Enquiry")
+
+    def test_auto_sync_toggle_and_scheduler(self):
+        from fb_leads.models import FacebookAccount, FacebookPage
+        from fb_leads.scheduler import run_auto_sync_cycle
+
+        self.client.force_login(self.admin)
+        acc = FacebookAccount.objects.create(account_name="Marketing Corp", access_token="EAA123")
+        page = FacebookPage.objects.create(
+            account=acc,
+            page_id="PAGE99",
+            page_name="TechPanda Chennai",
+            page_access_token="tok99",
+            branch=self.velachery,
+            auto_sync_enabled=True,
+            sync_interval_minutes=3,
+        )
+        self.assertTrue(page.auto_sync_enabled)
+        self.assertEqual(page.sync_interval_minutes, 3)
+
+        # 1. Toggle Auto-Sync via POST
+        r = self.client.post(
+            reverse("fb_leads:fb_page_toggle_autosync", args=[page.id]),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertFalse(data["auto_sync_enabled"])
+        page.refresh_from_db()
+        self.assertFalse(page.auto_sync_enabled)
+
+        # 2. Toggle back on
+        r = self.client.post(
+            reverse("fb_leads:fb_page_toggle_autosync", args=[page.id]),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        data = r.json()
+        self.assertTrue(data["auto_sync_enabled"])
+        page.refresh_from_db()
+        self.assertTrue(page.auto_sync_enabled)
+        self.assertIsNotNone(page.next_sync_at)
+
+        # 3. Update Interval to 1 minute
+        r = self.client.post(
+            reverse("fb_leads:fb_page_update_interval", args=[page.id]),
+            data={"interval": "1"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(r.status_code, 200)
+        page.refresh_from_db()
+        self.assertEqual(page.sync_interval_minutes, 1)
+
+        # 4. Status API
+        r = self.client.get(
+            reverse("fb_leads:fb_api_autosync_status"),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(r.status_code, 200)
+        status_data = r.json()
+        self.assertTrue(status_data["success"])
+        page_entry = [p for p in status_data["pages"] if p["id"] == page.id][0]
+        self.assertEqual(page_entry["sync_interval_minutes"], 1)
+        self.assertTrue(page_entry["auto_sync_enabled"])
+

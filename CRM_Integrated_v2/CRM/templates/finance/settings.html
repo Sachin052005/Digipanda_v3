@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Finance Settings & User Manual - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <div class="tp-page-header" style="margin-bottom: 24px;">
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--tp-text-primary); margin: 0;">Settings</h1>
+  </div>
+
+  <!-- Section 1: Account -->
+  <div class="card tp-card-glass" style="margin-bottom: 24px; padding: 22px;">
+    <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">Account</h3>
+    <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 0 0 16px 0;">
+      Update your password, or request a reset link if you've forgotten it.
+    </p>
+
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <button type="button" class="btn btn-primary" onclick="document.getElementById('password-modal').style.display='flex';" style="background: #dc2626; font-weight: 700; font-size: 0.84rem;">
+        Change password
+      </button>
+      <a href="{% url 'password_reset' %}" class="btn btn-secondary" style="font-weight: 600; font-size: 0.84rem;">
+        Forgot password
+      </a>
+    </div>
+  </div>
+
+  <!-- Section 2: User Manual -->
+  <div class="card tp-card-glass" style="margin-bottom: 24px; padding: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div>
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">User Manual</h3>
+      <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 0;">
+        How to get each task done as a Branch Financial Head — where to go, what to click, and what happens next.
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('manual-modal').style.display='flex';" style="background: #dc2626; font-weight: 700; font-size: 0.84rem;">
+      View manual
+    </button>
+  </div>
+
+  <!-- Section 3: Demo Videos -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 4px 0;">Demo Videos</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 0;">
+          Short walkthroughs for what you do here — played in-app, no leaving the CRM.
+        </p>
+      </div>
+      <div style="font-size: 0.82rem; color: var(--tp-text-muted); font-weight: 600;">7 videos</div>
+    </div>
+
+    <!-- 7 Video Cards Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+      <!-- Video 1 -->
+      <div class="card" style="padding: 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer;" onclick="playDemo('Payroll Approvals', 'Step-by-step verification and approval of monthly branch staff payroll.')">
+        <div style="height: 120px; background: rgba(0,0,0,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--tp-text-primary);">Ops360 | Payroll Approvals — Branch Finance Head</div>
+      </div>
+
+      <!-- Video 2 -->
+      <div class="card" style="padding: 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer;" onclick="playDemo('Salary Management', 'Configuring employee salary structures and managing salary arrears.')">
+        <div style="height: 120px; background: rgba(0,0,0,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--tp-text-primary);">Ops360 | Salary Management — Branch Finance Head</div>
+      </div>
+
+      <!-- Video 3 -->
+      <div class="card" style="padding: 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer;" onclick="playDemo('Record Expense', 'Adding branch expenses with bills and tracking budget variance.')">
+        <div style="height: 120px; background: rgba(0,0,0,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--tp-text-primary);">Ops360 | Record Expense — Branch Finance Head</div>
+      </div>
+
+      <!-- Video 4 -->
+      <div class="card" style="padding: 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer;" onclick="playDemo('Renewal Alerts', 'Scheduling recurring rent, electricity, and subscription reminders.')">
+        <div style="height: 120px; background: rgba(0,0,0,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--tp-text-primary);">Ops360 | Renewal Alerts — Branch Finance Head</div>
+      </div>
+
+      <!-- Video 5 -->
+      <div class="card" style="padding: 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer;" onclick="playDemo('Branch Transfer Request', 'Initiating internal cash or asset transfers between academy branches.')">
+        <div style="height: 120px; background: rgba(0,0,0,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--tp-text-primary);">Ops360 | Branch Transfer Request — Branch Finance Head</div>
+      </div>
+
+      <!-- Video 6 -->
+      <div class="card" style="padding: 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer;" onclick="playDemo('Internal Transfer Approval', 'Reviewing delivery challans and acknowledging incoming branch transfers.')">
+        <div style="height: 120px; background: rgba(0,0,0,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--tp-text-primary);">Ops360 | Internal Transfer Approval & Acknowledgement</div>
+      </div>
+
+      <!-- Video 7 -->
+      <div class="card" style="padding: 14px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer;" onclick="playDemo('Finance Oversight', 'Verifying receipts, editing vouchers, or reverting payment discrepancies.')">
+        <div style="height: 120px; background: rgba(0,0,0,0.06); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--tp-text-primary);">Ops360 | Finance Oversight — Branch Finance Head</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Password Change Modal -->
+<div id="password-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+  <div class="card" style="max-width: 440px; width: 100%; padding: 24px; border-radius: 12px; background: var(--bg-card);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Change Account Password</h3>
+      <button type="button" onclick="document.getElementById('password-modal').style.display='none';" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="change_password" value="1">
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+        {{ pw_form.as_p }}
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('password-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="background: #dc2626;">Save Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- User Manual Modal -->
+<div id="manual-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+  <div class="card" style="max-width: 680px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 28px; border-radius: 12px; background: var(--bg-card);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+      <h3 style="font-size: 1.2rem; font-weight: 800; margin: 0;">Branch Financial Head — Operational Guide</h3>
+      <button type="button" onclick="document.getElementById('manual-modal').style.display='none';" style="background: none; border: none; font-size: 1.4rem; cursor: pointer;">&times;</button>
+    </div>
+    <div style="font-size: 0.86rem; line-height: 1.6; color: var(--tp-text-primary);">
+      <h4 style="font-weight: 700; margin: 12px 0 4px 0;">1. Daily Collections Verification</h4>
+      <p>Navigate to <em>Approvals &rarr; Income</em> to inspect payment proofs uploaded by counselors. Approve to record payments or deny with comments to request a re-upload.</p>
+
+      <h4 style="font-weight: 700; margin: 12px 0 4px 0;">2. Pending Payment Escalations</h4>
+      <p>Under <em>Pending Payments</em>, review students grouped by batch start dates. Flag overdue students to counselors for follow-up before suspension triggers.</p>
+
+      <h4 style="font-weight: 700; margin: 12px 0 4px 0;">3. Monthly Payroll Runs</h4>
+      <p>On the 25th of each month, navigate to <em>HR & Payroll &rarr; Payroll</em>. Click <strong>Generate</strong>, select payable employees, and confirm net amounts. Deferring an employee saves their balance to Salary Arrears.</p>
+
+      <h4 style="font-weight: 700; margin: 12px 0 4px 0;">4. Expenses & GST Ledger</h4>
+      <p>Log all vendor payments under <em>Expenses & Ledger</em>. Ensure GST invoices are filed accurately to maintain compliance.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Video Walkthrough Player Modal -->
+<div id="video-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+  <div class="card" style="max-width: 580px; width: 100%; padding: 24px; border-radius: 12px; background: var(--bg-card); text-align: center;">
+    <h3 id="video-title" style="font-size: 1.15rem; font-weight: 800; margin: 0 0 8px 0;"></h3>
+    <p id="video-desc" style="font-size: 0.85rem; color: var(--tp-text-muted); margin: 0 0 20px 0;"></p>
+    <div style="height: 220px; background: rgba(0,0,0,0.05); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 20px; border: 1px dashed var(--border-color);">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: #dc2626; color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      </div>
+      <div style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-muted);">In-App Interactive Tutorial Ready</div>
+    </div>
+    <button type="button" class="btn btn-secondary" onclick="document.getElementById('video-modal').style.display='none';">Close Player</button>
+  </div>
+</div>
+
+<script>
+function playDemo(title, desc) {
+  document.getElementById('video-title').textContent = title;
+  document.getElementById('video-desc').textContent = desc;
+  document.getElementById('video-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}

@@ -32,7 +32,12 @@
       var cards = col.querySelectorAll('.tp-kanban-card');
       var badge = document.getElementById('count-' + colId);
       if (badge) {
-        badge.textContent = cards.length;
+        var countSpan = badge.querySelector('.count-val');
+        if (countSpan) {
+          countSpan.textContent = cards.length;
+        } else {
+          badge.textContent = cards.length;
+        }
       }
       var emptySlot = col.querySelector('.tp-kanban-empty-slot');
       if (emptySlot) {
@@ -67,6 +72,37 @@
     }, 3200);
   }
 
+  function getGhostPlaceholder() {
+    var placeholder = document.getElementById('tp-kanban-ghost');
+    if (!placeholder) {
+      placeholder = document.createElement('div');
+      placeholder.id = 'tp-kanban-ghost';
+      placeholder.className = 'tp-kanban-ghost-placeholder';
+    }
+    return placeholder;
+  }
+
+  function removeGhostPlaceholder() {
+    var placeholder = document.getElementById('tp-kanban-ghost');
+    if (placeholder && placeholder.parentNode) {
+      placeholder.parentNode.removeChild(placeholder);
+    }
+  }
+
+  function getDragAfterElement(container, y) {
+    var draggableElements = Array.prototype.slice.call(container.querySelectorAll('.tp-kanban-card:not(.is-dragging)'));
+
+    return draggableElements.reduce(function (closest, child) {
+      var box = child.getBoundingClientRect();
+      var offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
   function initKanban() {
     var cards = document.querySelectorAll('.tp-kanban-card');
     var dropzones = document.querySelectorAll('.tp-kanban-dropzone');
@@ -76,17 +112,22 @@
         draggedCard = card;
         originContainer = card.parentElement;
         originNextSibling = card.nextElementSibling;
-        card.style.opacity = '0.5';
-        card.style.transform = 'scale(0.98)';
+        
+        // Add floating glass elevation class with micro-delay for clean drag preview
+        setTimeout(function () {
+          card.classList.add('is-dragging');
+        }, 10);
+
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', card.getAttribute('data-lead-id'));
       });
 
       card.addEventListener('dragend', function () {
         if (draggedCard) {
-          draggedCard.style.opacity = '1';
-          draggedCard.style.transform = 'none';
+          draggedCard.classList.remove('is-dragging');
         }
+        removeGhostPlaceholder();
+        dropzones.forEach(function (z) { z.classList.remove('drag-active'); });
         draggedCard = null;
       });
     });
@@ -95,33 +136,63 @@
       zone.addEventListener('dragover', function (e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        zone.style.background = 'var(--tp-surface-card-hover)';
-        zone.style.borderRadius = 'var(--tp-radius-md)';
+        zone.classList.add('drag-active');
+
+        if (!draggedCard) return;
+
+        var ghost = getGhostPlaceholder();
+        var afterElement = getDragAfterElement(zone, e.clientY);
+        if (afterElement == null) {
+          zone.appendChild(ghost);
+        } else {
+          zone.insertBefore(ghost, afterElement);
+        }
       });
 
-      zone.addEventListener('dragleave', function () {
-        zone.style.background = 'transparent';
+      zone.addEventListener('dragleave', function (e) {
+        // Only remove if leaving the dropzone boundary entirely
+        if (!zone.contains(e.relatedTarget)) {
+          zone.classList.remove('drag-active');
+        }
       });
 
       zone.addEventListener('drop', function (e) {
         e.preventDefault();
-        zone.style.background = 'transparent';
+        zone.classList.remove('drag-active');
 
         if (!draggedCard) return;
 
+        var ghost = document.getElementById('tp-kanban-ghost');
         var targetContainer = zone;
         var leadId = draggedCard.getAttribute('data-lead-id');
         var targetStatus = zone.getAttribute('data-target-status');
         var currentStatus = draggedCard.getAttribute('data-current-status');
 
+        draggedCard.classList.remove('is-dragging');
+
         if (originContainer === targetContainer) {
-          // Dropped in the same column
+          // Reordering within same column
+          if (ghost && ghost.parentElement === targetContainer) {
+            targetContainer.insertBefore(draggedCard, ghost);
+          }
+          removeGhostPlaceholder();
           return;
         }
 
-        // 1. Optimistic UI update: move card to target column immediately
-        targetContainer.appendChild(draggedCard);
+        // 1. Optimistic UI update: place card where ghost was
+        if (ghost && ghost.parentElement === targetContainer) {
+          targetContainer.insertBefore(draggedCard, ghost);
+        } else {
+          targetContainer.appendChild(draggedCard);
+        }
+        removeGhostPlaceholder();
         updateColumnCounts();
+
+        // Spring snap animation feedback
+        draggedCard.style.animation = 'tpCardSnap 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        setTimeout(function () {
+          if (draggedCard) draggedCard.style.animation = '';
+        }, 320);
 
         // 2. Fire backend transition API
         var csrfToken = getCookie('csrftoken') || '';

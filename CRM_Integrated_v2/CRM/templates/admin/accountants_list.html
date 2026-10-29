@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}Accountants Management — DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin: 0;">ACCOUNTANTS</h1>
+      <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 9999px;">
+        {{ total_accountants }} Total
+      </span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Financial auditors and accountant staff managing student payment verifications across branches.
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 8px;">
+    <a href="{% url 'accountant_dashboard' %}" class="btn btn-secondary">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      Financial Dashboard
+    </a>
+    <a href="{% url 'admin_user_create' %}?role=ACCOUNTANT" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Add Accountant
+    </a>
+  </div>
+</div>
+
+<!-- KPI SUMMARY CARDS -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Total Accountants</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ total_accountants }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Finance staff on record</div>
+  </div>
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Active Staff</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #059669; margin: 4px 0;">{{ active_accountants }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Active verification officers</div>
+  </div>
+  <div style="background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Branches Covered</div>
+    <div style="font-size: 1.75rem; font-weight: 800; color: #7c3aed; margin: 4px 0;">{{ branches|length }}</div>
+    <div style="font-size: 0.75rem; color: #6b7280;">Active center locations</div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-card" style="margin-bottom: 20px; background: #fff; border-radius: 8px; padding: 16px; border: 1px solid var(--border-color, #e5e7eb);">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <div class="filter-col" style="flex: 2 1 200px;">
+      <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px;">Search Staff</label>
+      <input type="text" name="q" class="form-control" placeholder="Search name, username, email, phone..." value="{{ search_query }}">
+    </div>
+    <div class="filter-col" style="flex: 1 1 150px;">
+      <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px;">Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="filter-col" style="flex: 1 1 160px;">
+      <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px;">Branch</label>
+      <select name="branch" class="form-select">
+        <option value="">All Branches / HQ</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="display: flex; gap: 8px;">
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="{% url 'admin_accountants_list' %}" class="btn btn-secondary">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- ACCOUNTANTS TABLE -->
+<div class="table-card" style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+  <div class="table-responsive" style="width: 100%; overflow-x: auto;">
+    <table class="crm-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="background: #f8fafc; border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <th style="padding: 12px 14px; text-align: left;">Name / Login ID</th>
+          <th style="padding: 12px 14px; text-align: left;">Assigned Branch</th>
+          <th style="padding: 12px 14px; text-align: left;">Contact Details</th>
+          <th style="padding: 12px 14px; text-align: left;">Account Status</th>
+          <th style="padding: 12px 14px; text-align: left;">Joined Date</th>
+          <th style="padding: 12px 14px; text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for acc in accountants %}
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 12px 14px; vertical-align: middle;">
+            <div style="font-weight: 700; color: var(--text-main, #0f172a);">
+              <a href="{% url 'admin_accountant_detail' acc.id %}" style="color: var(--primary, #2563eb); text-decoration: none;">{{ acc.get_full_name|default:acc.username }}</a>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted, #64748b); font-family: monospace;">
+              @{{ acc.username }}
+            </div>
+          </td>
+          <td style="padding: 12px 14px; vertical-align: middle;">
+            {% if acc.branch %}
+            <span class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; font-weight: 600;">
+              {{ acc.branch.name }}
+            </span>
+            {% else %}
+            <span class="badge" style="background: #e0e7ff; color: #4338ca; font-weight: 600;">Head Office / Central</span>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: middle;">
+            <div style="font-size: 0.85rem; font-family: monospace;">{{ acc.phone|default:"-" }}</div>
+            {% if acc.email %}
+            <div style="font-size: 0.75rem; color: var(--text-muted, #64748b);">{{ acc.email }}</div>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: middle;">
+            {% if acc.is_active %}
+            <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 600;">Active</span>
+            {% else %}
+            <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 600;">Inactive</span>
+            {% endif %}
+            {% if acc.invitation_status == 'SENT' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.68rem;">Invite Sent</span></div>
+            {% elif acc.invitation_status == 'ACTIVATED' %}
+            <div style="margin-top: 3px;"><span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.68rem;">Activated</span></div>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: middle; color: var(--text-muted, #64748b);">
+            {{ acc.date_joined|date:"M d, Y" }}
+          </td>
+          <td style="padding: 12px 14px; vertical-align: middle; text-align: right; white-space: nowrap;">
+            <a href="{% url 'resend_user_invitation' acc.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;" title="Resend Welcome Email & Setup Link">
+              Invite
+            </a>
+            <a href="{% url 'admin_set_user_password' acc.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;" title="Set Password">
+              Password
+            </a>
+            <form method="POST" action="{% url 'admin_accountant_toggle_status' acc.id %}" style="display: inline-block; margin-left: 4px;">
+              {% csrf_token %}
+              <button type="submit" class="btn {% if acc.is_active %}btn-secondary{% else %}btn-primary{% endif %}" style="font-size: 0.75rem; padding: 4px 8px;">
+                {% if acc.is_active %}Deactivate{% else %}Activate{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 48px 16px; color: var(--text-muted, #64748b);">
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main, #0f172a);">No Accountants Found</div>
+            <div style="font-size: 0.85rem; margin-top: 4px;">Click "+ Add Accountant" above to create a dedicated finance role.</div>
+            <div style="margin-top: 14px;">
+              <a href="{% url 'admin_user_create' %}?role=ACCOUNTANT" class="btn btn-primary">+ Add Accountant</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

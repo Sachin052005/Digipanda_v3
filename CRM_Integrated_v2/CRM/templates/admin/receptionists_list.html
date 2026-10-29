@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Receptionists - TECHPANDA CRM{% endblock %}
+{% block title %}Receptionists - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
@@ -21,7 +21,7 @@
     </a>
     <a href="{% url 'admin_receptionist_create' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      + Add Receptionist
+       Add Receptionist
     </a>
   </div>
 </div>
@@ -76,46 +76,51 @@
 </div>
 
 <!-- RECEPTIONISTS TABLE -->
-<div class="table-card">
-  <div class="table-responsive">
-    <table class="table" style="margin: 0;">
+<div class="table-card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+  <div class="table-responsive" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+    <table class="crm-table" style="width: 100%; min-width: 900px; table-layout: fixed; border-collapse: collapse;">
       <thead>
         <tr>
-          <th>Name / Username</th>
-          <th>Assigned Branch</th>
-          <th>Contact</th>
-          <th>Status</th>
-          <th>Joined Date</th>
-          <th style="text-align: right;">Actions</th>
+          <th style="width: 22%; min-width: 180px; text-align: left; padding: 12px 14px;">Name / Username</th>
+          <th style="width: 16%; min-width: 140px; text-align: left; padding: 12px 14px;">Assigned Branch</th>
+          <th style="width: 20%; min-width: 160px; text-align: left; padding: 12px 14px;">Contact</th>
+          <th style="width: 12%; min-width: 110px; text-align: left; padding: 12px 14px;">Status</th>
+          <th style="width: 12%; min-width: 110px; text-align: left; padding: 12px 14px;">Joined Date</th>
+          <th style="width: 18%; min-width: 180px; text-align: right; padding: 12px 14px;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for rec in page_obj %}
-        <tr>
-          <td>
-            <div style="font-weight: 700; color: #1e293b;">
-              {{ rec.get_full_name|default:rec.username }}
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 12px 14px; vertical-align: middle;">
+            <div style="font-weight: 700; color: var(--text-main);">
+              <a href="{% url 'admin_receptionist_detail' rec.pk %}" style="color: var(--primary); text-decoration: none;">{{ rec.get_full_name|default:rec.username }}</a>
             </div>
-            <div style="font-size: 0.75rem; color: #64748b; font-family: monospace;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">
               @{{ rec.username }}
             </div>
           </td>
-          <td>
+          <td style="padding: 12px 14px; vertical-align: middle;">
             {% if rec.branch %}
-            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 600;">
+            <span class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; font-weight: 600;">
               {{ rec.branch.name }}
             </span>
+            <div style="margin-top: 3px;">
+              <a href="{% url 'admin_walkin_desk' %}?branch={{ rec.branch.id }}" style="font-size: 0.725rem; color: #2563eb; text-decoration: none;" title="Open Walk-in Desk for {{ rec.branch.name }}">
+                Branch Desk &rarr;
+              </a>
+            </div>
             {% else %}
             <span class="badge" style="background: #fee2e2; color: #991b1b;">Unassigned</span>
             {% endif %}
           </td>
-          <td>
-            <div style="font-size: 0.85rem; font-family: monospace;">{{ rec.phone|default:"-" }}</div>
+          <td style="padding: 12px 14px; vertical-align: middle;">
+            <div style="font-size: 0.85rem; font-family: monospace; color: var(--text-main);">{{ rec.phone|default:"-" }}</div>
             {% if rec.email %}
-            <div style="font-size: 0.75rem; color: #64748b;">{{ rec.email }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ rec.email }}">{{ rec.email }}</div>
             {% endif %}
           </td>
-          <td>
+          <td style="padding: 12px 14px; vertical-align: middle;">
             {% if rec.is_active %}
             <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 600;">Active</span>
             {% else %}
@@ -129,15 +134,15 @@
             <div style="margin-top: 3px;"><span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.68rem;">Activated</span></div>
             {% endif %}
           </td>
-          <td>
-            <div style="font-size: 0.85rem; color: #475569;">{{ rec.date_joined|date:"M d, Y" }}</div>
+          <td style="padding: 12px 14px; vertical-align: middle;">
+            <div style="font-size: 0.85rem; color: var(--text-muted);">{{ rec.date_joined|date:"M d, Y" }}</div>
           </td>
-          <td style="text-align: right; white-space: nowrap;">
+          <td style="padding: 12px 14px; vertical-align: middle; text-align: right; white-space: nowrap;">
             <a href="{% url 'resend_user_invitation' rec.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;" title="Resend Welcome Email & Setup Link">
-              Resend Invite
+              Invite
             </a>
             <a href="{% url 'admin_receptionist_change_password' rec.id %}" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 8px;">
-              Reset Password
+              Password
             </a>
             <form method="POST" action="{% url 'admin_receptionist_toggle_status' rec.id %}" style="display: inline-block; margin-left: 4px;">
               {% csrf_token %}
@@ -149,10 +154,10 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" style="text-align: center; padding: 48px 16px; color: #6b7280;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: #9ca3af;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <div style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">No Receptionists Found</div>
-            <div style="font-size: 0.85rem; margin-top: 4px; color: #64748b;">Click "+ Add Receptionist" above to create a new front-desk account for a branch.</div>
+          <td colspan="6" style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: var(--text-muted);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">No Receptionists Found</div>
+            <div style="font-size: 0.85rem; margin-top: 4px; color: var(--text-muted);">Click "+ Add Receptionist" above to create a new front-desk account for a branch.</div>
             <div style="margin-top: 14px;">
               <a href="{% url 'admin_receptionist_create' %}" class="btn btn-primary">+ Add Receptionist</a>
             </div>

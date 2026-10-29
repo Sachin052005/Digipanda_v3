@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Enrolled Students & Fee Management - TECHPANDA CRM{% endblock %}
+{% block title %}Enrolled Students & Fee Management - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
@@ -22,54 +22,79 @@
 </div>
 
 <!-- Financial KPI Cards -->
-<div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
-  <div class="kpi-card" style="background: #fff; padding: 18px 20px; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0); box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-    <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Enrolled Students</div>
-    <div style="font-size: 1.6rem; font-weight: 700; color: #0f172a; margin-top: 4px;">{{ total_enrolled }}</div>
-    <div style="font-size: 0.75rem; color: #10b981; margin-top: 4px;">Active admissions</div>
-  </div>
-
-  <div class="kpi-card" style="background: #fff; padding: 18px 20px; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0); box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-    <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Total Course Fees</div>
-    <div style="font-size: 1.6rem; font-weight: 700; color: #0f172a; margin-top: 4px;">₹{{ total_receivable|floatformat:2 }}</div>
-    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Agreed total payable (incl. GST)</div>
-  </div>
-
-  <div class="kpi-card" style="background: #fff; padding: 18px 20px; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0); box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-    <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Total Collected</div>
-    <div style="font-size: 1.6rem; font-weight: 700; color: #059669; margin-top: 4px;">₹{{ total_collected|floatformat:2 }}</div>
-    <div style="font-size: 0.75rem; color: #059669; margin-top: 4px;">Verified payments</div>
-  </div>
-
-  <div class="kpi-card" style="background: #fff; padding: 18px 20px; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0); box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-    <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Outstanding Balance</div>
-    <div style="font-size: 1.6rem; font-weight: 700; color: #d97706; margin-top: 4px;">₹{{ total_outstanding|floatformat:2 }}</div>
-    <div style="font-size: 0.75rem; color: #d97706; margin-top: 4px;">Remaining to collect</div>
-  </div>
-
-  <div class="kpi-card" style="background: #fff; padding: 18px 20px; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0); box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-    <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">Overdue Installments</div>
-    <div style="font-size: 1.6rem; font-weight: 700; color: {% if overdue_count %}#dc2626{% else %}#10b981{% endif %}; margin-top: 4px;">
-      {{ overdue_count }}
+<div class="kpi-grid tp-stagger-container" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="kpi-card tp-kpi-card tp-hover-lift">
+    <div class="kpi-info">
+      <h4>Enrolled Students</h4>
+      <div class="kpi-value" style="color: var(--tp-primary-600);">{{ total_enrolled }}</div>
+      <div style="font-size: 0.75rem; color: #10b981; margin-top: 4px;">Active admissions</div>
     </div>
-    <div style="font-size: 0.75rem; color: {% if overdue_count %}#dc2626{% else %}#10b981{% endif %}; margin-top: 4px;">
-      {% if overdue_count %}Action required{% else %}All schedules up to date{% endif %}
+    <div class="kpi-icon-wrap blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card tp-kpi-card tp-hover-lift">
+    <div class="kpi-info">
+      <h4>Total Course Fees</h4>
+      <div class="kpi-value" style="color: var(--tp-text-primary);">₹{{ total_receivable|floatformat:2 }}</div>
+      <div style="font-size: 0.75rem; color: var(--tp-text-muted); margin-top: 4px;">Agreed total (incl. GST)</div>
+    </div>
+    <div class="kpi-icon-wrap purple">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card tp-kpi-card tp-hover-lift">
+    <div class="kpi-info">
+      <h4>Total Collected</h4>
+      <div class="kpi-value" style="color: #059669;">₹{{ total_collected|floatformat:2 }}</div>
+      <div style="font-size: 0.75rem; color: #059669; margin-top: 4px;">Verified payments</div>
+    </div>
+    <div class="kpi-icon-wrap green">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card tp-kpi-card tp-hover-lift">
+    <div class="kpi-info">
+      <h4>Outstanding Balance</h4>
+      <div class="kpi-value" style="color: #d97706;">₹{{ total_outstanding|floatformat:2 }}</div>
+      <div style="font-size: 0.75rem; color: #d97706; margin-top: 4px;">Remaining to collect</div>
+    </div>
+    <div class="kpi-icon-wrap amber">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card tp-kpi-card tp-hover-lift">
+    <div class="kpi-info">
+      <h4>Overdue Installments</h4>
+      <div class="kpi-value" style="color: {% if overdue_count %}#dc2626{% else %}#10b981{% endif %};">
+        {{ overdue_count }}
+      </div>
+      <div style="font-size: 0.75rem; color: {% if overdue_count %}#dc2626{% else %}#10b981{% endif %}; margin-top: 4px;">
+        {% if overdue_count %}Action required{% else %}All schedules up to date{% endif %}
+      </div>
+    </div>
+    <div class="kpi-icon-wrap {% if overdue_count %}rose{% else %}green{% endif %}">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
     </div>
   </div>
 </div>
 
 <!-- Filters -->
-<div class="crm-card" style="background: #fff; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0); padding: 16px 20px; margin-bottom: 20px;">
-  <form method="get" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
-    <div style="flex: 1; min-width: 220px;">
-      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted);">Search Student</label>
-      <input type="text" name="q" value="{{ search_query }}" placeholder="Student name, phone, email, enrollment #" class="form-control" style="width: 100%;">
+<div class="filter-card tp-card" style="padding: 16px 20px; margin-bottom: 20px;">
+  <form method="get" class="filter-form" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+    <div class="filter-col" style="flex: 1; min-width: 220px;">
+      <label class="tp-label">Search Student</label>
+      <input type="text" name="q" value="{{ search_query }}" placeholder="Student name, phone, email, enrollment #" class="form-control tp-input" style="width: 100%;">
     </div>
 
     {% if not is_counselor_view and branches %}
-    <div style="min-width: 160px;">
-      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted);">Branch</label>
-      <select name="branch" class="form-control">
+    <div class="filter-col" style="min-width: 160px;">
+      <label class="tp-label">Branch</label>
+      <select name="branch" class="form-select tp-select">
         <option value="">All Branches</option>
         {% for b in branches %}
         <option value="{{ b.id }}" {% if selected_branch == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
@@ -79,9 +104,9 @@
     {% endif %}
 
     {% if not is_counselor_view and counselors %}
-    <div style="min-width: 160px;">
-      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted);">Counselor</label>
-      <select name="counselor" class="form-control">
+    <div class="filter-col" style="min-width: 160px;">
+      <label class="tp-label">Counselor</label>
+      <select name="counselor" class="form-select tp-select">
         <option value="">All Counselors</option>
         {% for c in counselors %}
         <option value="{{ c.id }}" {% if selected_counselor == c.id|stringformat:"s" %}selected{% endif %}>{{ c.get_full_name|default:c.username }}</option>
@@ -90,9 +115,9 @@
     </div>
     {% endif %}
 
-    <div style="min-width: 160px;">
-      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted);">Payment Status</label>
-      <select name="payment_status" class="form-control">
+    <div class="filter-col" style="min-width: 160px;">
+      <label class="tp-label">Payment Status</label>
+      <select name="payment_status" class="form-select tp-select">
         <option value="">All Statuses</option>
         {% for val, label in payment_statuses %}
         <option value="{{ val }}" {% if selected_payment_status == val %}selected{% endif %}>{{ label }}</option>
@@ -101,19 +126,19 @@
     </div>
 
     <div style="display: flex; gap: 8px;">
-      <button type="submit" class="btn btn-primary">Filter</button>
-      <a href="{% if is_counselor_view %}{% url 'counselor_enrolled_students' %}{% else %}{% url 'admin_enrolled_students' %}{% endif %}" class="btn btn-secondary">Reset</a>
+      <button type="submit" class="btn btn-primary tp-btn-primary">Filter</button>
+      <a href="{% if is_counselor_view %}{% url 'counselor_enrolled_students' %}{% else %}{% url 'admin_enrolled_students' %}{% endif %}" class="btn btn-secondary tp-btn-secondary">Reset</a>
     </div>
   </form>
 </div>
 
 <!-- Enrolled Students Table -->
-<div class="crm-card" style="background: #fff; border-radius: 10px; border: 1px solid var(--border-color, #e2e8f0); overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+<div class="crm-card tp-card" style="overflow: hidden; margin-bottom: 24px;">
   {% if page_obj.object_list %}
   <div class="table-responsive">
-    <table class="crm-table" style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+    <table class="crm-table tp-table" style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
       <thead>
-        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color, #e2e8f0); text-align: left; font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted);">
+        <tr style="text-align: left; font-size: 0.78rem; text-transform: uppercase;">
           <th style="padding: 12px 16px;">Enrollment #</th>
           <th style="padding: 12px 16px;">Student Information</th>
           <th style="padding: 12px 16px;">Program / Branch</th>
@@ -174,9 +199,6 @@
           </td>
           <td style="padding: 12px 16px; text-align: right; vertical-align: middle;">
             <div style="display: inline-flex; gap: 6px;">
-              <button type="button" class="btn btn-sm btn-secondary" onclick="viewEnrollmentDetails({{ enr.id }})" style="padding: 4px 8px; font-size: 0.78rem;">
-                Schedule
-              </button>
               {% if enr.outstanding_balance > 0 %}
               <button type="button" class="btn btn-sm btn-primary" onclick="openPaymentModal({{ enr.id }}, '{{ enr.student_name|escapejs }}', '{{ enr.outstanding_balance }}')" style="padding: 4px 8px; font-size: 0.78rem;">
                 + Payment
@@ -206,13 +228,13 @@
 </div>
 
 <!-- Record Payment Modal -->
-<div id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="payModalStudentName" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-  <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 480px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; margin: 16px;">
+<div id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="payModalStudentName" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div class="modal-dialog" style="background: var(--bg-card, #fff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); overflow: hidden; margin: 16px;">
     <div style="padding: 16px 20px; background: var(--navy-dark, #0f172a); color: #fff; display: flex; justify-content: space-between; align-items: center;">
       <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">Record Payment Collection</h3>
       <button type="button" onclick="closePaymentModal()" style="background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer;">&times;</button>
     </div>
-    <form id="recordPaymentForm" method="post" action="" style="padding: 20px;">
+    <form id="recordPaymentForm" method="post" action="" enctype="multipart/form-data" style="padding: 20px;">
       {% csrf_token %}
       <div style="margin-bottom: 14px;">
         <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px;">Student</label>
@@ -221,13 +243,13 @@
       </div>
 
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Collection Amount (₹) *</label>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Collection Amount (₹) *</label>
         <input type="number" step="0.01" name="amount" id="payModalAmountInput" required class="form-control" style="width: 100%; font-size: 1.1rem; font-weight: 700;">
       </div>
 
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Payment Method *</label>
-        <select name="payment_method" required class="form-control" style="width: 100%;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Payment Method *</label>
+        <select name="payment_method" id="payModalMethodSelect" required class="form-control" style="width: 100%;" onchange="toggleProofRequirement(this.value)">
           <option value="UPI">UPI / QR Code</option>
           <option value="Bank Transfer">Bank Transfer / NEFT</option>
           <option value="Cash">Cash</option>
@@ -238,31 +260,43 @@
       </div>
 
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Transaction Reference / UTR #</label>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Transaction Reference / UTR #</label>
         <input type="text" name="transaction_reference" class="form-control" placeholder="e.g. UPI Ref, NEFT UTR, Cheque No" style="width: 100%;">
       </div>
 
+      <!-- Payment Proof Screenshot / Receipt Upload -->
+      <div id="proofUploadGroup" style="margin-bottom: 14px; background: var(--bg-card-hover, #f8fafc); border: 1px dashed var(--border-color, #cbd5e1); border-radius: 8px; padding: 12px;">
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-main);">
+          <span>Payment Screenshot / Proof <span id="proofStar" style="color: #ef4444;">*</span></span>
+          <span style="font-size: 0.72rem; color: var(--text-muted, #64748b); font-weight: 400;">JPG, PNG, WEBP (Max 5MB)</span>
+        </label>
+        <input type="file" name="payment_proof" id="payModalProofInput" accept=".jpg,.jpeg,.png,.webp" required class="form-control" style="width: 100%; font-size: 0.85rem; padding: 6px;">
+        <small id="proofNotice" style="display: block; color: var(--text-muted, #475569); font-size: 0.74rem; margin-top: 5px;">
+          Mandatory screenshot for UPI, Bank Transfer, and Card payments. Submitted to Accountant for verification.
+        </small>
+      </div>
+
       <div style="margin-bottom: 16px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Notes</label>
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Notes</label>
         <textarea name="notes" rows="2" class="form-control" placeholder="Optional payment remarks" style="width: 100%;"></textarea>
       </div>
 
       <div style="display: flex; justify-content: flex-end; gap: 8px;">
         <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary">Generate Receipt & Save</button>
+        <button type="submit" class="btn btn-primary">Submit for Verification</button>
       </div>
     </form>
   </div>
 </div>
 
 <!-- Details & Schedule Modal -->
-<div id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-  <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); margin: 16px;">
+<div id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+  <div class="modal-dialog" style="background: var(--bg-card, #fff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); margin: 16px;">
     <div style="padding: 16px 20px; background: var(--navy-dark, #0f172a); color: #fff; display: flex; justify-content: space-between; align-items: center;">
       <h3 id="scheduleModalTitle" style="margin: 0; font-size: 1.1rem; color: #fff;">Installment Schedule & History</h3>
       <button type="button" onclick="closeDetailsModal()" style="background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer;">&times;</button>
     </div>
-    <div id="detailsModalContent" style="padding: 20px;">
+    <div id="detailsModalContent" style="padding: 20px; color: var(--text-main);">
       Loading...
     </div>
   </div>
@@ -334,28 +368,63 @@ function viewEnrollmentDetails(enrollmentId) {
 
       if (data.payments.length > 0) {
         html += `
-          <h4 style="margin: 0 0 10px 0; font-size: 0.95rem;">Payment Transactions & Receipts</h4>
+          <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: var(--text-main);">Payment Transactions & Verification</h4>
           <table class="crm-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
             <thead>
-              <tr style="background: #f1f5f9; text-align: left;">
+              <tr style="background: var(--bg-card-hover, #f1f5f9); color: var(--text-muted); text-align: left;">
                 <th style="padding: 8px 10px;">Receipt #</th>
                 <th style="padding: 8px 10px;">Date</th>
                 <th style="padding: 8px 10px;">Amount</th>
                 <th style="padding: 8px 10px;">Method</th>
+                <th style="padding: 8px 10px;">Verification</th>
                 <th style="padding: 8px 10px; text-align: right;">Action</th>
               </tr>
             </thead>
             <tbody>`;
         data.payments.forEach(p => {
+          let statusBadge = '';
+          let actionButtons = '';
+
+          if (p.is_approved) {
+            statusBadge = `<span style="background: #dcfce7; color: #15803d; padding: 2px 7px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;">✓ Approved</span>`;
+            actionButtons = `
+              <a href="/enrollments/receipt/${p.id}/" target="_blank" class="btn btn-sm btn-outline-secondary" style="padding: 2px 8px; font-size: 0.75rem;">Print</a>
+              <a href="/enrollments/receipt/${p.id}/pdf/" class="btn btn-sm btn-outline-primary" style="padding: 2px 8px; font-size: 0.75rem; margin-left: 4px;">⬇ PDF</a>
+            `;
+          } else if (p.is_pending_verification) {
+            statusBadge = `<span style="background: #fef3c7; color: #b45309; padding: 2px 7px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;">⏳ Pending Verification</span>`;
+            actionButtons = `<span style="font-size: 0.75rem; color: var(--text-muted, #64748b); font-style: italic;">Receipt on hold</span>`;
+          } else if (p.is_rejected) {
+            statusBadge = `<span style="background: #fee2e2; color: #b91c1c; padding: 2px 7px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600;" title="${p.rejection_comment || ''}">✕ Rejected</span>`;
+            if (p.can_resubmit) {
+              actionButtons = `
+                <button type="button" class="btn btn-sm btn-danger" style="padding: 2px 8px; font-size: 0.75rem; background: #dc2626; border-color: #dc2626; color: #fff;" onclick="openResubmitModal(${p.id}, '${p.amount}', '${p.payment_method}', '${p.transaction_reference || ''}', '${escape(p.rejection_comment || '')}')">Resubmit</button>
+              `;
+            } else {
+              actionButtons = `<span style="font-size: 0.72rem; color: var(--text-muted, #94a3b8); font-style: italic;">Assigned to ${p.received_by}</span>`;
+            }
+          } else {
+            statusBadge = `<span class="badge">${p.status}</span>`;
+            actionButtons = `<a href="/enrollments/receipt/${p.id}/" target="_blank" class="btn btn-sm btn-outline-secondary" style="padding: 2px 8px; font-size: 0.75rem;">Print</a>`;
+          }
+
+          let proofLink = p.payment_proof_url ? `<a href="${p.payment_proof_url}" target="_blank" style="margin-left: 6px; font-size: 0.72rem; color: #4338ca; font-weight: 600; text-decoration: underline;">[Proof ↗]</a>` : '';
+
           html += `
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-              <td style="padding: 8px 10px; font-weight: 600; color: #0284c7;">${p.receipt_number}</td>
-              <td style="padding: 8px 10px;">${p.payment_date}</td>
-              <td style="padding: 8px 10px; font-weight: 700; color: green;">₹${p.amount}</td>
-              <td style="padding: 8px 10px;">${p.payment_method}</td>
+            <tr style="border-bottom: 1px solid var(--border-color, #e2e8f0);">
+              <td style="padding: 8px 10px; font-weight: 600; color: #0284c7;">
+                ${p.receipt_number}
+                ${p.resubmission_count > 0 ? `<span style="font-size: 0.68rem; color: var(--text-muted, #64748b); display: block;">Resubmitted ${p.resubmission_count}x</span>` : ''}
+              </td>
+              <td style="padding: 8px 10px; color: var(--text-main);">${p.payment_date}</td>
+              <td style="padding: 8px 10px; font-weight: 700; color: var(--text-main, #1e293b);">₹${p.amount}</td>
+              <td style="padding: 8px 10px; color: var(--text-main);">${p.payment_method} ${proofLink}</td>
+              <td style="padding: 8px 10px;">
+                ${statusBadge}
+                ${p.rejection_comment ? `<div style="font-size: 0.72rem; color: #b91c1c; margin-top: 2px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.rejection_comment}">Reason: ${p.rejection_comment}</div>` : ''}
+              </td>
               <td style="padding: 8px 10px; text-align: right; white-space: nowrap;">
-                <a href="/enrollments/receipt/${p.id}/" target="_blank" class="btn btn-sm btn-outline-secondary" style="padding: 2px 8px; font-size: 0.75rem;">View / Print</a>
-                <a href="/enrollments/receipt/${p.id}/pdf/" class="btn btn-sm btn-outline-primary" style="padding: 2px 8px; font-size: 0.75rem; margin-left: 4px;">⬇ PDF</a>
+                ${actionButtons}
               </td>
             </tr>`;
         });
@@ -372,10 +441,39 @@ function closeDetailsModal() {
   document.getElementById('detailsModal').style.display = 'none';
 }
 
+function toggleProofRequirement(method) {
+  const star = document.getElementById('proofStar');
+  const input = document.getElementById('payModalProofInput');
+  const notice = document.getElementById('proofNotice');
+  if (method === 'Cash') {
+    if (star) star.style.display = 'none';
+    if (input) input.required = false;
+    if (notice) notice.textContent = 'Screenshot is optional for Cash transactions.';
+  } else {
+    if (star) star.style.display = 'inline';
+    if (input) input.required = true;
+    if (notice) notice.textContent = 'Mandatory screenshot for ' + method + ' payments. Submitted to Accountant for verification.';
+  }
+}
+
+function openResubmitModal(paymentId, amount, method, ref, encodedReason) {
+  const reason = unescape(encodedReason || '');
+  document.getElementById('resubmitPaymentForm').action = '/enrollments/payments/' + paymentId + '/resubmit/';
+  document.getElementById('resubmitAmountInput').value = amount;
+  document.getElementById('resubmitMethodSelect').value = method;
+  document.getElementById('resubmitRefInput').value = ref;
+  document.getElementById('resubmitReasonText').textContent = reason || 'No comment provided by accountant.';
+  document.getElementById('resubmitModal').style.display = 'flex';
+}
+function closeResubmitModal() {
+  document.getElementById('resubmitModal').style.display = 'none';
+}
+
 // Modal Dismiss on Backdrop Click & Escape Key
 (function() {
   const pModal = document.getElementById('paymentModal');
   const dModal = document.getElementById('detailsModal');
+  const rModal = document.getElementById('resubmitModal');
   if (pModal) {
     pModal.addEventListener('click', function(e) {
       if (e.target === this) closePaymentModal();
@@ -386,12 +484,78 @@ function closeDetailsModal() {
       if (e.target === this) closeDetailsModal();
     });
   }
+  if (rModal) {
+    rModal.addEventListener('click', function(e) {
+      if (e.target === this) closeResubmitModal();
+    });
+  }
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       if (pModal && pModal.style.display === 'flex') closePaymentModal();
       if (dModal && dModal.style.display === 'flex') closeDetailsModal();
+      if (rModal && rModal.style.display === 'flex') closeResubmitModal();
     }
   });
 })();
 </script>
+
+<!-- Resubmit Rejected Payment Modal -->
+<div id="resubmitModal" role="dialog" aria-modal="true" aria-labelledby="resubmitModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center;">
+  <div class="modal-dialog" style="background: var(--bg-card, #fff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; width: 100%; max-width: 480px; box-shadow: var(--shadow-lg); overflow: hidden; margin: 16px;">
+    <div style="padding: 16px 20px; background: #dc2626; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="resubmitModalTitle" style="margin: 0; font-size: 1.1rem; color: #fff;">Resubmit Rejected Payment</h3>
+      <button type="button" onclick="closeResubmitModal()" style="background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer;">&times;</button>
+    </div>
+    <form id="resubmitPaymentForm" method="post" action="" enctype="multipart/form-data" style="padding: 20px;">
+      {% csrf_token %}
+      <div id="resubmitReasonBox" style="margin-bottom: 14px; background: var(--danger-light, #fef2f2); border: 1px solid var(--border-color, #fecaca); border-radius: 8px; padding: 12px; color: var(--danger, #991b1b); font-size: 0.85rem;">
+        <strong style="display: block; margin-bottom: 4px;">Accountant Rejection Reason:</strong>
+        <span id="resubmitReasonText"></span>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Corrected Amount (₹) *</label>
+        <input type="number" step="0.01" name="amount" id="resubmitAmountInput" required class="form-control" style="width: 100%; font-size: 1rem; font-weight: 700;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Payment Method *</label>
+        <select name="payment_method" id="resubmitMethodSelect" required class="form-control" style="width: 100%;">
+          <option value="UPI">UPI / QR Code</option>
+          <option value="Bank Transfer">Bank Transfer / NEFT</option>
+          <option value="Cash">Cash</option>
+          <option value="Card">Credit / Debit Card</option>
+          <option value="Online">Online Payment Gateway</option>
+          <option value="Cheque">Cheque / Demand Draft</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Transaction Reference / UTR #</label>
+        <input type="text" name="transaction_reference" id="resubmitRefInput" class="form-control" style="width: 100%;">
+      </div>
+
+      <div style="margin-bottom: 14px; background: var(--bg-card-hover, #f8fafc); border: 1px dashed var(--border-color, #cbd5e1); border-radius: 8px; padding: 12px;">
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-main);">
+          <span>New Payment Proof Screenshot</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted, #64748b); font-weight: 400;">JPG, PNG, WEBP (Max 5MB)</span>
+        </label>
+        <input type="file" name="payment_proof" id="resubmitProofInput" accept=".jpg,.jpeg,.png,.webp" class="form-control" style="width: 100%; font-size: 0.85rem; padding: 6px;">
+        <small style="display: block; color: var(--text-muted, #475569); font-size: 0.74rem; margin-top: 5px;">
+          Attach a clear screenshot or receipt to replace the previous rejected proof.
+        </small>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Resubmission Clarification Note</label>
+        <textarea name="resubmission_notes" rows="2" class="form-control" placeholder="Explain the corrections made for the Accountant" style="width: 100%;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeResubmitModal()">Cancel</button>
+        <button type="submit" class="btn btn-danger" style="background: #dc2626; border-color: #dc2626; color: #fff;">Resubmit for Verification</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}

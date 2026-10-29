@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title|default:"Marketing & Performance Reports" }} - TECHPANDA CRM{% endblock %}
+{% block title %}{{ page_title|default:"Marketing & Performance Reports" }} - DigipandaCRM{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/dashboard-report.css' %}?v=20261012_report">
+<link rel="stylesheet" href="{% static 'css/dashboard-report.css' %}?v=20261015_aura">
 {% endblock %}
 
 {% block content %}
@@ -37,6 +37,12 @@
           <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
           <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Date Range…</option>
         </select>
+      </div>
+
+      <!-- Custom Date Smart Calendar Anchored Silently -->
+      <div class="tp-smart-date-container" id="reportSmartDateContainer" style="position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; overflow: hidden;">
+        <input type="date" id="customStartDate" name="start_date" value="{{ start_date }}" style="display: none;">
+        <input type="date" id="customEndDate" name="end_date" value="{{ end_date }}" style="display: none;">
       </div>
 
       <!-- Branch Selector Pill -->
@@ -92,10 +98,20 @@
     <span id="lastSyncText">Live CRM Application Database Connected</span>
   </div>
 
+{% if request.user.is_superuser or request.user.role == 'ADMIN' %}
+  {% url 'admin_leads_list' as leads_url %}
+{% elif request.user.role == 'SALES_HEAD' %}
+  {% url 'manager_leads_list' as leads_url %}
+{% elif request.user.role == 'BRANCH_HEAD' %}
+  {% url 'branch_head_leads_list' as leads_url %}
+{% else %}
+  {% url 'telecaller_leads_list' as leads_url %}
+{% endif %}
+
   <!-- 1. Top 4 Pastel KPI Cards Row -->
   <section class="report-kpi-row">
     <!-- Total Leads (Blue) -->
-    <div class="tp-ui-kpi-card card-blue">
+    <a href="{{ leads_url }}?view=all{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" id="kpiLinkTotal" data-base-url="{{ leads_url }}" class="tp-ui-kpi-card card-blue" style="text-decoration: none; color: inherit; cursor: pointer;" title="View all filtered leads">
       <div class="tp-kpi-left-section">
         <div class="tp-kpi-avatar">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -109,10 +125,10 @@
         <span class="tp-kpi-trend-badge" id="kpiTotalPct">{% if kpi_total_change_pct >= 0 %}+{% endif %}{{ kpi_total_change_pct }}%</span>
         <span class="tp-kpi-trend-label" id="kpiTotalPctLabel">vs previous period</span>
       </div>
-    </div>
+    </a>
 
     <!-- Connected Leads (Green) -->
-    <div class="tp-ui-kpi-card card-green">
+    <a href="{{ leads_url }}?view=all&status_group=connected{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" id="kpiLinkConnected" class="tp-ui-kpi-card card-green" style="text-decoration: none; color: inherit; cursor: pointer;" title="View connected leads">
       <div class="tp-kpi-left-section">
         <div class="tp-kpi-avatar">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
@@ -126,10 +142,10 @@
         <span class="tp-kpi-trend-badge" id="kpiPct1">{{ kpi_connected_pct }}%</span>
         <span class="tp-kpi-trend-label">of total leads</span>
       </div>
-    </div>
+    </a>
 
     <!-- Prospected Leads (Yellow) -->
-    <div class="tp-ui-kpi-card card-yellow">
+    <a href="{{ leads_url }}?view=all&status_group=prospected{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" id="kpiLinkProspected" class="tp-ui-kpi-card card-yellow" style="text-decoration: none; color: inherit; cursor: pointer;" title="View prospected leads">
       <div class="tp-kpi-left-section">
         <div class="tp-kpi-avatar">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
@@ -143,10 +159,10 @@
         <span class="tp-kpi-trend-badge" id="kpiPct2">{{ kpi_prospected_pct }}%</span>
         <span class="tp-kpi-trend-label">of total leads</span>
       </div>
-    </div>
+    </a>
 
     <!-- Call Not Connected (Red) -->
-    <div class="tp-ui-kpi-card card-red">
+    <a href="{{ leads_url }}?view=all&status_group=not_connected{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" id="kpiLinkNotConnected" class="tp-ui-kpi-card card-red" style="text-decoration: none; color: inherit; cursor: pointer;" title="View not connected leads">
       <div class="tp-kpi-left-section">
         <div class="tp-kpi-avatar">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9a3 3 0 0 0 3 3"></path><path d="M19.12 15.12a3 3 0 0 0 .88-2.12v-3a2 2 0 0 0-2-2h-3a2 2 0 0 0-1.72 1"></path><path d="M5.4 5.4A19.79 19.79 0 0 0 2.12 7.18a2 2 0 0 0-.12 2.82l2.35 2.35a2 2 0 0 0 2.83 0l1.27-1.27a2 2 0 0 1 2.11-.45"></path></svg>
@@ -160,31 +176,31 @@
         <span class="tp-kpi-trend-badge" id="kpiPct3">{{ kpi_not_connected_pct }}%</span>
         <span class="tp-kpi-trend-label">of total leads</span>
       </div>
-    </div>
+    </a>
   </section>
 
   <!-- 2. Leads by Channel Grid (Flat White Panel) -->
-  <section class="tp-panel-card">
+  <section class="tp-panel-card" style="margin-top: 20px;">
     <div class="tp-panel-header-title">Leads by Channel <span data-period>({{ period_label }})</span></div>
 
     <div class="tp-channels-cards-grid">
       <!-- 1. Meta WhatsApp -->
-      <div class="tp-channel-box">
+      <a href="{{ leads_url }}?view=all&channel=Meta+WhatsApp{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" data-chan-link="Meta WhatsApp" class="tp-channel-box" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Meta WhatsApp leads">
         <div class="tp-channel-box-icon">
           <svg viewBox="0 0 36 36" fill="none">
-            <rect width="36" height="36" rx="8" fill="#22c55e"/>
+            <rect width="36" height="36" rx="8" fill="#25D366"/>
             <path d="M18 9C13.03 9 9 13.03 9 18C9 19.64 9.44 21.18 10.22 22.51L9 27L13.62 25.8C14.9 26.54 16.4 27 18 27C22.97 27 27 22.97 27 18C27 13.03 22.97 9 18 9ZM22.5 21.75C22.31 22.28 21.57 22.7 20.94 22.84C20.5 22.94 19.94 23.01 18.01 22.21C15.54 21.19 13.95 18.68 13.83 18.52C13.71 18.36 12.83 17.19 12.83 15.98C12.83 14.77 13.45 14.18 13.69 13.93C13.89 13.72 14.22 13.63 14.52 13.63C14.62 13.63 14.71 13.63 14.79 13.64C15.03 13.65 15.15 13.66 15.31 14.04C15.51 14.52 16 15.71 16.06 15.83C16.12 15.96 16.18 16.12 16.1 16.28C16.01 16.45 15.94 16.53 15.82 16.67C15.7 16.81 15.58 16.92 15.46 17.07C15.33 17.22 15.19 17.38 15.34 17.64C15.49 17.9 16.01 18.75 16.78 19.43C17.77 20.31 18.58 20.59 18.87 20.71C19.16 20.83 19.33 20.81 19.5 20.61C19.67 20.41 20.23 19.76 20.45 19.45C20.67 19.14 20.89 19.19 21.19 19.3C21.49 19.41 23.09 20.2 23.42 20.36C23.75 20.52 23.97 20.6 24.05 20.74C24.13 20.88 24.13 21.52 22.5 21.75Z" fill="white"/>
           </svg>
         </div>
         <div class="tp-channel-box-details">
           <span class="tp-channel-box-title">Meta WhatsApp</span>
-          <span class="tp-channel-box-count" data-chan-count="Meta WhatsApp">0</span>
-          <span class="tp-channel-box-pct" data-chan-pct="Meta WhatsApp">0%</span>
+          <span class="tp-channel-box-count" data-chan-count="Meta WhatsApp">{{ channels.0.count|default:0 }}</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Meta WhatsApp">{{ channels.0.percentage|default:0 }}%</span>
         </div>
-      </div>
+      </a>
 
       <!-- 2. Meta Lead Form -->
-      <div class="tp-channel-box">
+      <a href="{{ leads_url }}?view=all&channel=Meta+Lead+Form{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" data-chan-link="Meta Lead Form" class="tp-channel-box" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Meta Lead Form leads">
         <div class="tp-channel-box-icon">
           <svg viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="8" fill="#e0f2fe"/>
@@ -193,13 +209,13 @@
         </div>
         <div class="tp-channel-box-details">
           <span class="tp-channel-box-title">Meta Lead Form</span>
-          <span class="tp-channel-box-count" data-chan-count="Meta Lead Form">0</span>
-          <span class="tp-channel-box-pct" data-chan-pct="Meta Lead Form">0%</span>
+          <span class="tp-channel-box-count" data-chan-count="Meta Lead Form">{{ channels.1.count|default:0 }}</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Meta Lead Form">{{ channels.1.percentage|default:0 }}%</span>
         </div>
-      </div>
+      </a>
 
       <!-- 3. Website (Google Ad) -->
-      <div class="tp-channel-box">
+      <a href="{{ leads_url }}?view=all&channel=Website+(Google+Ad){% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" data-chan-link="Website (Google Ad)" class="tp-channel-box" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Website Google Ad leads">
         <div class="tp-channel-box-icon">
           <svg viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="8" fill="#fef9c3"/>
@@ -208,13 +224,13 @@
         </div>
         <div class="tp-channel-box-details">
           <span class="tp-channel-box-title">Website (Google Ad)</span>
-          <span class="tp-channel-box-count" data-chan-count="Website (Google Ad)">0</span>
-          <span class="tp-channel-box-pct" data-chan-pct="Website (Google Ad)">0%</span>
+          <span class="tp-channel-box-count" data-chan-count="Website (Google Ad)">{{ channels.2.count|default:0 }}</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Website (Google Ad)">{{ channels.2.percentage|default:0 }}%</span>
         </div>
-      </div>
+      </a>
 
       <!-- 4. Website (Google SEO) -->
-      <div class="tp-channel-box">
+      <a href="{{ leads_url }}?view=all&channel=Website+(Google+SEO){% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" data-chan-link="Website (Google SEO)" class="tp-channel-box" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Website Google SEO leads">
         <div class="tp-channel-box-icon">
           <svg viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="8" fill="#8b5cf6"/>
@@ -223,13 +239,13 @@
         </div>
         <div class="tp-channel-box-details">
           <span class="tp-channel-box-title">Website (Google SEO)</span>
-          <span class="tp-channel-box-count" data-chan-count="Website (Google SEO)">0</span>
-          <span class="tp-channel-box-pct" data-chan-pct="Website (Google SEO)">0%</span>
+          <span class="tp-channel-box-count" data-chan-count="Website (Google SEO)">{{ channels.3.count|default:0 }}</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Website (Google SEO)">{{ channels.3.percentage|default:0 }}%</span>
         </div>
-      </div>
+      </a>
 
       <!-- 5. Instagram -->
-      <div class="tp-channel-box">
+      <a href="{{ leads_url }}?view=all&channel=Instagram{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" data-chan-link="Instagram" class="tp-channel-box" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Instagram leads">
         <div class="tp-channel-box-icon">
           <svg viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="8" fill="#fdf2f8"/>
@@ -238,28 +254,28 @@
         </div>
         <div class="tp-channel-box-details">
           <span class="tp-channel-box-title">Instagram</span>
-          <span class="tp-channel-box-count" data-chan-count="Instagram">0</span>
-          <span class="tp-channel-box-pct" data-chan-pct="Instagram">0%</span>
+          <span class="tp-channel-box-count" data-chan-count="Instagram">{{ channels.4.count|default:0 }}</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Instagram">{{ channels.4.percentage|default:0 }}%</span>
         </div>
-      </div>
+      </a>
 
       <!-- 6. Google Calls -->
-      <div class="tp-channel-box">
+      <a href="{{ leads_url }}?view=all&channel=Google+Calls{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" data-chan-link="Google Calls" class="tp-channel-box" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Google Calls leads">
         <div class="tp-channel-box-icon">
           <svg viewBox="0 0 36 36" fill="none">
-            <rect width="36" height="36" rx="8" fill="#10b981"/>
+            <rect width="36" height="36" rx="8" fill="#06b6d4"/>
             <path d="M24.5 20.8C23.2 20.8 22 20.6 20.9 20.2C20.5 20.1 20.1 20.2 19.8 20.5L18.2 22.1C15.8 20.8 14.2 19.2 12.9 16.8L14.5 15.2C14.8 14.9 14.9 14.5 14.8 14.1C14.4 13 14.2 11.8 14.2 10.5C14.2 9.9 13.7 9.5 13.2 9.5H10.5C10 9.5 9.5 9.9 9.5 10.5C9.5 18.8 16.2 25.5 24.5 25.5C25.1 25.5 25.5 25 25.5 24.5V21.8C25.5 21.2 25.1 20.8 24.5 20.8Z" fill="white"/>
           </svg>
         </div>
         <div class="tp-channel-box-details">
           <span class="tp-channel-box-title">Google Calls</span>
-          <span class="tp-channel-box-count" data-chan-count="Google Calls">0</span>
-          <span class="tp-channel-box-pct" data-chan-pct="Google Calls">0%</span>
+          <span class="tp-channel-box-count" data-chan-count="Google Calls">{{ channels.5.count|default:0 }}</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Google Calls">{{ channels.5.percentage|default:0 }}%</span>
         </div>
-      </div>
+      </a>
 
       <!-- 7. Influencer -->
-      <div class="tp-channel-box">
+      <a href="{{ leads_url }}?view=all&channel=Influencer{% if start_date %}&date_from={{ start_date }}&date_to={{ end_date }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" data-chan-link="Influencer" class="tp-channel-box" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Influencer leads">
         <div class="tp-channel-box-icon">
           <svg viewBox="0 0 36 36" fill="none">
             <rect width="36" height="36" rx="8" fill="#6366f1"/>
@@ -268,17 +284,17 @@
         </div>
         <div class="tp-channel-box-details">
           <span class="tp-channel-box-title">Influencer</span>
-          <span class="tp-channel-box-count" data-chan-count="Influencer">0</span>
-          <span class="tp-channel-box-pct" data-chan-pct="Influencer">0%</span>
+          <span class="tp-channel-box-count" data-chan-count="Influencer">{{ channels.6.count|default:0 }}</span>
+          <span class="tp-channel-box-pct" data-chan-pct="Influencer">{{ channels.6.percentage|default:0 }}%</span>
         </div>
-      </div>
+      </a>
     </div>
   </section>
 
   <!-- 3. Branch Wise Lead Summary Table -->
-  <section class="tp-panel-card">
+  <section class="tp-panel-card" style="margin-top: 24px;">
     <div class="tp-panel-header-title tp-panel-header-flex">
-      <span>Branch Wise Lead Summary <span data-period>({{ period_label }})</span></span>
+      <span>Branch Wise Lead Distribution Matrix <span data-period>({{ period_label }})</span></span>
       <button type="button" class="tp-export-btn" id="btnExportCsvTable" onclick="window.CRMReportDashboard && window.CRMReportDashboard.exportCSV()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         <span>Export CSV</span>
@@ -345,11 +361,14 @@
     </div>
   </section>
 
-  <!-- 4. Bottom 3 Visual Charts Row -->
-  <section class="report-charts-row">
+  <!-- 4. Visual Charts Row (Bottom - All 3 Charts Simultaneously) -->
+  <section class="report-charts-row" id="viewVisualCharts" style="margin-top: 24px;">
     <!-- Chart 1: Leads by Channel Donut -->
     <div class="tp-chart-panel">
-      <div class="tp-chart-panel-title">Leads by Channel <span data-period>({{ period_label }})</span></div>
+      <div class="tp-chart-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Leads by Channel <span data-period>({{ period_label }})</span></span>
+        <span class="badge" style="background: rgba(37, 99, 235, 0.1); color: var(--primary); font-size: 0.72rem;">Channel Share</span>
+      </div>
       <div class="tp-donut-chart-container">
         <div class="tp-donut-canvas-wrap">
           <canvas id="channelDonutChart"></canvas>
@@ -366,7 +385,10 @@
 
     <!-- Chart 2: Branch Wise Lead Distribution Stacked Chart -->
     <div class="tp-chart-panel">
-      <div class="tp-chart-panel-title">Branch Wise Lead Distribution</div>
+      <div class="tp-chart-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Branch Wise Lead Distribution</span>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669; font-size: 0.72rem;">Multi-Channel</span>
+      </div>
       <div class="tp-stacked-canvas-wrap">
         <canvas id="branchStackedChart"></canvas>
       </div>
@@ -377,7 +399,10 @@
 
     <!-- Chart 3: Call Outcomes & Lead Quality Bar Chart -->
     <div class="tp-chart-panel">
-      <div class="tp-chart-panel-title">Call Outcomes &amp; Lead Quality <span data-period>({{ period_label }})</span></div>
+      <div class="tp-chart-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Call Outcomes &amp; Lead Quality <span data-period>({{ period_label }})</span></span>
+        <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #b45309; font-size: 0.72rem;">Disposition %</span>
+      </div>
       <div class="tp-outcomes-note" id="outcomesNote">% of total calls/leads</div>
       <div class="tp-outcomes-canvas-wrap">
         <canvas id="outcomesChart"></canvas>
@@ -385,23 +410,25 @@
     </div>
   </section>
 
+
+
 </div>
 
 <!-- Custom Date Range Modal -->
-<div id="customDateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
-  <div style="background: var(--bg-card, #ffffff); border-radius: 12px; padding: 24px; width: 340px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color, #e2e8f0);">
-    <h3 style="margin: 0 0 16px; font-size: 1.1rem; color: var(--text-main, #0f172a);">Select Date Range</h3>
-    <div style="margin-bottom: 12px;">
-      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted, #475569);">Start Date</label>
-      <input type="date" id="customStartDate" value="{{ start_date }}" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1);">
+<div id="customDateModal" style="display: none; position: fixed; inset: 0; width: 100%; height: 100%; background: rgba(9, 13, 22, 0.65); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="tp-card" style="width: 360px; max-width: 90vw; padding: var(--tp-space-6, 24px); box-shadow: var(--tp-shadow-2xl, 0 25px 50px -12px rgba(0, 0, 0, 0.25)); border: 1px solid var(--tp-border-subtle, #e2e8f0); animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+    <h3 style="margin: 0 0 var(--tp-space-4, 16px); font-size: 1.1rem; font-weight: 700; color: var(--tp-text-primary, #0f172a);">Select Date Range</h3>
+    <div style="margin-bottom: var(--tp-space-3, 12px);">
+      <label class="tp-label" style="display: block; margin-bottom: 6px;">Start Date</label>
+      <input type="date" id="customStartDate" value="{{ start_date }}" class="tp-input" style="width: 100%;">
     </div>
-    <div style="margin-bottom: 20px;">
-      <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-muted, #475569);">End Date</label>
-      <input type="date" id="customEndDate" value="{{ end_date }}" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1);">
+    <div style="margin-bottom: var(--tp-space-5, 20px);">
+      <label class="tp-label" style="display: block; margin-bottom: 6px;">End Date</label>
+      <input type="date" id="customEndDate" value="{{ end_date }}" class="tp-input" style="width: 100%;">
     </div>
     <div style="display: flex; justify-content: flex-end; gap: 8px;">
-      <button type="button" class="btn btn-secondary" onclick="document.getElementById('customDateModal').style.display='none';">Cancel</button>
-      <button type="button" class="btn btn-primary" onclick="document.getElementById('customDateModal').style.display='none'; window.CRMReportDashboard && window.CRMReportDashboard.fetch();">Apply Range</button>
+      <button type="button" class="tp-btn-secondary" onclick="document.getElementById('customDateModal').style.display='none';">Cancel</button>
+      <button type="button" class="tp-btn-primary" onclick="document.getElementById('customDateModal').style.display='none'; window.CRMReportDashboard && window.CRMReportDashboard.fetch();">Apply Range</button>
     </div>
   </div>
 </div>
@@ -412,45 +439,10 @@
 {{ outcomes_chart|json_script:"initial-outcomes-data" }}
 
 <script id="initial-report-data" type="application/json">
-{
-  "period_label": "{{ period_label|escapejs }}",
-  "kpi_total_leads": {{ kpi_total_leads }},
-  "kpi_total_change_pct": {{ kpi_total_change_pct }},
-  "kpi_connected_leads": {{ kpi_connected_leads }},
-  "kpi_connected_pct": {{ kpi_connected_pct }},
-  "kpi_prospected_leads": {{ kpi_prospected_leads }},
-  "kpi_prospected_pct": {{ kpi_prospected_pct }},
-  "kpi_not_connected_leads": {{ kpi_not_connected_leads }},
-  "kpi_not_connected_pct": {{ kpi_not_connected_pct }},
-  "donut_chart": {
-    "labels": {{ donut_chart.labels|safe }},
-    "values": {{ donut_chart.values|safe }},
-    "colors": {{ donut_chart.colors|safe }},
-    "percentages": {{ donut_chart.percentages|safe }},
-    "total": {{ donut_chart.total }}
-  },
-  "stacked_chart": {
-    "labels": {{ stacked_chart.labels|safe }},
-    "datasets": [
-      {% for ds in stacked_chart.datasets %}
-      {
-        "label": "{{ ds.label|escapejs }}",
-        "data": {{ ds.data|safe }},
-        "backgroundColor": "{{ ds.backgroundColor|escapejs }}"
-      }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ]
-  },
-  "outcomes_chart": {
-    "labels": {{ outcomes_chart.labels|safe }},
-    "values": {{ outcomes_chart.values|safe }},
-    "percentages": {{ outcomes_chart.percentages|safe }},
-    "total": {{ outcomes_chart.total }}
-  }
-}
+{{ report_state_json|safe }}
 </script>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/dashboard-report.js' %}?v=20261012_report"></script>
+<script src="{% static 'js/dashboard-report.js' %}?v=20261021_drilldown_fix"></script>
 {% endblock %}

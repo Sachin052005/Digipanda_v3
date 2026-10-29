@@ -56,6 +56,9 @@ class AdminFollowUpForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        lead = cleaned_data.get('lead')
+        follow_up_date = cleaned_data.get('follow_up_date')
+        status = cleaned_data.get('status')
         manager = cleaned_data.get('manager')
         telecaller = cleaned_data.get('telecaller')
 
@@ -64,6 +67,20 @@ class AdminFollowUpForm(forms.ModelForm):
             if telecaller.branch_id and telecaller.branch_id not in get_accessible_branch_ids(manager):
                 raise forms.ValidationError(
                     f"Invalid assignment: Telecaller '{telecaller.username}' belongs to a branch not managed by '{manager.username}'."
+                )
+
+        # Accidental duplicate check: Prevent duplicate PENDING follow-ups on the exact same date for the same lead
+        if lead and follow_up_date and status == FollowUpStatus.PENDING:
+            existing_pending = FollowUp.objects.filter(
+                lead=lead,
+                follow_up_date=follow_up_date,
+                status=FollowUpStatus.PENDING
+            )
+            if self.instance and self.instance.pk:
+                existing_pending = existing_pending.exclude(pk=self.instance.pk)
+            if existing_pending.exists():
+                raise forms.ValidationError(
+                    f"A pending follow-up is already scheduled for lead '{lead.name}' on {follow_up_date}."
                 )
 
         return cleaned_data
@@ -83,3 +100,22 @@ class FollowUpRescheduleForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Reason for rescheduling or additional notes...'}),
         help_text="Reschedule context or reason"
     )
+
+    def __init__(self, *args, followup=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.followup = followup
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_date = cleaned_data.get('follow_up_date')
+        if getattr(self, 'followup', None) and self.followup.lead and new_date:
+            exists = FollowUp.objects.filter(
+                lead=self.followup.lead,
+                follow_up_date=new_date,
+                status=FollowUpStatus.PENDING
+            ).exclude(pk=self.followup.pk).exists()
+            if exists:
+                raise forms.ValidationError(
+                    f"A pending follow-up is already scheduled for lead '{self.followup.lead.name}' on {new_date}."
+                )
+        return cleaned_data

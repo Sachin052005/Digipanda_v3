@@ -173,31 +173,85 @@ def send_interactive_list(
 ) -> Dict[str, Any]:
     """
     Sends an interactive list menu (up to 10 rows) via WhatsApp Cloud API.
-    sections: [{"title": "Courses", "rows": [{"id": "py", "title": "Python", "description": "3 Mos"}, ...]}]
+    Strictly sanitizes lengths to comply with Meta Cloud API limits:
+    - Button text: max 20 characters
+    - Section title: max 24 characters
+    - Row title: max 24 characters (CRITICAL: Meta rejects if > 24)
+    - Row description: max 72 characters
+    - Total rows: max 10
     """
     client = WhatsAppClient(business_account=business_account)
     recipient = clean_phone_number(to_phone_number)
 
+    # Sanitize sections and rows
+    sanitized_sections: List[Dict[str, Any]] = []
+    total_rows = 0
+
+    for s_idx, sec in enumerate(sections or []):
+        sec_title = str(sec.get('title') or f"Menu {s_idx + 1}").strip()[:24]
+        raw_rows = sec.get('rows') or []
+        sanitized_rows = []
+
+        for r_idx, r in enumerate(raw_rows):
+            if total_rows >= 10:
+                break
+            raw_title = str(r.get('title') or '').strip()
+            if not raw_title:
+                continue
+            r_id = str(r.get('id') or f"row_{s_idx + 1}_{r_idx + 1}").strip()[:200]
+            # Meta enforces strict 24-character limit for row title
+            clean_title = raw_title[:24]
+
+            row_data: Dict[str, str] = {
+                "id": r_id,
+                "title": clean_title,
+            }
+            raw_desc = str(r.get('description') or '').strip()
+            if raw_desc:
+                row_data["description"] = raw_desc[:72]
+
+            sanitized_rows.append(row_data)
+            total_rows += 1
+
+        if sanitized_rows:
+            sanitized_sections.append({
+                "title": sec_title or "Options",
+                "rows": sanitized_rows
+            })
+
+    # If no rows exist (e.g. database empty or unconfigured), fallback to clean text message so bot never hangs
+    if not sanitized_sections or total_rows == 0:
+        logger.warning("send_interactive_list called with 0 valid rows; falling back to text message for %s", recipient)
+        return send_text_message(
+            to_phone_number=to_phone_number,
+            message_text=body_text or "Please choose an option:",
+            business_account=business_account
+        )
+
+    btn_label = str(button_text or 'View Options').strip()[:20]
+    if not btn_label:
+        btn_label = 'View Options'
+
     interactive_obj: Dict[str, Any] = {
         "type": "list",
         "body": {
-            "text": body_text
+            "text": (body_text or "Please choose an option:")[:1024]
         },
         "action": {
-            "button": button_text[:20],
-            "sections": sections
+            "button": btn_label,
+            "sections": sanitized_sections
         }
     }
 
-    if header_text:
+    if header_text and str(header_text).strip():
         interactive_obj["header"] = {
             "type": "text",
-            "text": header_text[:60]
+            "text": str(header_text).strip()[:60]
         }
 
-    if footer_text:
+    if footer_text and str(footer_text).strip():
         interactive_obj["footer"] = {
-            "text": footer_text[:60]
+            "text": str(footer_text).strip()[:60]
         }
 
     payload = {

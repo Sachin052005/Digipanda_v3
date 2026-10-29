@@ -1,5 +1,5 @@
 """
-Shared Email Service for TECHPANDA CRM.
+Shared Email Service for DigiPanda CRM.
 Handles:
 - Professional HTML + Plain-text alternative email rendering and delivery via Django SMTP.
 - Recipient email validation and sanitization.
@@ -12,6 +12,8 @@ Handles:
 
 import logging
 import re
+import os
+import base64
 from decimal import Decimal
 from datetime import timedelta
 
@@ -42,6 +44,18 @@ def is_valid_email(email):
     return bool(EMAIL_REGEX.match(email.strip()))
 
 
+def get_brand_logo_data_uri():
+    """Returns Base64 Data URI for the authentic DigiPanda logo."""
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'digipanda_logo.png')
+    if os.path.exists(logo_path):
+        try:
+            with open(logo_path, 'rb') as f:
+                return f"data:image/png;base64,{base64.b64encode(f.read()).decode('utf-8')}"
+        except Exception:
+            pass
+    return None
+
+
 def send_template_email(subject, recipient, html_template, text_template, context, from_email=None, attachments=None, inline_images=None):
     """
     Core reusable email dispatcher using Django's configured EmailMultiAlternatives backend.
@@ -53,6 +67,9 @@ def send_template_email(subject, recipient, html_template, text_template, contex
         return False, f"Invalid recipient email address: '{recipient}'"
 
     from_addr = from_email or getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', '')
+
+    if context is not None and 'logo_data_uri' not in context:
+        context['logo_data_uri'] = get_brand_logo_data_uri()
 
     try:
         html_body = render_to_string(html_template, context)
@@ -126,7 +143,7 @@ def send_enrollment_confirmation_email(enrollment, force_retry=False):
     session = f"{enroll_year} – {enroll_year + 1}"
 
     context = {
-        'company_name': getattr(settings, 'COMPANY_NAME', 'TECHPANDA'),
+        'company_name': getattr(settings, 'COMPANY_NAME', 'DIGIPANDA'),
         'student_name': enrollment.student_name,
         'student_id': student_id,
         'enrollment_number': enrollment.enrollment_number,
@@ -136,7 +153,7 @@ def send_enrollment_confirmation_email(enrollment, force_retry=False):
         'branch_name': branch_name,
         'campus_address': campus_address,
         'session': session,
-        'portal_url': 'https://learn.techpanda.in',
+        'portal_url': 'https://learn.digipanda.in',
         'total_payable': enrollment.total_payable,
         'gst_treatment': enrollment.get_gst_treatment_display(),
         'payment_plan': enrollment.get_payment_plan_display(),
@@ -192,8 +209,8 @@ def send_payment_receipt_email(payment, force_retry=False):
     if not payment:
         return False, "Payment transaction missing"
 
-    if payment.status != PaymentTransactionStatus.SUCCESS:
-        return False, f"Cannot send receipt for non-successful payment status: '{payment.status}'"
+    if payment.status not in (PaymentTransactionStatus.APPROVED, PaymentTransactionStatus.SUCCESS):
+        return False, f"Cannot send receipt for non-successful / non-approved payment status: '{payment.status}'"
 
     # Idempotency check
     if payment.email_sent and not force_retry:
@@ -217,15 +234,15 @@ def send_payment_receipt_email(payment, force_retry=False):
     branch_name = enrollment.branch.name if enrollment.branch else "Main Campus"
 
     # Calculate previously paid before this payment
-    # All successful payments for this enrollment before or with smaller ID
+    # All approved payments for this enrollment before or with smaller ID
     prior_payments = enrollment.payments.filter(
-        status=PaymentTransactionStatus.SUCCESS,
+        status__in=[PaymentTransactionStatus.APPROVED, PaymentTransactionStatus.SUCCESS],
         created_at__lt=payment.created_at
     ).exclude(id=payment.id)
     previously_paid = sum((p.amount for p in prior_payments), Decimal('0.00'))
 
     context = {
-        'company_name': getattr(settings, 'COMPANY_NAME', 'TECHPANDA'),
+        'company_name': getattr(settings, 'COMPANY_NAME', 'DIGIPANDA'),
         'student_name': enrollment.student_name,
         'student_id': student_id,
         'enrollment_number': enrollment.enrollment_number,
@@ -276,7 +293,7 @@ def send_payment_receipt_email(payment, force_retry=False):
 
         pdf_bytes = generate_receipt_pdf(pdf_ctx)
         if pdf_bytes:
-            filename = f"TechPanda_Receipt_{payment.receipt_number}.pdf"
+            filename = f"DigiPanda_Receipt_{payment.receipt_number}.pdf"
             attachments.append((filename, pdf_bytes, "application/pdf"))
     except Exception as e:
         logger.warning("Could not generate PDF attachment for receipt %s: %s", payment.receipt_number, e)
@@ -379,7 +396,7 @@ def send_installment_reminder_email(installment, reminder_type='DUE_REMINDER', f
     subject = f"Fee Payment Reminder — {course_name}"
 
     context = {
-        'company_name': getattr(settings, 'COMPANY_NAME', 'TECHPANDA'),
+        'company_name': getattr(settings, 'COMPANY_NAME', 'DIGIPANDA'),
         'student_name': enrollment.student_name,
         'student_id': student_id,
         'enrollment_number': enrollment.enrollment_number,
@@ -401,8 +418,8 @@ def send_installment_reminder_email(installment, reminder_type='DUE_REMINDER', f
         'payment_status': installment.get_status_display(),
         'is_overdue': is_overdue,
         'accounts_phone': getattr(enrollment.branch, 'phone', '') if enrollment.branch else '+91 98765 43210',
-        'accounts_email': getattr(settings, 'DEFAULT_FROM_EMAIL', 'support@techpanda.in'),
-        'payment_url': 'https://pay.techpanda.in',
+        'accounts_email': getattr(settings, 'DEFAULT_FROM_EMAIL', 'support@digipanda.in'),
+        'payment_url': 'https://pay.digipanda.in',
     }
 
     log_entry = PaymentEmailLog.objects.create(

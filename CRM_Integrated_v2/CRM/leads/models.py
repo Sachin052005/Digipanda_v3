@@ -34,7 +34,26 @@ class LeadStatus(models.TextChoices):
     NO_ANSWER = 'No Answer', 'No Answer'
     BUSY = 'Busy', 'Busy'
     NOT_JOINED = 'Not Joined', 'Not Joined'
+    SWITCHED_OFF = 'Switched Off', 'Switched Off'
     HISTORICAL = 'Historical', 'Historical'
+
+class PipelineStatus(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    stage_category = models.CharField(max_length=50, default='General', blank=True)
+    color = models.CharField(max_length=30, default='#3b82f6', blank=True)
+    sort_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    is_system_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+        verbose_name = 'Pipeline Status'
+        verbose_name_plural = 'Pipeline Statuses'
+
+    def __str__(self):
+        return self.name
 
 class LeadCategory(models.TextChoices):
     TRAINING = 'Training', 'Training'
@@ -61,10 +80,18 @@ class Lead(models.Model):
         max_length=20,
         choices=LeadCategory.choices,
         default=LeadCategory.TRAINING,
+        blank=True,
         db_index=True,
         help_text="Segmentation: Training vs Placement"
     )
     phone = models.CharField(max_length=20)
+    normalized_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        db_index=True,
+        help_text="Canonical 10-digit digits-only contact number for high-speed indexing"
+    )
     email = models.EmailField(blank=True, default='')
     alternate_phone = models.CharField(max_length=20, blank=True, default='')
     channel = models.ForeignKey(
@@ -210,6 +237,13 @@ class Lead(models.Model):
         return digits
 
     @property
+    def has_duplicate_attempts(self):
+        """Returns True if this lead has actual incoming duplicate touches (excluding initial creation)."""
+        if hasattr(self, '_prefetched_objects_cache') and 'duplicate_records' in self._prefetched_objects_cache:
+            return any(r.record_type != 'ORIGINAL_INGESTION' for r in self.duplicate_records.all())
+        return self.duplicate_records.exclude(record_type='ORIGINAL_INGESTION').exists()
+
+    @property
     def last_three_calls(self):
         """Returns the last 3 call attempts for quick history and modal display."""
         return list(self.calls.select_related('caller', 'telecaller').order_by('-call_started_at')[:3])
@@ -305,6 +339,23 @@ class Lead(models.Model):
             raise ValidationError({
                 'assigned_branch_head': f"Branch Head '{self.assigned_branch_head.username}' belongs to a different branch."
             })
+
+    def save(self, *args, **kwargs):
+        if self.phone and not str(self.phone).startswith('NoPhone-'):
+            from .duplicates import normalize_phone
+            norm = normalize_phone(self.phone)
+            if norm.startswith('+'):
+                self.normalized_phone = norm
+            else:
+                self.normalized_phone = norm[-10:] if len(norm) >= 10 else norm
+            update_fields = kwargs.get('update_fields')
+            if update_fields is not None:
+                update_fields = set(update_fields)
+                update_fields.add('normalized_phone')
+                kwargs['update_fields'] = list(update_fields)
+        elif not self.phone or str(self.phone).startswith('NoPhone-'):
+            self.normalized_phone = ''
+        super().save(*args, **kwargs)
 
 
 class LeadAssignmentHistory(models.Model):
@@ -631,10 +682,44 @@ class LeadSetupConfig(models.Model):
         return cfg.assignment_method
 
 
+CANONICAL_LEAD_SOURCES = [
+    'WhatsApp',
+    'Facebook',
+    'Website',
+    'Google Sheets',
+    'Walk-in',
+    'Google Call',
+    'Manual',
+]
+
+
+def normalize_lead_source(src: str) -> str:
+    """Normalizes raw lead source strings into canonical CRM lead sources."""
+    if not src:
+        return ''
+    s = str(src).strip()
+    sl = s.lower()
+    if 'walk' in sl:
+        return 'Walk-in'
+    if 'whatsapp' in sl:
+        return 'WhatsApp'
+    if 'facebook' in sl or 'meta' in sl or 'lead form' in sl:
+        return 'Facebook'
+    if 'sheet' in sl:
+        return 'Google Sheets'
+    if 'google call' in sl or 'call' in sl:
+        return 'Google Call'
+    if 'web' in sl or 'google ad' in sl or 'seo' in sl:
+        return 'Website'
+    if 'manual' in sl:
+        return 'Manual'
+    return s
+
+
 class TelecallerLeadSetup(models.Model):
     """
-    Branch- and Channel-based Telecaller assignment rules:
-    - Independent Percentage or Lead Count per Branch & Channel
+    Branch- and Lead-Source-based Telecaller assignment rules:
+    - Hierarchy: Branch -> Lead Source -> Eligible Telecallers -> Allocation Percentages (100% total per source)
     """
     telecaller = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -645,6 +730,13 @@ class TelecallerLeadSetup(models.Model):
         'branches.Branch',
         on_delete=models.CASCADE,
         related_name='telecaller_lead_setups'
+    )
+    source = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        db_index=True,
+        help_text="Lead source (e.g. WhatsApp, Facebook, Website, Google Sheets, Walk-in, Google Call, Manual). Empty = Branch Default."
     )
     channel = models.ForeignKey(
         'channels.Channel',
@@ -662,13 +754,45 @@ class TelecallerLeadSetup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('telecaller', 'branch', 'channel')
-        ordering = ['branch__name', 'channel__name', 'telecaller__username']
+        unique_together = ('telecaller', 'branch', 'source')
+        ordering = ['branch__name', 'source', 'telecaller__username']
 
     def __str__(self):
         name = self.telecaller.get_full_name() or self.telecaller.username
-        chan = self.channel.name if self.channel else (self.channel_name or "All Channels")
-        return f"{name} - {self.branch.name} [{chan}] ({self.assignment_percentage}%, {self.lead_count} leads)"
+        src = self.source or self.channel_name or "General"
+        return f"{name} - {self.branch.name} [{src}] ({self.assignment_percentage}%, {self.lead_count} leads)"
+
+
+class LeadAllocationConfigAudit(models.Model):
+    """
+    Audit log of lead assignment configuration changes across branches and sources.
+    Tracks who changed what allocation, previous values, new values, and timestamp.
+    """
+    branch = models.ForeignKey(
+        'branches.Branch',
+        on_delete=models.CASCADE,
+        related_name='allocation_audits'
+    )
+    source = models.CharField(max_length=100, blank=True, default='', db_index=True)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lead_allocation_audits'
+    )
+    previous_config = models.JSONField(default=dict, blank=True)
+    new_config = models.JSONField(default=dict, blank=True)
+    notes = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        by = self.changed_by.username if self.changed_by else 'System'
+        return f"Allocation Audit: {self.branch.name} [{self.source or 'General'}] by {by} at {self.created_at}"
+
 
 
 # =====================================================================
@@ -676,13 +800,28 @@ class TelecallerLeadSetup(models.Model):
 # =====================================================================
 class DuplicateLeadRecord(models.Model):
     """
-    Stores duplicate submission details and audit trail for a lead.
-    Tracks cross-source duplicate detections under the 10-day rule.
+    Stores duplicate submission details and audit trail for a lead in a dedicated separate table.
+    Tracks cross-source duplicate detections under the 10-day rule and pre-merge archives.
     """
+    RECORD_TYPE_CHOICES = [
+        ('INCOMING_DUPLICATE', 'Incoming Duplicate (<= 10 Days)'),
+        ('REENQUIRY_DUPLICATE', 'Re-enquiry Duplicate (> 10 Days)'),
+        ('MERGED_ARCHIVE', 'Merged / Consolidated Lead Archive'),
+        ('MANUAL_PROMOTED', 'Promoted to Independent Lead'),
+    ]
+
     original_lead = models.ForeignKey(
         Lead,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='duplicate_records'
+    )
+    record_type = models.CharField(
+        max_length=50,
+        choices=RECORD_TYPE_CHOICES,
+        default='INCOMING_DUPLICATE',
+        db_index=True
     )
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20)
@@ -724,16 +863,53 @@ class DuplicateLeadRecord(models.Model):
         indexes = [
             models.Index(fields=['source', 'provider_event_id'], name='idx_dup_lead_src_event'),
             models.Index(fields=['normalized_phone'], name='idx_dup_lead_norm_phone'),
+            models.Index(fields=['record_type', 'submitted_at'], name='idx_dup_lead_type_sub'),
         ]
 
     def __str__(self):
         return f"Duplicate: {self.name} ({self.phone}) [{self.action_taken}] in {self.branch_name or 'N/A'}"
 
 
+class WalkinEnquiryForm(models.Model):
+    title = models.CharField(max_length=200, default="Student Enquiry Form")
+    slug = models.SlugField(max_length=200, unique=True, db_index=True)
+    description = models.CharField(max_length=500, blank=True, default="Training & Placement Enquiry")
+    branch = models.ForeignKey(
+        'branches.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='walkin_forms',
+        help_text="If assigned, leads from this form automatically belong to this branch."
+    )
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    theme_color = models.CharField(max_length=20, default="#4f46e5")
+    logo = models.ImageField(upload_to='form_logos/', null=True, blank=True)
+    banner_image = models.ImageField(upload_to='form_banners/', null=True, blank=True)
+    form_schema = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="JSON structure holding sections, fields, choices, and validation."
+    )
+    submissions_count = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_default', '-created_at']
+
+    def __str__(self):
+        branch_str = f" ({self.branch.name})" if self.branch else ""
+        return f"{self.title}{branch_str}"
+
+
 from .models_enrollment import (
     Enrollment,
     Installment,
     PaymentTransaction,
+    PaymentVerificationHistory,
     InstallmentScheduleHistory,
     PaymentEmailLog,
     GSTTreatment,

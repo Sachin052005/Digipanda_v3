@@ -5,8 +5,10 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 
+from django.core.exceptions import PermissionDenied
+
 from .models import User, UserRole
-from .permissions import admin_required
+from .permissions import admin_required, can_manage_user
 from .forms import AdminReceptionistCreateForm
 from .services import send_user_welcome_email
 from branches.models import Branch
@@ -92,6 +94,9 @@ def admin_receptionist_create(request):
 def admin_receptionist_change_password(request, pk):
     """Admin resets or sets a new password for a Receptionist."""
     receptionist = get_object_or_404(User, pk=pk, role=UserRole.RECEPTIONIST)
+    if not can_manage_user(request.user, receptionist):
+        raise PermissionDenied("You do not have permission to manage this receptionist's password.")
+
     if request.method == 'POST':
         form = SetPasswordForm(receptionist, request.POST)
         if form.is_valid():
@@ -100,7 +105,7 @@ def admin_receptionist_change_password(request, pk):
             receptionist.save(update_fields=['must_change_password'])
             log_activity(
                 user=request.user,
-                action="Password Changed",
+                action="Administrator Set Password",
                 description=f"Admin updated password for Receptionist '{receptionist.username}'.",
                 object_type="User",
                 object_id=receptionist.pk,
@@ -136,3 +141,61 @@ def admin_receptionist_toggle_status(request, pk):
     )
     messages.success(request, f"Receptionist '{receptionist.username}' was successfully {status_str}.")
     return redirect('admin_receptionists_list')
+
+
+@admin_required
+def admin_receptionist_detail(request, pk):
+    """Admin detail/profile view for a Receptionist user with branch metrics and recent check-ins."""
+    from django.utils import timezone
+    from datetime import datetime, time
+    from leads.models import Lead
+    from activities.models import Activity
+
+    receptionist = get_object_or_404(User.objects.select_related('branch'), pk=pk, role=UserRole.RECEPTIONIST)
+    branch = receptionist.branch
+
+    today = timezone.localdate()
+    today_start = timezone.make_aware(datetime.combine(today, time.min))
+    today_end = timezone.make_aware(datetime.combine(today, time.max))
+    month_start = timezone.make_aware(datetime.combine(today.replace(day=1), time.min))
+
+    walkin_qs = Lead.objects.filter(
+        Q(source__iexact='Walk-in') |
+        Q(channel__name__iexact='Walk-in') |
+        Q(source__iexact='Google Sheets') |
+        Q(channel__name__iexact='Google Sheets') |
+        Q(sheet_mappings__isnull=False) |
+        Q(is_offline=True)
+    ).distinct()
+
+    if branch:
+        walkin_qs = walkin_qs.filter(Q(branch=branch) | Q(secondary_branches=branch)).distinct()
+    else:
+        walkin_qs = walkin_qs.none()
+
+    total_walkins = walkin_qs.count()
+    today_walkins = walkin_qs.filter(created_at__range=(today_start, today_end)).count()
+    month_walkins = walkin_qs.filter(created_at__gte=month_start).count()
+    awaiting_assignment = walkin_qs.filter(assigned_counselor__isnull=True).count()
+    assigned_walkins = walkin_qs.filter(assigned_counselor__isnull=False).count()
+
+    recent_walkins = walkin_qs.select_related('assigned_counselor', 'channel', 'product').order_by('-updated_at')[:10]
+    recent_activities = Activity.objects.filter(user=receptionist).order_by('-timestamp')[:10]
+
+    counselors_count = 0
+    if branch:
+        counselors_count = User.objects.filter(role=UserRole.COUNSELOR, branch=branch, is_active=True).count()
+
+    context = {
+        'receptionist': receptionist,
+        'branch': branch,
+        'total_walkins': total_walkins,
+        'today_walkins': today_walkins,
+        'month_walkins': month_walkins,
+        'awaiting_assignment': awaiting_assignment,
+        'assigned_walkins': assigned_walkins,
+        'counselors_count': counselors_count,
+        'recent_walkins': recent_walkins,
+        'recent_activities': recent_activities,
+    }
+    return render(request, 'admin/receptionist_detail.html', context)

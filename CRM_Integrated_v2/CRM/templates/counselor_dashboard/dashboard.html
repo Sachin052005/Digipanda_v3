@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Counselor Dashboard - TECHPANDA CRM{% endblock %}
+{% block title %}Counselor Dashboard - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
@@ -26,27 +26,97 @@
       <a href="?period=month" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Month</a>
     </div>
 
-    <!-- Custom Date Range -->
-    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-      <input type="hidden" name="period" value="custom">
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">From</span>
-        <input type="date" name="start_date" class="form-control tp-input" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ start_date }}">
-      </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">To</span>
-        <input type="date" name="end_date" class="form-control tp-input" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ end_date }}">
-      </div>
-      {% if period != 'all' and period %}
-        <a href="?period=all" class="btn btn-secondary tp-btn-secondary" style="font-size: 0.8rem; padding: 5px 8px; color: #ef4444;" title="Reset filter">&times;</a>
-      {% endif %}
+    <!-- Custom Date Range (Smart Calendar Popover) -->
+    <div class="tp-smart-date-container">
+      <input type="hidden" name="period" value="{% if period == 'custom' %}custom{% else %}all{% endif %}">
+      <input type="date" name="start_date" value="{{ start_date }}" style="display: none;">
+      <input type="date" name="end_date" value="{{ end_date }}" style="display: none;">
     </div>
   </form>
 </div>
 
+<!-- REJECTED PAYMENTS AWAITING CORRECTION (Submitting Counselor Queue) -->
+{% if rejected_payments %}
+<div class="tp-card" style="background: #fff5f5; border: 1px solid #fecaca; border-left: 5px solid #dc2626; border-radius: 12px; padding: 20px; margin-bottom: 24px; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.08);">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #dc2626; color: #fff;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </span>
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #991b1b;">
+          Action Required: {{ rejected_payments_count }} Payment{{ rejected_payments_count|pluralize }} Returned for Correction
+        </h3>
+      </div>
+      <p style="margin: 4px 0 0 36px; font-size: 0.85rem; color: #7f1d1d;">
+        The Accountant has reviewed and returned the following payment submission{{ rejected_payments_count|pluralize }} recorded by you. Please review the accountant's feedback, correct any errors or upload new proof, and resubmit for verification.
+      </p>
+    </div>
+    <span class="badge" style="background: #dc2626; color: #fff; font-size: 0.78rem; font-weight: 700; padding: 5px 12px; border-radius: 9999px;">
+      {{ rejected_payments_count }} Rejected Submission{{ rejected_payments_count|pluralize }}
+    </span>
+  </div>
+
+  <div class="table-responsive" style="background: #ffffff; border-radius: 8px; border: 1px solid #fee2e2; overflow-x: auto;">
+    <table class="crm-table tp-table" style="width: 100%; min-width: 900px; border-collapse: separate; border-spacing: 0; font-size: 0.85rem;">
+      <thead>
+        <tr style="background: #fef2f2; text-align: left; color: #991b1b; font-size: 0.74rem; text-transform: uppercase;">
+          <th style="padding: 10px 14px;">Receipt #</th>
+          <th style="padding: 10px 14px;">Student Name</th>
+          <th style="padding: 10px 14px;">Course / Program</th>
+          <th style="padding: 10px 14px;">Amount & Method</th>
+          <th style="padding: 10px 14px;">Accountant Rejection Reason</th>
+          <th style="padding: 10px 14px; text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in rejected_payments %}
+        <tr style="border-bottom: 1px solid #fee2e2;">
+          <td style="padding: 12px 14px; font-weight: 700; color: #0284c7; font-family: monospace;">
+            {{ p.receipt_number }}
+            {% if p.resubmission_count > 0 %}
+            <div style="font-size: 0.7rem; color: #6d28d9; font-weight: 600;">Resubmitted {{ p.resubmission_count }}x</div>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 14px;">
+            <div style="font-weight: 700; color: #1e293b;">{{ p.enrollment.student_name }}</div>
+            <div style="font-size: 0.74rem; color: #64748b;">{{ p.enrollment.student_phone }}</div>
+          </td>
+          <td style="padding: 12px 14px;">
+            <div style="font-weight: 600;">{{ p.enrollment.product.name|default:"General Course" }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">🏢 {{ p.enrollment.branch.name|default:"Main Campus" }}</div>
+          </td>
+          <td style="padding: 12px 14px;">
+            <div style="font-weight: 800; color: #991b1b; font-size: 0.95rem;">₹{{ p.amount }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">Via {{ p.payment_method }}</div>
+          </td>
+          <td style="padding: 12px 14px;">
+            <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; padding: 6px 10px; color: #9f1239; font-size: 0.8rem; line-height: 1.35; max-width: 320px;">
+              <strong>Accountant Note:</strong> {{ p.rejection_comment|default:"No specific reason provided." }}
+              {% if p.reviewed_by %}
+              <div style="font-size: 0.7rem; color: #be123c; margin-top: 2px;">
+                — {{ p.reviewed_by.get_full_name|default:p.reviewed_by.username }} ({{ p.reviewed_at|date:"d M, H:i" }})
+              </div>
+              {% endif %}
+            </div>
+          </td>
+          <td style="padding: 12px 14px; text-align: right; vertical-align: middle; white-space: nowrap;">
+            <button type="button" class="btn btn-sm btn-danger tp-btn-danger" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 700; background: #dc2626; border-color: #dc2626; color: #fff; border-radius: 6px;"
+                    onclick="openResubmitModal({{ p.id }}, '{{ p.amount }}', '{{ p.payment_method }}', '{{ p.transaction_reference|default:''|escapejs }}', '{{ p.rejection_comment|default:''|escapejs }}', '{{ p.enrollment.student_name|escapejs }}', '{{ p.receipt_number|escapejs }}')">
+              Correct & Resubmit &rarr;
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
 <!-- CLICKABLE KPI CARDS -->
-<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
-  <a href="{% url 'counselor_leads_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all my leads">
+<div class="kpi-grid tp-stagger-container" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <a href="{% url 'counselor_leads_list' %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view all my leads">
     <div class="kpi-info">
       <h4>My Leads</h4>
       <div class="kpi-value" style="color: var(--tp-primary-600);">{{ my_leads_count }}</div>
@@ -56,7 +126,7 @@
     </div>
   </a>
 
-  <a href="{% url 'counselor_leads_list' %}?status=Visited" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view visited leads">
+  <a href="{% url 'counselor_leads_list' %}?status=Visited" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view visited leads">
     <div class="kpi-info">
       <h4>Visits</h4>
       <div class="kpi-value" style="color: #7c3aed;">{{ visits_count }}</div>
@@ -66,7 +136,7 @@
     </div>
   </a>
 
-  <a href="{% url 'counselor_leads_list' %}?status=Counseling" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view counseling in progress">
+  <a href="{% url 'counselor_leads_list' %}?status=Counseling" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view counseling in progress">
     <div class="kpi-info">
       <h4>Counseling</h4>
       <div class="kpi-value" style="color: #0284c7;">{{ counseling_count }}</div>
@@ -76,7 +146,7 @@
     </div>
   </a>
 
-  <a href="{% url 'counselor_followups_list' %}?status=Pending" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view pending follow-ups">
+  <a href="{% url 'counselor_followups_list' %}?status=Pending" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view pending follow-ups">
     <div class="kpi-info">
       <h4>Pending Follow-ups</h4>
       <div class="kpi-value" style="color: #f59e0b;">{{ pending_followups_count }}</div>
@@ -86,7 +156,7 @@
     </div>
   </a>
 
-  <a href="{% url 'counselor_leads_list' %}?status=Enrolled" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view enrolled students">
+  <a href="{% url 'counselor_leads_list' %}?status=Enrolled" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view enrolled students">
     <div class="kpi-info">
       <h4>Enrolled</h4>
       <div class="kpi-value" style="color: #10b981;">{{ joined_count }}</div>
@@ -98,20 +168,18 @@
 </div>
 
 <div class="tp-grid-2col" style="gap: 24px; margin-bottom: 24px;">
-  <div class="crm-card">
-    <div class="crm-card-header">
-      <h3>My Lead Pipeline</h3>
+  <div class="tp-chart-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary);">My Lead Pipeline</h3>
     </div>
-    <div class="crm-card-body">
-      <div style="max-height: 280px; position: relative;">
-        <canvas id="counselorLeadStatusChart"></canvas>
-      </div>
+    <div style="height: 270px; position: relative;">
+      <canvas id="counselorLeadStatusChart"></canvas>
     </div>
   </div>
-  <div class="crm-card">
-    <div class="crm-card-header">
+  <div class="crm-card tp-card">
+    <div class="crm-card-header tp-card-header" style="display: flex; justify-content: space-between; align-items: center;">
       <h3>Recent Leads</h3>
-      <a href="{% url 'counselor_leads_list' %}" class="btn btn-secondary btn-sm">View All</a>
+      <a href="{% url 'counselor_leads_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">View All</a>
     </div>
     <div class="table-responsive">
       <table class="crm-table">
@@ -119,34 +187,141 @@
         <tbody>
           {% for ld in recent_leads %}
           <tr>
-            <td><strong><a href="{% url 'counselor_lead_detail' ld.pk %}">{{ ld.name }}</a></strong></td>
+            <td><strong><a href="{% url 'counselor_lead_detail' ld.pk %}" style="text-decoration: none; color: var(--tp-primary-600);">{{ ld.name }}</a></strong></td>
             <td><span class="badge badge-{{ ld.status|lower|slugify }}">{{ ld.status }}</span></td>
             <td>{{ ld.updated_at|date:"M d, H:i" }}</td>
           </tr>
           {% empty %}
-          <tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No leads handed off to you yet.</td></tr>
+          <tr><td colspan="3" style="text-align: center; color: var(--tp-text-muted); padding: 20px;">No leads handed off to you yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
 </div>
+
+<!-- Resubmit Rejected Payment Modal -->
+<div id="resubmitModal" role="dialog" aria-modal="true" aria-labelledby="resubmitModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+  <div style="background: #ffffff; border-radius: 14px; width: 100%; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); overflow: hidden; margin: 16px; border: 1px solid #fee2e2;">
+    <div style="padding: 16px 20px; background: #dc2626; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="resubmitModalTitle" style="margin: 0; font-size: 1.1rem; color: #ffffff; font-weight: 700;">Resubmit Rejected Payment</h3>
+      <button type="button" onclick="closeResubmitModal()" style="background: none; border: none; color: #ffffff; font-size: 1.4rem; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <form id="resubmitPaymentForm" method="post" action="" enctype="multipart/form-data" style="padding: 20px;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'counselor_dashboard' %}">
+      
+      <div id="resubmitReceiptInfo" style="margin-bottom: 12px; font-weight: 700; color: #1e293b; font-size: 0.9rem;"></div>
+      
+      <div id="resubmitReasonBox" style="margin-bottom: 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; color: #991b1b; font-size: 0.85rem; line-height: 1.4;">
+        <strong style="display: block; margin-bottom: 4px;">Accountant Rejection Reason:</strong>
+        <span id="resubmitReasonText"></span>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Corrected Amount (₹) *</label>
+        <input type="number" step="0.01" name="amount" id="resubmitAmountInput" required class="form-control tp-input" style="width: 100%; font-size: 1rem; font-weight: 700;">
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Payment Method *</label>
+        <select name="payment_method" id="resubmitMethodSelect" required class="form-select tp-select" style="width: 100%;">
+          <option value="UPI">UPI / QR Code</option>
+          <option value="Bank Transfer">Bank Transfer / NEFT</option>
+          <option value="Cash">Cash</option>
+          <option value="Card">Credit / Debit Card</option>
+          <option value="Online">Online Payment Gateway</option>
+          <option value="Cheque">Cheque / Demand Draft</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Transaction Reference / UTR #</label>
+        <input type="text" name="transaction_reference" id="resubmitRefInput" class="form-control tp-input" placeholder="e.g. UPI Ref, NEFT UTR, Cheque No" style="width: 100%;">
+      </div>
+
+      <div style="margin-bottom: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px;">
+        <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; font-weight: 700; margin-bottom: 6px;">
+          <span>New Payment Proof Screenshot</span>
+          <span style="font-size: 0.72rem; color: #64748b; font-weight: 400;">JPG, PNG, WEBP (Max 5MB)</span>
+        </label>
+        <input type="file" name="payment_proof" id="resubmitProofInput" accept=".jpg,.jpeg,.png,.webp" class="form-control" style="width: 100%; font-size: 0.85rem; padding: 6px;">
+        <small style="display: block; color: #475569; font-size: 0.74rem; margin-top: 5px;">
+          Attach a clear screenshot or receipt to replace the previously rejected proof.
+        </small>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Resubmission Clarification Note</label>
+        <textarea name="resubmission_notes" rows="2" class="form-control tp-input" placeholder="Explain the corrections made for the Accountant review" style="width: 100%; font-size: 0.85rem;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary tp-btn-secondary" onclick="closeResubmitModal()">Cancel</button>
+        <button type="submit" class="btn btn-danger tp-btn-danger" style="background: #dc2626; border-color: #dc2626; color: #fff; font-weight: 700;">Resubmit for Verification</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function openResubmitModal(paymentId, amount, method, ref, reason, studentName, receiptNo) {
+  document.getElementById('resubmitPaymentForm').action = '/enrollments/payments/' + paymentId + '/resubmit/';
+  document.getElementById('resubmitReceiptInfo').textContent = 'Receipt #' + receiptNo + ' (' + studentName + ')';
+  document.getElementById('resubmitAmountInput').value = amount;
+  document.getElementById('resubmitMethodSelect').value = method;
+  document.getElementById('resubmitRefInput').value = ref || '';
+  document.getElementById('resubmitReasonText').textContent = reason || 'No specific feedback provided by accountant.';
+  document.getElementById('resubmitModal').style.display = 'flex';
+}
+
+function closeResubmitModal() {
+  document.getElementById('resubmitModal').style.display = 'none';
+}
+
+(function() {
+  const m = document.getElementById('resubmitModal');
+  if (m) {
+    m.addEventListener('click', function(e) {
+      if (e.target === this) closeResubmitModal();
+    });
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && m && m.style.display === 'flex') {
+      closeResubmitModal();
+    }
+  });
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
   const ctx = document.getElementById('counselorLeadStatusChart');
   if (ctx) {
     const rawData = {{ status_dict|safe }};
     const labels = Object.keys(rawData);
     const data = Object.values(rawData);
-    if (labels.length === 0) { labels.push('No Leads Yet'); data.push(0); }
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b'] }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-    });
+    if (window.TPCharts) {
+      window.TPCharts.createDoughnut(ctx, {
+        labels: labels,
+        data: data,
+        centerLabel: 'MY LEADS',
+        cutout: '74%',
+        legendPosition: 'bottom'
+      });
+    } else {
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['No Leads Yet'],
+          datasets: [{
+            data: data.length ? data : [0],
+            backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { position: 'bottom' } } }
+      });
+    }
   }
 });
 </script>

@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Walk-in Form Studio - DigipandaCRM{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --cyber-primary: #6366f1;
+    --cyber-accent: #06b6d4;
+    --cyber-glow: rgba(99, 102, 241, 0.35);
+  }
+
+  /* Futuristic Cyber Studio Hero */
+  .studio-hero {
+    background: linear-gradient(135deg, #090d16 0%, #111827 40%, #1e1b4b 100%);
+    border-radius: 16px;
+    padding: 30px 36px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    color: #ffffff;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    box-shadow: 0 16px 40px -10px rgba(15, 23, 42, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .studio-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #6366f1, #06b6d4, #ec4899, #8b5cf6);
+    background-size: 300% 100%;
+    animation: neonLaser 6s linear infinite;
+  }
+  @keyframes neonLaser {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .studio-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.725rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #a5b4fc;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .studio-hero-title {
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .studio-hero-sub {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    max-width: 620px;
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  /* HUD Metrics Pods */
+  .hud-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+  .hud-pod {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 14px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  }
+  .hud-pod:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.08);
+  }
+  .hud-pod::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    bottom: 0;
+  }
+  .hud-pod.pod-blue::before { background: #6366f1; }
+  .hud-pod.pod-green::before { background: #10b981; }
+  .hud-pod.pod-purple::before { background: #a855f7; }
+  .hud-pod.pod-amber::before { background: #f59e0b; }
+
+  .hud-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted, #64748b);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .hud-val {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin: 8px 0 4px;
+    color: var(--text-main, #0f172a);
+    letter-spacing: -0.03em;
+  }
+  .hud-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted, #94a3b8);
+  }
+
+  /* Holographic Form Cards Grid */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
+  }
+  .holo-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+  .holo-card:hover {
+    transform: translateY(-5px) scale(1.008);
+    box-shadow: 0 20px 35px -8px rgba(15, 23, 42, 0.12);
+  }
+  .holo-laser-bar {
+    height: 5px;
+    width: 100%;
+    transition: filter 0.2s;
+  }
+  .holo-card:hover .holo-laser-bar {
+    filter: brightness(1.2);
+  }
+
+  .card-top {
+    padding: 22px 22px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .form-title-text {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-main, #0f172a);
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .form-sub-text {
+    font-size: 0.8rem;
+    color: var(--text-muted, #64748b);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.4em;
+    line-height: 1.4;
+  }
+
+  .meta-tag-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .holo-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    font-size: 0.725rem;
+    font-weight: 700;
+  }
+  .holo-tag-default {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+  }
+  .holo-tag-branch {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+  }
+  .holo-tag-count {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Cyber Slug Box */
+  .slug-terminal {
+    background: #0f172a;
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: #38bdf8;
+    margin-bottom: 18px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .slug-code {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .slug-copy-icon {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .slug-copy-icon:hover {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+  }
+
+  /* Card Footer Actions */
+  .card-action-bar {
+    padding: 14px 22px;
+    background: #f8fafc;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn-cyber-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+    transition: all 0.15s;
+  }
+  .btn-cyber-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  }
+  .btn-cyber-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .btn-cyber-outline:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.open {
+    display: flex;
+  }
+  .modal-box {
+    background: #ffffff;
+    border-radius: 16px;
+    max-width: 540px;
+    width: 100%;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    animation: modalPop 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes modalPop {
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1500px; margin: 0 auto; padding: 12px 0;">
+
+  <!-- Futuristic Hero Banner -->
+  <div class="studio-hero">
+    <div>
+      <div class="studio-hero-badge">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+        <span>OFFICIAL DEFAULT FORM</span>
+      </div>
+      <h1 class="studio-hero-title">WALK-IN ENQUIRY FORM &amp; QR</h1>
+      <p class="studio-hero-sub">
+        Standardized DigiPanda Student Enquiry Form, branch reception desk tracking, and printable A4 QR standees.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <a href="{% url 'admin_walkin_desk' %}" class="btn-cyber-outline" style="background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: #ffffff;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Reception Desk
+      </a>
+      <a href="{% url 'public_student_enquiry_form' %}" target="_blank" class="btn-cyber-primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> Open Live Form</a>
+    </div>
+  </div>
+
+  <!-- HUD KPI Grid -->
+  <div class="hud-grid">
+    <div class="hud-pod pod-blue">
+      <div class="hud-label">
+        <span>Total Forms</span>
+        <span>📁</span>
+      </div>
+      <div class="hud-val" style="color:#6366f1;">{{ total_forms }}</div>
+      <div class="hud-sub">Published and active templates</div>
+    </div>
+    <div class="hud-pod pod-green">
+      <div class="hud-label">
+        <span>Active Forms</span>
+        <span style="color:#10b981;">●</span>
+      </div>
+      <div class="hud-val" style="color:#10b981;">{{ active_forms }}</div>
+      <div class="hud-sub">Live and accepting enquiries</div>
+    </div>
+    <div class="hud-pod pod-purple">
+      <div class="hud-label">
+        <span>Total Submissions</span>
+        <span>⚡</span>
+      </div>
+      <div class="hud-val" style="color:#a855f7;">{{ total_submissions }}</div>
+      <div class="hud-sub">Total walk-ins registered</div>
+    </div>
+    <div class="hud-pod pod-amber">
+      <div class="hud-label">
+        <span>Active Centers</span>
+        <span>📍</span>
+      </div>
+      <div class="hud-val" style="color:#f59e0b;">{{ branches.count }}</div>
+      <div class="hud-sub">Branches with assigned forms</div>
+    </div>
+  </div>
+
+  <!-- Cards Grid -->
+  <div class="cards-grid">
+    {% for form in forms %}
+    <div class="holo-card">
+      <div class="holo-laser-bar" style="background: {{ form.theme_color|default:'#4f46e5' }};"></div>
+
+      <div class="card-top">
+        <div style="flex: 1; min-width: 0;">
+          <div class="form-title-text" title="{{ form.title }}">{{ form.title }}</div>
+          <div class="form-sub-text">{{ form.description|default:"Standard walk-in student registration and counselling enquiry form." }}</div>
+        </div>
+
+        <form method="POST" action="{% url 'admin_walkin_form_toggle_status' form.id %}" style="margin: 0;">
+          {% csrf_token %}
+          <button type="submit" class="holo-tag {% if form.is_active %}holo-tag-default{% else %}holo-tag-branch{% endif %}" style="cursor: pointer; border: 1px solid transparent;" title="Click to toggle status">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background: {% if form.is_active %}#10b981{% else %}#ef4444{% endif %};"></span>
+            {{ form.is_active|yesno:"Active,Draft" }}
+          </button>
+        </form>
+      </div>
+
+      <div style="padding: 0 22px 14px; flex: 1;">
+        <div class="meta-tag-cluster">
+          {% if form.is_default %}
+          <span class="holo-tag holo-tag-default">
+            ★ System Default
+          </span>
+          {% endif %}
+
+          <span class="holo-tag holo-tag-branch">
+            📍 {% if form.branch %}{{ form.branch.name }}{% else %}All Centers (Global){% endif %}
+          </span>
+
+          <span class="holo-tag holo-tag-count">
+            👥 {{ form.submissions_count }} Leads
+          </span>
+
+          <span class="holo-tag" style="background:#f8fafc; border:1px solid #e2e8f0; color:#64748b;">
+            📑 {{ form.form_schema.sections|length|default:1 }} Section{{ form.form_schema.sections|length|pluralize }}
+          </span>
+        </div>
+
+        <!-- Terminal-Styled Public Slug Box -->
+        <div class="slug-terminal">
+          <span class="slug-code">/enquiry/f/{{ form.slug }}/</span>
+          <button type="button" class="slug-copy-icon" onclick="copyFormLink('{{ form.slug }}', this)" title="Copy public URL">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="card-action-bar">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <a href="{% url 'public_student_enquiry_slug' form.slug %}" target="_blank" class="btn-cyber-primary" title="Open Standard Student Enquiry Form">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            Open Live Form
+          </a>
+          <a href="{% url 'walkin_form_qr_standee' form.id %}" target="_blank" class="btn-cyber-outline" title="Printable A4 QR Standee">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            Print QR Standee
+          </a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="grid-column: 1 / -1; background: #ffffff; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 60px 24px; text-align: center;">
+      <div style="font-size: 2.8rem; margin-bottom: 12px;">📑</div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 6px;">No Walk-in Forms Created Yet</h3>
+      <p style="color: #64748b; font-size: 0.875rem; max-width: 460px; margin: 0 auto 20px;">
+        Build your first custom walk-in student enquiry form with visual field builder, dynamic branch mapping, and printable QR standee.
+      </p>
+      <a href="{% url 'public_student_enquiry_form' %}" target="_blank" class="btn-cyber-primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> Open Live Form</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  function autoGenerateSlug(text) {
+    const slug = text.toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    document.getElementById('create_form_slug').value = slug;
+    document.getElementById('slug_preview').innerText = slug || 'form-slug';
+  }
+
+  document.getElementById('create_form_slug').addEventListener('input', function() {
+    document.getElementById('slug_preview').innerText = this.value || 'form-slug';
+  });
+
+  function selectThemeColor(hex) {
+    document.getElementById('create_theme_color').value = hex;
+    document.getElementById('create_color_picker').value = hex;
+  }
+
+  function copyFormLink(slug, btn) {
+    const fullUrl = window.location.origin + '/enquiry/f/' + slug + '/';
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span style="color:#10b981; font-weight:700;">✓</span>';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    });
+  }
+</script>
+{% endblock %}

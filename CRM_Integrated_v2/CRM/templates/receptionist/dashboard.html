@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Receptionist Dashboard - {{ branch.name|default:"Reception" }} - TECHPANDA CRM{% endblock %}
+{% block title %}Receptionist Dashboard - {{ branch.name|default:"Reception" }} - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
@@ -18,14 +18,25 @@
     </p>
   </div>
   <div class="page-actions" style="display: flex; gap: 10px; align-items: center;">
+    <a href="{% url 'receptionist_qr_standee' %}" target="_blank" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <span>Reception QR Standee</span>
+    </a>
     <button type="button" class="btn btn-primary" onclick="openRegisterStudentModal()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      + Register Walk-in Student
+       Register Walk-in Student
     </button>
   </div>
 </div>
 
-{% if not has_counselors %}
+{% if not branch %}
+<div style="background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+  <div style="font-size: 0.9rem; color: #991b1b;">
+    <strong>Branch Assignment Required:</strong> Your receptionist account is not currently assigned to any branch center. You cannot view or check in walk-in leads. Please contact your system administrator to assign a branch.
+  </div>
+</div>
+{% elif not has_counselors %}
 <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
   <div style="font-size: 0.85rem; color: #92400e;">
@@ -35,71 +46,85 @@
 {% endif %}
 
 <!-- 4 SUMMARY KPI CARDS (Clickable) -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+<div class="kpi-grid tp-stagger-container" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
   <!-- 1. Total walk-in leads registered today -->
   <a href="?period=today{% if status_filter %}&status_filter={{ status_filter }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 10px; padding: 18px; border: 2px solid {% if period == 'today' %}#3b82f6{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;" title="Click to filter walk-ins today">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Walk-ins Today</div>
-    <div style="font-size: 1.85rem; font-weight: 800; color: #2563eb; margin: 4px 0;">{{ total_today }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Total registered today &rarr;</div>
+     class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to filter walk-ins today">
+    <div class="kpi-info">
+      <h4>Walk-ins Today</h4>
+      <div class="kpi-value" style="color: var(--tp-primary-600);">{{ total_today }}</div>
+    </div>
+    <div class="kpi-icon-wrap blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+    </div>
   </a>
 
   <!-- 2. Leads awaiting Counselor assignment -->
   <a href="?assignment_filter=unassigned{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if period %}&period={{ period }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 10px; padding: 18px; border: 2px solid {% if assignment_filter == 'unassigned' %}#e11d48{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;" title="Click to filter leads awaiting counselor">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Awaiting Counselor</div>
-    <div style="font-size: 1.85rem; font-weight: 800; color: #e11d48; margin: 4px 0;">{{ awaiting_assignment }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Pending counselor assignment &rarr;</div>
+     class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to filter leads awaiting counselor">
+    <div class="kpi-info">
+      <h4>Awaiting Counselor</h4>
+      <div class="kpi-value" style="color: #e11d48;">{{ awaiting_assignment }}</div>
+    </div>
+    <div class="kpi-icon-wrap rose">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    </div>
   </a>
 
   <!-- 3. Leads assigned today -->
   <a href="?assignment_filter=assigned{% if status_filter %}&status_filter={{ status_filter }}{% endif %}{% if period %}&period={{ period }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 10px; padding: 18px; border: 2px solid {% if assignment_filter == 'assigned' %}#059669{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;" title="Click to filter leads assigned today">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Assigned Today</div>
-    <div style="font-size: 1.85rem; font-weight: 800; color: #059669; margin: 4px 0;">{{ assigned_today }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Counselor assigned today &rarr;</div>
+     class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to filter leads assigned today">
+    <div class="kpi-info">
+      <h4>Assigned Today</h4>
+      <div class="kpi-value" style="color: #059669;">{{ assigned_today }}</div>
+    </div>
+    <div class="kpi-icon-wrap green">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
   </a>
 
   <!-- 4. Total walk-in leads this month -->
   <a href="?period=month{% if status_filter %}&status_filter={{ status_filter }}{% endif %}"
-     style="text-decoration: none; display: block; background: #fff; border-radius: 10px; padding: 18px; border: 2px solid {% if period == 'month' %}#7c3aed{% else %}var(--border-color, #e5e7eb){% endif %}; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;" title="Click to filter walk-ins this month">
-    <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; letter-spacing: 0.05em;">Walk-ins This Month</div>
-    <div style="font-size: 1.85rem; font-weight: 800; color: #7c3aed; margin: 4px 0;">{{ total_this_month }}</div>
-    <div style="font-size: 0.75rem; color: #6b7280;">Monthly branch aggregate &rarr;</div>
+     class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to filter walk-ins this month">
+    <div class="kpi-info">
+      <h4>Walk-ins This Month</h4>
+      <div class="kpi-value" style="color: #7c3aed;">{{ total_this_month }}</div>
+    </div>
+    <div class="kpi-icon-wrap purple">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+    </div>
   </a>
 </div>
 
-<!-- FILTERS CARD (AUTO-APPLY ON CHANGE) -->
-<div class="filter-card" style="margin-bottom: 20px;">
+<!-- FILTERS CARD -->
+<div class="filter-card tp-card" style="padding: 16px 20px; margin-bottom: 24px;">
   <!-- Preset Period Buttons -->
   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--tp-surface-border, #e5e7eb);">
     <span style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-right: 4px;">Period:</span>
-    <a href="?period=all" class="btn {% if period == 'all' or not period and not from_date and not to_date %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">All Time</a>
-    <a href="?period=today" class="btn {% if period == 'today' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">Today</a>
-    <a href="?period=week" class="btn {% if period == 'week' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Week</a>
-    <a href="?period=month" class="btn {% if period == 'month' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Month</a>
+    <a href="?period=all" class="btn {% if period == 'all' or not period and not from_date and not to_date %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">All Time</a>
+    <a href="?period=today" class="btn {% if period == 'today' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">Today</a>
+    <a href="?period=week" class="btn {% if period == 'week' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Week</a>
+    <a href="?period=month" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 4px 12px;">This Month</a>
   </div>
 
   <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
     <div class="filter-col" style="flex: 2 1 200px;">
-      <label>Search Student (Name / Phone / Lead ID)</label>
-      <input type="text" name="search" class="form-control" placeholder="Search by name, phone, lead ID, token..." value="{{ search_query }}">
+      <label class="tp-label">Search Student (Name / Phone / Lead ID)</label>
+      <input type="text" name="search" class="form-control tp-input" placeholder="Search by name, phone, lead ID, token..." value="{{ search_query }}">
     </div>
 
-    <div class="filter-col" style="flex: 1 1 130px;">
-      <label>From Date</label>
-      <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
-    </div>
-
-    <div class="filter-col" style="flex: 1 1 130px;">
-      <label>To Date</label>
-      <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+    <div class="filter-col" style="flex: 1 1 180px;">
+      <label class="tp-label">Date Range</label>
+      <div class="tp-smart-date-container w-100">
+        <input type="date" name="from_date" value="{{ from_date }}" style="display: none;">
+        <input type="date" name="to_date" value="{{ to_date }}" style="display: none;">
+      </div>
     </div>
 
     {% if all_branches %}
     <div class="filter-col" style="flex: 1 1 140px;">
-      <label>Branch</label>
-      <select name="branch" class="form-select">
+      <label class="tp-label">Branch</label>
+      <select name="branch" class="form-select tp-select">
         {% for b in all_branches %}
         <option value="{{ b.id }}" {% if branch and branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>
         {% endfor %}
@@ -107,9 +132,18 @@
     </div>
     {% endif %}
 
+    <div class="filter-col" style="flex: 1 1 150px;">
+      <label class="tp-label">Lead Type</label>
+      <select name="lead_type_filter" class="form-select tp-select">
+        <option value="">All Lead Types</option>
+        <option value="new" {% if lead_type_filter == 'new' %}selected{% endif %}>New Leads Only</option>
+        <option value="existing" {% if lead_type_filter == 'existing' %}selected{% endif %}>Existing Leads Only</option>
+      </select>
+    </div>
+
     <div class="filter-col" style="flex: 1 1 160px;">
-      <label>Assignment Status</label>
-      <select name="assignment_filter" class="form-select">
+      <label class="tp-label">Assignment Status</label>
+      <select name="assignment_filter" class="form-select tp-select">
         <option value="">All Assignment Statuses</option>
         <option value="unassigned" {% if assignment_filter == 'unassigned' %}selected{% endif %}>Awaiting Counselor</option>
         <option value="assigned" {% if assignment_filter == 'assigned' %}selected{% endif %}>Assigned to Counselor</option>
@@ -117,8 +151,8 @@
     </div>
 
     <div class="filter-col" style="flex: 1 1 150px;">
-      <label>Visitor Status</label>
-      <select name="status_filter" class="form-select">
+      <label class="tp-label">Visitor Status</label>
+      <select name="status_filter" class="form-select tp-select">
         <option value="">All Visitor Statuses</option>
         <option value="Waiting" {% if status_filter == 'Waiting' %}selected{% endif %}>Waiting in Lobby</option>
         <option value="In Consultation" {% if status_filter == 'In Consultation' %}selected{% endif %}>In Consultation</option>
@@ -128,140 +162,196 @@
     </div>
 
     <div class="filter-col" style="display: flex; gap: 8px;">
-      <a href="{% url 'receptionist_dashboard' %}" class="btn btn-secondary">Clear Filters</a>
+      <a href="{% url 'receptionist_dashboard' %}" class="btn btn-secondary tp-btn-secondary">Clear Filters</a>
     </div>
   </form>
 </div>
 
+<!-- BULK ACTIONS BAR (Visible when checkboxes are selected) -->
+<div id="bulkActionBar" style="display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 18px; margin-bottom: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span class="badge" style="background: #1d4ed8; color: #fff; font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 9999px;" id="bulkSelectedCount">
+      0
+    </span>
+    <span style="font-weight: 700; color: #1e3a8a; font-size: 0.9rem;">
+      walk-in lead(s) selected
+    </span>
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <button type="button" class="btn btn-secondary btn-sm" onclick="clearBulkSelection()">
+      Deselect All
+    </button>
+    <button type="button" class="btn btn-primary btn-sm" onclick="openBulkAssignModal()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+      Assign Selected to Counselor &rarr;
+    </button>
+  </div>
+</div>
+
 <!-- WALK-IN LEADS TABLE -->
-<div class="table-card">
-  <div class="table-responsive">
-    <table class="table" style="margin: 0;">
+<div class="table-card tp-card" style="background: var(--bg-card, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+  <div class="table-responsive" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+    <table class="crm-table tp-table" style="width: 100%; min-width: 1260px; table-layout: fixed; border-collapse: separate; border-spacing: 0;">
       <thead>
-        <tr>
-          <th>Lead ID</th>
-          <th>Student Name</th>
-          <th>Phone Number</th>
-          <th>Course / Program</th>
-          <th>Branch</th>
-          <th>Lead Source</th>
-          <th>Lead Status (Read-Only)</th>
-          <th>Assigned Counselor</th>
-          <th>Last Updated</th>
-          <th style="text-align: right;">Actions</th>
+        <tr style="background: var(--tp-surface-bg, #f8fafc); border-bottom: 1px solid var(--border-color, #e2e8f0);">
+          <th style="width: 44px; min-width: 44px; max-width: 44px; text-align: center; vertical-align: middle; padding: 12px 8px;">
+            <input type="checkbox" id="selectAllLeads" title="Select all on this page" style="cursor: pointer; width: 16px; height: 16px; vertical-align: middle;">
+          </th>
+          <th style="width: 85px; min-width: 85px; text-align: left; vertical-align: middle; padding: 12px 10px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Lead ID</th>
+          <th style="width: 180px; min-width: 170px; text-align: left; vertical-align: middle; padding: 12px 12px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Student Name</th>
+          <th style="width: 130px; min-width: 125px; text-align: left; vertical-align: middle; padding: 12px 10px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Phone Number</th>
+          <th style="width: 140px; min-width: 135px; text-align: left; vertical-align: middle; padding: 12px 10px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Type & Source</th>
+          <th style="width: 155px; min-width: 145px; text-align: left; vertical-align: middle; padding: 12px 10px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Course / Program</th>
+          <th style="width: 110px; min-width: 105px; text-align: left; vertical-align: middle; padding: 12px 10px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Branch</th>
+          <th style="width: 120px; min-width: 115px; text-align: left; vertical-align: middle; padding: 12px 10px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Creation Date</th>
+          <th style="width: 160px; min-width: 155px; text-align: left; vertical-align: middle; padding: 12px 10px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Assignment Status</th>
+          <th style="width: 175px; min-width: 170px; text-align: right; vertical-align: middle; padding: 12px 14px; font-weight: 700; font-size: 0.74rem; text-transform: uppercase; color: var(--text-muted, #64748b);">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for lead in page_obj %}
-        <tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #f1f5f9); transition: background-color 0.15s ease;">
+          <!-- Checkbox Selection -->
+          <td style="padding: 12px 8px; text-align: center; vertical-align: middle;">
+            <input type="checkbox" class="lead-select-cb" value="{{ lead.id }}" data-name="{{ lead.name|escapejs }}" style="cursor: pointer; width: 16px; height: 16px; vertical-align: middle;">
+          </td>
+
           <!-- Lead ID -->
-          <td>
-            <span class="badge" style="background: #f1f5f9; color: #1e293b; font-family: monospace; font-size: 0.85rem; padding: 4px 8px; border: 1px solid #cbd5e1;">
+          <td style="padding: 12px 10px; vertical-align: middle;">
+            <span class="badge" style="background: var(--bg-body, #f1f5f9); color: var(--text-main, #1e293b); font-family: monospace; font-size: 0.82rem; font-weight: 600; padding: 3px 7px; border: 1px solid var(--border-color, #cbd5e1); border-radius: 4px;">
               #{{ lead.id }}
             </span>
             {% if lead.token_number %}
-            <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">{{ lead.token_number }}</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted, #64748b); margin-top: 3px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ lead.token_number }}">
+              {{ lead.token_number }}
+            </div>
             {% endif %}
           </td>
 
           <!-- Student Name -->
-          <td>
-            <div style="font-weight: 700; color: #1e293b;">{{ lead.name }}</div>
+          <td style="padding: 12px 12px; vertical-align: middle;">
+            <div style="font-weight: 700; color: var(--text-main, #1e293b); font-size: 0.88rem; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 165px;" title="{{ lead.name }}">
+              {{ lead.name }}
+            </div>
             {% if lead.email %}
-            <div style="font-size: 0.75rem; color: #64748b;">{{ lead.email }}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted, #64748b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 165px; margin-top: 2px;" title="{{ lead.email }}">
+              {{ lead.email }}
+            </div>
             {% endif %}
           </td>
 
           <!-- Phone Number -->
-          <td>
-            <div style="font-family: monospace; font-size: 0.85rem; font-weight: 600; color: #1e293b;">{{ lead.phone }}</div>
+          <td style="padding: 12px 10px; vertical-align: middle;">
+            <div style="font-family: monospace; font-size: 0.85rem; font-weight: 600; color: var(--text-main, #1e293b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <a href="tel:{{ lead.phone }}" style="color: inherit; text-decoration: none;" title="Call {{ lead.phone }}">
+                {{ lead.phone }}
+              </a>
+            </div>
+          </td>
+
+          <!-- Lead Type & Source -->
+          <td style="padding: 12px 10px; vertical-align: middle;">
+            {% if lead.lead_type == 'New Lead' %}
+              <span class="badge" style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 0.74rem; padding: 4px 8px; border: 1px solid #a7f3d0; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                New Lead
+              </span>
+            {% elif lead.lead_type == 'Ambiguous Match' %}
+              <span class="badge" style="background: #fffbeb; color: #b45309; font-weight: 700; font-size: 0.74rem; padding: 4px 8px; border: 1px solid #fde68a; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;" title="Ambiguous match: Phone and Email match different records. Click to review history." onclick="openLeadHistoryModal({{ lead.id }})">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                Ambiguous
+              </span>
+            {% else %}
+              <span class="badge" style="background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 0.74rem; padding: 4px 8px; border: 1px solid #bfdbfe; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;" title="Existing lead found in CRM. Click to view prior details." onclick="openLeadHistoryModal({{ lead.id }})">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
+                Existing Lead
+              </span>
+            {% endif %}
+            <div style="margin-top: 4px;">
+              {% if lead.source_display == 'Google Sheets' %}
+                <span class="badge" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 0.68rem; font-weight: 600; padding: 2px 6px;">
+                  Google Sheets
+                </span>
+              {% else %}
+                <span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 0.68rem; font-weight: 600; padding: 2px 6px;">
+                  Direct Walk-in
+                </span>
+              {% endif %}
+            </div>
           </td>
 
           <!-- Course / Program -->
-          <td>
-            <span class="badge" style="background: #e0e7ff; color: #4338ca; font-weight: 600;">
-              {{ lead.product.name|default:lead.category }}
+          <td style="padding: 12px 10px; vertical-align: middle;">
+            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-weight: 600; font-size: 0.74rem; padding: 3px 8px; border-radius: 4px; display: inline-block; max-width: 145px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;" title="{{ lead.product.name|default:lead.category }}">
+              {{ lead.product.name|default:lead.category|default:"General Course" }}
             </span>
           </td>
 
           <!-- Branch -->
-          <td>
-            <div style="font-weight: 600; color: #334155;">{{ lead.branch.name|default:"Unassigned" }}</div>
-          </td>
-
-          <!-- Lead Source -->
-          <td>
-            <div style="font-size: 0.825rem; color: #475569;">
-              {% if lead.source %}{{ lead.source }}{% elif lead.channel %}{{ lead.channel.name }}{% else %}Walk-in{% endif %}
-            </div>
-            {% if lead.sheet_mappings.exists %}
-            <span class="badge" style="background: #ecfdf5; color: #047857; font-size: 0.7rem; margin-top: 2px;">Google Sheet</span>
-            {% endif %}
-          </td>
-
-          <!-- Lead Status (Read-Only) -->
-          <td>
-            <span class="badge" style="background: #e2e8f0; color: #1e293b; font-weight: 600; padding: 4px 8px;">
-              {{ lead.status }}
-            </span>
-            <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
-              Visit: {{ lead.visitor_status|default:"Waiting" }}
+          <td style="padding: 12px 10px; vertical-align: middle;">
+            <div style="font-weight: 600; color: var(--text-main, #1e293b); font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 105px;" title="{{ lead.branch.name|default:'Unassigned' }}">
+              {{ lead.branch.name|default:"Unassigned" }}
             </div>
           </td>
 
-          <!-- Assigned Counselor -->
-          <td>
+          <!-- Lead Creation Date -->
+          <td style="padding: 12px 10px; vertical-align: middle;">
+            <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-main, #1e293b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ lead.created_at|date:"M d, Y" }}
+            </div>
+            <div style="font-size: 0.72rem; color: var(--text-muted, #64748b);">
+              {{ lead.created_at|date:"h:i A" }}
+            </div>
+          </td>
+
+          <!-- Assignment Status -->
+          <td style="padding: 12px 10px; vertical-align: middle;">
             {% if lead.assigned_counselor %}
-              <div style="font-weight: 700; color: #047857; display: flex; align-items: center; gap: 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                {{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}
+              <div style="font-weight: 700; color: #047857; display: flex; align-items: center; gap: 4px; font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px;" title="Assigned to {{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username }}</span>
               </div>
-              <div style="font-size: 0.7rem; color: #64748b;">Active Counselor</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted, #64748b); margin-top: 2px;">Assigned &bull; {{ lead.visitor_status|default:"In Consultation" }}</div>
             {% else %}
-              <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 600;">
-                Awaiting Counselor
+              <span class="badge" style="background: #fee2e2; color: #991b1b; font-weight: 700; font-size: 0.74rem; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #dc2626; display: inline-block;"></span>
+                Pending
               </span>
+              <div style="font-size: 0.7rem; color: var(--text-muted, #64748b); margin-top: 2px;">{{ lead.visitor_status|default:"Waiting in Lobby" }}</div>
             {% endif %}
-          </td>
-
-          <!-- Last Updated Date -->
-          <td>
-            <div style="font-size: 0.825rem; font-weight: 500; color: #1e293b;">
-              {{ lead.updated_at|date:"M d, Y" }}
-            </div>
-            <div style="font-size: 0.725rem; color: #64748b;">
-              {{ lead.updated_at|date:"h:i A" }}
-            </div>
           </td>
 
           <!-- Actions -->
-          <td style="text-align: right; white-space: nowrap;">
-            <!-- View History Action -->
-            <button type="button" class="btn btn-secondary" style="font-size: 0.775rem; padding: 4px 10px;"
-                    onclick="openLeadHistoryModal({{ lead.id }})">
-              View History
-            </button>
+          <td style="padding: 12px 14px; vertical-align: middle; text-align: right; white-space: nowrap;">
+            <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+              <!-- View History Action -->
+              <button type="button" class="btn btn-secondary tp-btn-secondary" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 600; line-height: 1.4;"
+                      onclick="openLeadHistoryModal({{ lead.id }})">
+                History
+              </button>
 
-            <!-- Assign Counselor Action -->
-            <button type="button" class="btn btn-primary" style="font-size: 0.775rem; padding: 4px 10px; margin-left: 4px;"
-                    onclick="openAssignCounselorModal({{ lead.id }}, '{{ lead.name|escapejs }}', '{{ lead.phone|escapejs }}', '{% if lead.assigned_counselor %}{{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username|escapejs }}{% endif %}')">
-              {% if lead.assigned_counselor %}Reassign{% else %}Assign Counselor{% endif %}
-            </button>
+              <!-- Assign Counselor Action -->
+              <button type="button" class="btn btn-primary tp-btn-primary" style="font-size: 0.75rem; padding: 4px 10px; font-weight: 600; line-height: 1.4;"
+                      onclick="openAssignCounselorModal({{ lead.id }}, '{{ lead.name|escapejs }}', '{{ lead.phone|escapejs }}', '{% if lead.assigned_counselor %}{{ lead.assigned_counselor.get_full_name|default:lead.assigned_counselor.username|escapejs }}{% endif %}')">
+                {% if lead.assigned_counselor %}Reassign{% else %}Assign{% endif %}
+              </button>
+            </div>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="10" style="text-align: center; padding: 48px 16px; color: #6b7280;">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 12px; color: #9ca3af;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <div style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">No Walk-in Students Found</div>
-            <div style="font-size: 0.85rem; margin-top: 4px; color: #64748b;">
-              There are currently no walk-in leads matching the filter criteria.
+          <td colspan="10" style="text-align: center; padding: 56px 20px; color: var(--text-muted);">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--tp-surface-bg, #f1f5f9); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="color: var(--text-muted, #64748b);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
             </div>
-            <div style="margin-top: 14px;">
-              <button type="button" class="btn btn-primary" onclick="openRegisterStudentModal()">
-                + Register Walk-in Student
-              </button>
-            </div>
+            <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-main, #1e293b); margin-bottom: 6px;">No Walk-in Students Found</div>
+            <p style="font-size: 0.88rem; max-width: 440px; margin: 0 auto 16px auto; color: var(--text-muted, #64748b); line-height: 1.4;">
+              There are currently no walk-in leads matching the selected filter criteria for this branch center.
+            </p>
+            <button type="button" class="btn btn-primary tp-btn-primary" onclick="openRegisterStudentModal()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 7px 16px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              + Register Walk-in Student
+            </button>
           </td>
         </tr>
         {% endfor %}
@@ -365,6 +455,57 @@
 </div>
 
 <!-- =================================================================== -->
+<!-- BULK ASSIGN COUNSELOR MODAL                                         -->
+<!-- =================================================================== -->
+<div id="bulkAssignModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
+  <div style="background: #fff; width: 100%; max-width: 480px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden; margin: 16px;">
+    <div style="padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b;">Bulk Assign to Counselor</h3>
+      <button type="button" onclick="closeBulkAssignModal()" style="border: none; background: none; font-size: 1.25rem; color: #64748b; cursor: pointer;">&times;</button>
+    </div>
+    <form id="bulkAssignForm" onsubmit="executeBulkAssign(event)" style="padding: 20px;">
+      {% csrf_token %}
+
+      <div style="margin-bottom: 16px; background: #eff6ff; padding: 12px; border-radius: 6px; border: 1px solid #bfdbfe;">
+        <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #1e40af;">Selected Walk-in Leads:</div>
+        <div id="bulkModalCountSummary" style="font-size: 0.95rem; font-weight: 700; color: #1e3a8a; margin-top: 4px;"></div>
+        <div id="bulkModalLeadsList" style="font-size: 0.8rem; color: #475569; max-height: 90px; overflow-y: auto; margin-top: 6px; padding: 4px; background: #fff; border-radius: 4px; border: 1px solid #e2e8f0;"></div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Select Branch Counselor *</label>
+        {% if has_counselors %}
+        <select name="counselor_id" id="modalBulkSelectCounselor" class="form-select" required>
+          <option value="">-- Choose Active Counselor in {{ branch.name|default:"Branch" }} --</option>
+          {% for c in counselors %}
+          <option value="{{ c.id }}">{{ c.get_full_name|default:c.username }} (Counselor)</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 6px; padding: 10px; color: #991b1b; font-size: 0.85rem;">
+          No active counselors are available in this branch. Please contact your branch administrator.
+        </div>
+        {% endif %}
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Handoff Reason / Desk Notes</label>
+        <input type="text" name="reason" id="modalBulkReason" class="form-control" value="Bulk assigned at Reception Desk" placeholder="Desk handoff remarks">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeBulkAssignModal()">Cancel</button>
+        {% if has_counselors %}
+        <button type="submit" id="btnSubmitBulkAssign" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+          Assign All Selected
+        </button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- =================================================================== -->
 <!-- REGISTER WALK-IN STUDENT MODAL (WITH DUPLICATE PRE-CHECK)           -->
 <!-- =================================================================== -->
 <div id="registerStudentModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
@@ -401,17 +542,28 @@
           <input type="text" class="form-control" value="{{ branch.name|default:'Unassigned Branch' }}" readonly style="background: #f8fafc; color: #475569;">
         </div>
         <div>
-          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Course / Program Interest</label>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Interested Course / Program</label>
+          <select name="product_id" class="form-select">
+            <option value="">-- Select Course (Optional) --</option>
+            {% for prod in products %}
+              <option value="{{ prod.id }}">{{ prod.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Category Interest</label>
           <select name="category" class="form-select">
             <option value="Training">Training</option>
             <option value="Placement">Placement</option>
           </select>
         </div>
-      </div>
-
-      <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Email Address (Optional)</label>
-        <input type="email" name="email" id="regStudentEmail" class="form-control" placeholder="student@example.com">
+        <div>
+          <label style="display: block; font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 4px;">Email Address (Optional)</label>
+          <input type="email" name="email" id="regStudentEmail" class="form-control" placeholder="student@example.com">
+        </div>
       </div>
 
       <div style="margin-bottom: 14px;">
@@ -461,7 +613,133 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   }
+
+  // Bulk Selection Checkbox Listeners
+  const selectAll = document.getElementById('selectAllLeads');
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      const cbs = document.querySelectorAll('.lead-select-cb');
+      cbs.forEach(cb => cb.checked = selectAll.checked);
+      updateBulkActionBar();
+    });
+  }
+
+  document.querySelectorAll('.lead-select-cb').forEach(cb => {
+    cb.addEventListener('change', updateBulkActionBar);
+  });
 });
+
+// =====================================================================
+// BULK SELECTION AND ASSIGNMENT LOGIC
+// =====================================================================
+function getSelectedLeadCheckboxes() {
+  return Array.from(document.querySelectorAll('.lead-select-cb:checked'));
+}
+
+function updateBulkActionBar() {
+  const selectedCbs = getSelectedLeadCheckboxes();
+  const allCbs = document.querySelectorAll('.lead-select-cb');
+  const count = selectedCbs.length;
+  const bulkBar = document.getElementById('bulkActionBar');
+  const countBadge = document.getElementById('bulkSelectedCount');
+  const selectAll = document.getElementById('selectAllLeads');
+
+  if (countBadge) countBadge.textContent = count;
+  if (bulkBar) {
+    bulkBar.style.display = count > 0 ? 'flex' : 'none';
+  }
+  if (selectAll && allCbs.length > 0) {
+    selectAll.checked = selectedCbs.length === allCbs.length;
+    selectAll.indeterminate = selectedCbs.length > 0 && selectedCbs.length < allCbs.length;
+  }
+}
+
+function clearBulkSelection() {
+  document.querySelectorAll('.lead-select-cb').forEach(cb => cb.checked = false);
+  const selectAll = document.getElementById('selectAllLeads');
+  if (selectAll) {
+    selectAll.checked = false;
+    selectAll.indeterminate = false;
+  }
+  updateBulkActionBar();
+}
+
+function openBulkAssignModal() {
+  const selectedCbs = getSelectedLeadCheckboxes();
+  if (selectedCbs.length === 0) {
+    alert("Please select at least one walk-in lead to assign.");
+    return;
+  }
+  const modal = document.getElementById('bulkAssignModal');
+  const countSummary = document.getElementById('bulkModalCountSummary');
+  const leadsList = document.getElementById('bulkModalLeadsList');
+  
+  countSummary.textContent = `${selectedCbs.length} walk-in student(s) selected for assignment`;
+  leadsList.innerHTML = selectedCbs.map(cb => {
+    const name = cb.getAttribute('data-name') || `Lead #${cb.value}`;
+    return `<div style="padding: 2px 0;">&bull; <strong>${name}</strong> (ID #${cb.value})</div>`;
+  }).join('');
+  
+  modal.style.display = 'flex';
+}
+
+function closeBulkAssignModal() {
+  document.getElementById('bulkAssignModal').style.display = 'none';
+}
+
+async function executeBulkAssign(e) {
+  e.preventDefault();
+  const selectedCbs = getSelectedLeadCheckboxes();
+  const leadIds = selectedCbs.map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+  
+  if (leadIds.length === 0) {
+    alert("Please select at least one walk-in lead.");
+    return;
+  }
+
+  const counselorSelect = document.getElementById('modalBulkSelectCounselor');
+  const counselorId = counselorSelect ? counselorSelect.value : null;
+  if (!counselorId) {
+    alert("Please select an eligible branch counselor.");
+    return;
+  }
+
+  const reason = document.getElementById('modalBulkReason').value || 'Bulk assigned at Reception Desk';
+  const submitBtn = document.getElementById('btnSubmitBulkAssign');
+  const originalText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Assigning...';
+
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  try {
+    const res = await fetch('/admin/leads/walk-in/bulk-assign/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({
+        lead_ids: leadIds,
+        counselor_id: counselorId,
+        reason: reason
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert(`Success: ${data.assigned_count} walk-in lead(s) successfully assigned to Counselor ${data.counselor_name}!`);
+      window.location.reload();
+    } else {
+      alert(`Error: ${data.error || 'Failed to assign leads.'}`);
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalText;
+    }
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
+}
 
 // =====================================================================
 // VIEW HISTORY MODAL LOGIC

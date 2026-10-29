@@ -5,6 +5,8 @@ from .models import BusinessAccount, Conversation, Message, AutomationFlow, User
 class AutomationFlowSerializer(serializers.ModelSerializer):
     active_sessions_count = serializers.SerializerMethodField()
     completed_sessions_count = serializers.SerializerMethodField()
+    trigger_keywords = serializers.CharField(required=False, allow_blank=True, default='')
+    slug = serializers.CharField(required=False, allow_blank=True, default='')
 
     class Meta:
         model = AutomationFlow
@@ -66,6 +68,8 @@ class UserFlowSessionSerializer(serializers.ModelSerializer):
 class BusinessAccountSerializer(serializers.ModelSerializer):
     unread_count = serializers.SerializerMethodField()
     active_flow_info = serializers.SerializerMethodField()
+    crm_branch_id = serializers.IntegerField(source='crm_branch.id', read_only=True)
+    crm_branch_name = serializers.CharField(source='crm_branch.name', read_only=True)
 
     class Meta:
         model = BusinessAccount
@@ -78,9 +82,15 @@ class BusinessAccountSerializer(serializers.ModelSerializer):
             'is_default',
             'is_active',
             'automation_enabled',
+            'crm_branch',
+            'crm_branch_id',
+            'crm_branch_name',
             'unread_count',
             'active_flow_info',
         ]
+        extra_kwargs = {
+            'crm_branch': {'required': False, 'allow_null': True}
+        }
 
     def get_unread_count(self, obj):
         return sum(conv.unread_count for conv in obj.conversations.filter(is_archived=False))

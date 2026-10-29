@@ -1,5 +1,5 @@
 """
-Bulk WhatsApp Campaign Service for TECHPANDA CRM.
+Bulk WhatsApp Campaign Service for DigiPanda CRM.
 Handles sender resolution, recipient normalization, consent & compliance validation,
 deterministic placeholder rendering, rate-limited batch submission, and webhook status progression.
 """
@@ -55,7 +55,7 @@ def ensure_default_senders_and_templates():
     if not WhatsAppSender.objects.filter(is_active=True).exists():
         phone_id = getattr(settings, 'WHATSAPP_PHONE_NUMBER_ID', '') or 'default_waba_phone_id'
         WhatsAppSender.objects.create(
-            name="TECHPANDA Official Admissions Line",
+            name="DIGIPANDA Official Admissions Line",
             phone_number_id=phone_id,
             display_phone_number="+91 84382 39448",
             is_active=True,
@@ -68,14 +68,25 @@ def ensure_default_senders_and_templates():
     if not WhatsAppTemplate.objects.exists():
         WhatsAppTemplate.objects.bulk_create([
             WhatsAppTemplate(
+                name="hello_world",
+                display_title="Meta Default Test Template (hello_world)",
+                language="en_US",
+                category="UTILITY",
+                status="APPROVED",
+                header_type="NONE",
+                body_text="Welcome and congratulations! This message demonstrates your ability to send a WhatsApp message using Cloud API. Thank you for taking the time to test with us.",
+                parameter_mapping=[],
+                is_active=True,
+            ),
+            WhatsAppTemplate(
                 name="course_inquiry_followup",
                 display_title="Course Inquiry Follow-up (Personalized)",
                 language="en_US",
                 category="MARKETING",
                 status="APPROVED",
                 header_type="NONE",
-                body_text="Hi {{1}}, thank you for your interest in TECHPANDA. Regarding your inquiry for {{2}} at our {{3}} center, your academic advisor {{4}} is ready to share the syllabus and upcoming batch dates. Reply YES to connect or call us directly.",
-                footer_text="TECHPANDA Academy - Career Growth",
+                body_text="Hi {{1}}, thank you for your interest in DIGIPANDA. Regarding your inquiry for {{2}} at our {{3}} center, your academic advisor {{4}} is ready to share the syllabus and upcoming batch dates. Reply YES to connect or call us directly.",
+                footer_text="DIGIPANDA Academy - Career Growth",
                 parameter_mapping=["lead_name", "course", "branch", "assigned_telecaller"],
                 is_active=True,
             ),
@@ -86,8 +97,8 @@ def ensure_default_senders_and_templates():
                 category="MARKETING",
                 status="APPROVED",
                 header_type="NONE",
-                body_text="Hello {{1}}, welcome to TECHPANDA! We have received your application for {{2}}. Our team at {{3}} branch will assist you with counseling and demo session schedules.",
-                footer_text="TECHPANDA Learning",
+                body_text="Hello {{1}}, welcome to DIGIPANDA! We have received your application for {{2}}. Our team at {{3}} branch will assist you with counseling and demo session schedules.",
+                footer_text="DIGIPANDA Learning",
                 parameter_mapping=["lead_name", "course", "branch"],
                 is_active=True,
             ),
@@ -99,11 +110,26 @@ def ensure_default_senders_and_templates():
                 status="APPROVED",
                 header_type="NONE",
                 body_text="Dear {{1}}, you are warmly invited to visit our {{2}} campus this week for a one-on-one session with our senior trainer. Please let us know your preferred day and time.",
-                footer_text="TECHPANDA Admissions",
+                footer_text="DIGIPANDA Admissions",
                 parameter_mapping=["lead_name", "branch"],
                 is_active=True,
             ),
         ])
+    else:
+        # Ensure standard hello_world test template is available
+        WhatsAppTemplate.objects.get_or_create(
+            name="hello_world",
+            defaults={
+                "display_title": "Meta Default Test Template (hello_world)",
+                "language": "en_US",
+                "category": "UTILITY",
+                "status": "APPROVED",
+                "header_type": "NONE",
+                "body_text": "Welcome and congratulations! This message demonstrates your ability to send a WhatsApp message using Cloud API. Thank you for taking the time to test with us.",
+                "parameter_mapping": [],
+                "is_active": True,
+            }
+        )
 
 
 def normalize_phone_number(raw_phone: str) -> Tuple[str, bool, Optional[str]]:
@@ -531,16 +557,35 @@ def dispatch_campaign_batch(campaign_id: int, batch_size: int = 50) -> Tuple[int
         except Exception as exc:
             err_str = str(exc)
             logger.error(f"Failed sending campaign message to {r.phone_number}: {err_str}")
-            # Determine if permanent or transient
-            is_permanent = any(kw in err_str.lower() for kw in ['invalid', 'not registered', 'disallowed', 'policy', 'blocked', '400'])
+            # Determine if permanent or transient error
+            # Permanent errors: invalid number, template missing, 404/400 client error, auth/permission failure, policy block
+            permanent_keywords = [
+                'invalid', 'not registered', 'disallowed', 'policy', 'blocked', '400',
+                '404', '132001', 'template name does not exist', 'not found',
+                'unsupported post request', 'object with id', 'permission', 'oauth',
+                'access token', '190', '100', '131030', 'does not exist', 'cannot be empty'
+            ]
+            is_permanent = any(kw in err_str.lower() for kw in permanent_keywords)
+
+            # Build human-readable diagnostic message
+            custom_err = err_str
+            if "132001" in err_str or "template name does not exist" in err_str.lower():
+                tpl_name = campaign.template.name if campaign.template else "template"
+                tpl_lang = campaign.template.language if campaign.template else "en_US"
+                custom_err = f"Meta Error #132001: Template '{tpl_name}' ({tpl_lang}) does not exist or is not approved in your Meta WhatsApp account."
+            elif "404" in err_str and "messages" in err_str:
+                custom_err = f"Meta API 404 Error: Phone Number ID not found or invalid on Meta Graph API."
+            elif "190" in err_str or "oauth" in err_str.lower():
+                custom_err = f"Meta Auth Error: Invalid or expired WhatsApp Access Token."
+
             if is_permanent or r.attempt_count >= r.max_attempts:
                 r.status = WhatsAppCampaignRecipient.STATUS_FAILED
-                r.error_message = err_str[:255]
+                r.error_message = custom_err[:255]
                 r.failed_at = timezone.now()
             else:
                 # Leave queued for backoff retry
                 r.status = WhatsAppCampaignRecipient.STATUS_QUEUED
-                r.error_message = f"Transient error: {err_str[:200]}"
+                r.error_message = f"Transient error: {custom_err[:200]}"
             r.save(update_fields=['status', 'error_message', 'failed_at', 'updated_at'])
 
     campaign.refresh_counters_from_db()
@@ -564,7 +609,7 @@ def dispatch_campaign_batch(campaign_id: int, batch_size: int = 50) -> Tuple[int
 def record_campaign_message_in_inbox(recipient: WhatsAppCampaignRecipient, client: WhatsAppClient):
     """
     Creates an agent Message inside the existing Conversation for this recipient's phone number.
-    Ensures that incoming customer replies automatically appear in the existing TECHPANDA WhatsApp Inbox.
+    Ensures that incoming customer replies automatically appear in the existing DigiPanda WhatsApp Inbox.
     """
     phone = f"+{recipient.phone_number}" if not recipient.phone_number.startswith('+') else recipient.phone_number
     biz_account = recipient.resolved_sender.business_account if recipient.resolved_sender else None

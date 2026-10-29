@@ -6,6 +6,7 @@ from branches.models import Branch
 from lead_channels.models import Channel
 from products.models import Product
 from .models import Lead, LeadStatus, LeadCategory
+from .duplicates import normalize_phone, normalize_email, find_duplicate_lead
 
 def infer_lead_branch(user=None, manager=None, telecaller=None, request=None, current_branch=None):
     """
@@ -44,10 +45,19 @@ class AdminLeadForm(forms.ModelForm):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    category = forms.ChoiceField(choices=LeadCategory.choices, initial=LeadCategory.TRAINING, required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     channel = forms.ModelChoiceField(queryset=Channel.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     product = forms.ModelChoiceField(queryset=Product.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     branch = forms.ModelChoiceField(queryset=Branch.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
 
+    
+    def clean_category(self):
+        cat = self.cleaned_data.get('category')
+        if not cat:
+            if hasattr(self, 'instance') and self.instance and getattr(self.instance, 'category', None):
+                return self.instance.category
+            return LeadCategory.TRAINING
+        return cat
     class Meta:
         model = Lead
         fields = [
@@ -63,6 +73,61 @@ class AdminLeadForm(forms.ModelForm):
             'category': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Inquiry details, background, course interest...'}),
         }
+
+    def clean_phone(self):
+        raw_phone = self.cleaned_data.get('phone')
+        if not raw_phone:
+            return raw_phone
+        clean_phone = normalize_phone(raw_phone)
+        if clean_phone and not clean_phone.startswith('NoPhone-'):
+            if len(clean_phone) < 7:
+                raise ValidationError("Please enter a valid phone number (at least 7 digits).")
+            # Only validate duplicates during edits (when self.instance.pk exists)
+            # On creation, admin_lead_create delegates to handle_incoming_lead_duplicate.
+            if self.instance and self.instance.pk:
+                conflict = find_duplicate_lead(phone=clean_phone, exclude_id=self.instance.pk)
+                if conflict:
+                    raise ValidationError(
+                        f"Phone number '{raw_phone}' already belongs to existing Lead #{conflict.pk} ('{conflict.name}')."
+                    )
+        return clean_phone
+
+    def clean_alternate_phone(self):
+        raw_alt = self.cleaned_data.get('alternate_phone')
+        if not raw_alt:
+            return ''
+        clean_alt = normalize_phone(raw_alt)
+        if not clean_alt:
+            return ''
+        if len(clean_alt) < 7 and not clean_alt.startswith('NoPhone-'):
+            raise ValidationError("Please enter a valid alternate phone number.")
+        # Check if identical to primary phone on this lead
+        primary = self.cleaned_data.get('phone') or getattr(self.instance, 'phone', '')
+        if primary and normalize_phone(primary) == clean_alt:
+            raise ValidationError("Alternate phone cannot be identical to the primary phone.")
+        exclude_id = self.instance.pk if self.instance else None
+        conflict = find_duplicate_lead(phone=clean_alt, exclude_id=exclude_id)
+        if conflict:
+            raise ValidationError(
+                f"Alternate phone '{raw_alt}' already matches Lead #{conflict.pk} ('{conflict.name}')."
+            )
+        return clean_alt
+
+    def clean_email(self):
+        raw_email = self.cleaned_data.get('email')
+        if not raw_email:
+            return ''
+        clean_email = normalize_email(raw_email)
+        if not clean_email:
+            return ''
+        exclude_id = self.instance.pk if self.instance else None
+        if exclude_id:
+            conflict = Lead.objects.filter(email__iexact=clean_email).exclude(pk=exclude_id).first()
+            if conflict:
+                raise ValidationError(
+                    f"Email '{raw_email}' already belongs to existing Lead #{conflict.pk} ('{conflict.name}')."
+                )
+        return clean_email
 
     def clean(self):
         cleaned_data = super().clean()
@@ -115,6 +180,14 @@ class ManagerLeadForm(forms.ModelForm):
     product = forms.ModelChoiceField(queryset=Product.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     branch = forms.ModelChoiceField(queryset=Branch.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
 
+    
+    def clean_category(self):
+        cat = self.cleaned_data.get('category')
+        if not cat:
+            if hasattr(self, 'instance') and self.instance and getattr(self.instance, 'category', None):
+                return self.instance.category
+            return LeadCategory.TRAINING
+        return cat
     class Meta:
         model = Lead
         fields = ['status', 'category', 'assigned_telecaller', 'product', 'branch', 'alternate_phone', 'notes']
@@ -124,6 +197,26 @@ class ManagerLeadForm(forms.ModelForm):
             'alternate_phone': forms.TextInput(attrs={'class': 'form-control'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def clean_alternate_phone(self):
+        raw_alt = self.cleaned_data.get('alternate_phone')
+        if not raw_alt:
+            return ''
+        clean_alt = normalize_phone(raw_alt)
+        if not clean_alt:
+            return ''
+        if len(clean_alt) < 7 and not clean_alt.startswith('NoPhone-'):
+            raise ValidationError("Please enter a valid alternate phone number.")
+        primary = getattr(self.instance, 'phone', '')
+        if primary and normalize_phone(primary) == clean_alt:
+            raise ValidationError("Alternate phone cannot be identical to the primary phone.")
+        exclude_id = self.instance.pk if self.instance else None
+        conflict = find_duplicate_lead(phone=clean_alt, exclude_id=exclude_id)
+        if conflict:
+            raise ValidationError(
+                f"Alternate phone '{raw_alt}' already matches Lead #{conflict.pk} ('{conflict.name}')."
+            )
+        return clean_alt
 
     def clean(self):
         cleaned_data = super().clean()
@@ -152,6 +245,14 @@ class ManagerLeadForm(forms.ModelForm):
         return lead
 
 class TelecallerLeadForm(forms.ModelForm):
+    
+    def clean_category(self):
+        cat = self.cleaned_data.get('category')
+        if not cat:
+            if hasattr(self, 'instance') and self.instance and getattr(self.instance, 'category', None):
+                return self.instance.category
+            return LeadCategory.TRAINING
+        return cat
     class Meta:
         model = Lead
         fields = ['status', 'category', 'alternate_phone', 'email', 'notes']
@@ -168,6 +269,42 @@ class TelecallerLeadForm(forms.ModelForm):
         if status in (LeadStatus.ENROLLED, 'Enrolled', 'ENROLLED'):
             raise forms.ValidationError("Permission Denied: Telecallers are not authorized to mark a lead as 'Enrolled'.")
         return status
+
+    def clean_alternate_phone(self):
+        raw_alt = self.cleaned_data.get('alternate_phone')
+        if not raw_alt:
+            return ''
+        clean_alt = normalize_phone(raw_alt)
+        if not clean_alt:
+            return ''
+        if len(clean_alt) < 7 and not clean_alt.startswith('NoPhone-'):
+            raise ValidationError("Please enter a valid alternate phone number.")
+        primary = getattr(self.instance, 'phone', '')
+        if primary and normalize_phone(primary) == clean_alt:
+            raise ValidationError("Alternate phone cannot be identical to the primary phone.")
+        exclude_id = self.instance.pk if self.instance else None
+        conflict = find_duplicate_lead(phone=clean_alt, exclude_id=exclude_id)
+        if conflict:
+            raise ValidationError(
+                f"Alternate phone '{raw_alt}' already matches Lead #{conflict.pk} ('{conflict.name}')."
+            )
+        return clean_alt
+
+    def clean_email(self):
+        raw_email = self.cleaned_data.get('email')
+        if not raw_email:
+            return ''
+        clean_email = normalize_email(raw_email)
+        if not clean_email:
+            return ''
+        exclude_id = self.instance.pk if self.instance else None
+        if exclude_id:
+            conflict = Lead.objects.filter(email__iexact=clean_email).exclude(pk=exclude_id).first()
+            if conflict:
+                raise ValidationError(
+                    f"Email '{raw_email}' already belongs to existing Lead #{conflict.pk} ('{conflict.name}')."
+                )
+        return clean_email
 
 class ManagerLeadCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -186,10 +323,19 @@ class ManagerLeadCreateForm(forms.ModelForm):
         required=False,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    category = forms.ChoiceField(choices=LeadCategory.choices, initial=LeadCategory.TRAINING, required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     channel = forms.ModelChoiceField(queryset=Channel.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     product = forms.ModelChoiceField(queryset=Product.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     branch = forms.ModelChoiceField(queryset=Branch.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
 
+    
+    def clean_category(self):
+        cat = self.cleaned_data.get('category')
+        if not cat:
+            if hasattr(self, 'instance') and self.instance and getattr(self.instance, 'category', None):
+                return self.instance.category
+            return LeadCategory.TRAINING
+        return cat
     class Meta:
         model = Lead
         fields = [
@@ -205,6 +351,25 @@ class ManagerLeadCreateForm(forms.ModelForm):
             'category': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Inquiry details, background...'}),
         }
+
+    def clean_phone(self):
+        raw = self.cleaned_data.get('phone')
+        clean = normalize_phone(raw) if raw else ''
+        return clean or raw
+
+    def clean_alternate_phone(self):
+        raw = self.cleaned_data.get('alternate_phone')
+        if not raw:
+            return ''
+        clean = normalize_phone(raw)
+        primary = self.cleaned_data.get('phone')
+        if primary and normalize_phone(primary) == clean:
+            raise ValidationError("Alternate phone cannot be identical to the primary phone.")
+        return clean
+
+    def clean_email(self):
+        raw = self.cleaned_data.get('email')
+        return normalize_email(raw) if raw else ''
 
     def clean(self):
         cleaned_data = super().clean()
@@ -233,6 +398,14 @@ class TelecallerLeadCreateForm(forms.ModelForm):
     channel = forms.ModelChoiceField(queryset=Channel.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
     product = forms.ModelChoiceField(queryset=Product.objects.filter(status='Active'), required=False, widget=forms.Select(attrs={'class': 'form-select'}))
 
+    
+    def clean_category(self):
+        cat = self.cleaned_data.get('category')
+        if not cat:
+            if hasattr(self, 'instance') and self.instance and getattr(self.instance, 'category', None):
+                return self.instance.category
+            return LeadCategory.TRAINING
+        return cat
     class Meta:
         model = Lead
         fields = [
@@ -246,6 +419,25 @@ class TelecallerLeadCreateForm(forms.ModelForm):
             'category': forms.Select(attrs={'class': 'form-select'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Inquiry details, notes...'}),
         }
+
+    def clean_phone(self):
+        raw = self.cleaned_data.get('phone')
+        clean = normalize_phone(raw) if raw else ''
+        return clean or raw
+
+    def clean_alternate_phone(self):
+        raw = self.cleaned_data.get('alternate_phone')
+        if not raw:
+            return ''
+        clean = normalize_phone(raw)
+        primary = self.cleaned_data.get('phone')
+        if primary and normalize_phone(primary) == clean:
+            raise ValidationError("Alternate phone cannot be identical to the primary phone.")
+        return clean
+
+    def clean_email(self):
+        raw = self.cleaned_data.get('email')
+        return normalize_email(raw) if raw else ''
 
 class LeadImportForm(forms.Form):
     file = forms.FileField(

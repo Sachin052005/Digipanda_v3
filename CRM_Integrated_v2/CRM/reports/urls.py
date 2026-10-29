@@ -8,6 +8,7 @@ urlpatterns = [
     path('reports/api/data/', views.reports_api_data, name='reports_api_data'),
     path('reports/api/sync-sheets/', views.reports_api_sync_sheets, name='reports_api_sync_sheets'),
     path('reports/telecaller-rnr/', views.telecaller_rnr_report, name='telecaller_rnr_report'),
+    path('reports/telecaller-rnr/leads/', views.telecaller_rnr_lead_drilldown_view, name='telecaller_rnr_lead_drilldown'),
     path('reports/api/management-charts/', views.management_charts_api, name='management_charts_api'),
     path('admin/api/trigger-sla-escalation/', views.trigger_lead_sla_escalation_api, name='admin_trigger_sla_escalation'),
 ]

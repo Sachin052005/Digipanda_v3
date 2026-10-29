@@ -10,10 +10,11 @@ from activities.utils import log_activity
 @admin_required
 def admin_products_list(request):
     """
-    Products page removed as per requirement. Cleanly redirects to Admin Dashboard.
-    Database table products_product is preserved.
+    Course & Product catalog management: Allows administrators to create,
+    view, search, and toggle active status for courses that populate lead dropdowns.
     """
-    return redirect('admin_dashboard')
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '').strip()
 
     products_qs = Product.objects.annotate(lead_count=Count('leads'))
 

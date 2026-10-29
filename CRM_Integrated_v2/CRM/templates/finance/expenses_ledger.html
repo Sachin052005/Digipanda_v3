@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Expenses & Ledger - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <!-- Top Page Header -->
+  <div class="tp-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h1 style="font-size: 1.55rem; font-weight: 800; color: var(--tp-text-primary); margin: 0; letter-spacing: -0.02em;">Expenses & Ledger</h1>
+        <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">LEDGER</span>
+      </div>
+      <p style="color: var(--tp-text-muted); font-size: 0.84rem; margin: 4px 0 0 0;">
+        Branch operational expenses, category budgets, owner ledgers, and 18% GST audit records
+      </p>
+    </div>
+
+    <!-- Quick Section Navigation Pills -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      <a href="#section-expenses" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; font-weight: 600; border-radius: 8px;">
+        Expenses
+      </a>
+      <a href="#section-budget" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; font-weight: 600; border-radius: 8px;">
+        Budget Forecast
+      </a>
+      <a href="#section-ledger" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; font-weight: 600; border-radius: 8px;">
+        Ledger
+      </a>
+      <a href="#section-gst" class="btn btn-secondary btn-sm" style="font-size: 0.78rem; font-weight: 600; border-radius: 8px;">
+        GST Records
+      </a>
+    </div>
+  </div>
+
+  <!-- Audit Report Exports Strip Card -->
+  <div class="card tp-card-glass" style="margin-bottom: 24px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-left: 4px solid var(--tp-primary-600);">
+    <div>
+      <div style="font-weight: 700; font-size: 0.88rem; color: var(--tp-text-primary); display: flex; align-items: center; gap: 6px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>Audit Report Exports</span>
+      </div>
+      <div style="font-size: 0.78rem; color: var(--tp-text-muted);">Download formatted audit tabs (Course Revenue, Expense Register, or Owner Ledger)</div>
+    </div>
+    <form method="GET" action="{% url 'finance_audit_export' %}" style="display: flex; gap: 10px; align-items: center;">
+      <select name="report" class="form-select tp-custom-select" style="padding: 5px 12px; font-size: 0.82rem; height: 34px;">
+        <option value="course_revenue">Course Revenue</option>
+        <option value="expenses">Expense Register</option>
+        <option value="ledger">Owner Ledger</option>
+      </select>
+      <button type="submit" class="btn btn-secondary" style="height: 34px; padding: 4px 14px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Export &darr;</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Collapsible Add Expense Card -->
+  <div class="card tp-card-glass" id="section-expenses" style="margin-bottom: 26px; padding: 22px; border-top: 3px solid #059669;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Record New Expense</span>
+        </h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 3px 0 0 0;">
+          Submit branch operational expenses with bill/receipt proof for verification
+        </p>
+      </div>
+      <button type="button" id="toggle-expense-form-btn" class="btn btn-secondary btn-sm" style="font-size: 0.78rem;">
+        Collapse Form
+      </button>
+    </div>
+
+    <form method="POST" id="add-expense-form-container" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="add_expense" value="1">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Category *</label>
+          {{ expense_form.category }}
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Sub-category *</label>
+          {{ expense_form.sub_category }}
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Paid By (Staff/Owner)</label>
+          {{ expense_form.paid_by }}
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Amount (₹) *</label>
+          {{ expense_form.amount }}
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Expense Date *</label>
+          {{ expense_form.expense_date }}
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Paid To (Vendor/Recipient) *</label>
+          {{ expense_form.paid_to }}
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Proof Document (Bill/Voucher)</label>
+          {{ expense_form.proof }}
+        </div>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 5px; color: var(--tp-text-primary);">Description / Justification</label>
+        {{ expense_form.description }}
+      </div>
+
+      <button type="submit" class="btn btn-primary tp-glossy-btn" style="font-weight: 700; font-size: 0.88rem; padding: 9px 20px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); border: none;">
+        Submit Expense For Approval
+      </button>
+    </form>
+  </div>
+
+  <!-- Expenses Register Table -->
+  <div class="card tp-card-glass" style="margin-bottom: 28px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Expense Register</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 2px 0 0 0;">Recent branch expense records and authorization statuses</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="font-size: 0.84rem; color: var(--tp-text-muted); font-weight: 600;">
+          {{ expenses|length }} items &bull; Total <strong style="color: #dc2626;">₹{{ total_expenses_amt|floatformat:2 }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px;">Category</th>
+            <th style="padding: 10px 12px;">Sub-category</th>
+            <th style="padding: 10px 12px;">Paid By</th>
+            <th style="padding: 10px 12px; text-align: right;">Amount</th>
+            <th style="padding: 10px 12px;">Paid To</th>
+            <th style="padding: 10px 12px;">Expense Date</th>
+            <th style="padding: 10px 12px;">Status</th>
+            <th style="padding: 10px 12px; text-align: center;">Proof</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in expenses %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;" class="tp-table-row-hover">
+            <td style="padding: 12px; font-weight: 600;">{{ exp.category }}</td>
+            <td style="padding: 12px;">{{ exp.sub_category }}</td>
+            <td style="padding: 12px; font-size: 0.8rem;">{% if exp.paid_by %}{{ exp.paid_by.get_full_name|default:exp.paid_by.username }}{% else %}{{ exp.paid_by_name|default:"Staff" }}{% endif %}</td>
+            <td style="padding: 12px; text-align: right; color: #dc2626; font-weight: 800;">₹{{ exp.amount|floatformat:2 }}</td>
+            <td style="padding: 12px;">{{ exp.paid_to }}</td>
+            <td style="padding: 12px; font-size: 0.8rem;">{{ exp.expense_date|date:"d M Y"|default:exp.expense_date }}</td>
+            <td style="padding: 12px;">
+              <span class="badge" style="{% if exp.status == 'APPROVED' %}background: rgba(16, 185, 129, 0.15); color: #059669;{% elif exp.status == 'PENDING' or exp.status == 'PENDING_APPROVAL' %}background: rgba(217, 119, 6, 0.15); color: #d97706;{% else %}background: rgba(220, 38, 38, 0.15); color: #dc2626;{% endif %} font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">
+                {{ exp.status }}
+              </span>
+            </td>
+            <td style="padding: 12px; text-align: center;">
+              {% if exp.proof %}
+              <a href="{{ exp.proof.url }}" target="_blank" class="btn btn-sm btn-secondary" style="font-size: 0.72rem; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;">
+                <span>View</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              </a>
+              {% else %}
+              <span style="font-size: 0.74rem; color: var(--tp-text-muted);">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding: 32px; text-align: center; color: var(--tp-text-muted);">
+              No expenses recorded for this selection.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Opening Balances Section -->
+  <div class="card tp-card-glass" style="margin-bottom: 28px; padding: 22px;">
+    <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Opening Balances</h3>
+    <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 3px 0 16px 0;">Per-owner starting balance configured for branch ledger reconciliation</p>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px; width: 40px;">#</th>
+            <th style="padding: 10px 12px;">Owner / Account</th>
+            <th style="padding: 10px 12px;">Opening Balance (₹)</th>
+            <th style="padding: 10px 12px; text-align: center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ob in opening_balances %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+            <td style="padding: 10px 12px;">{{ forloop.counter }}</td>
+            <td style="padding: 10px 12px; font-weight: 700; color: var(--tp-text-primary);">{{ ob.owner_name }}</td>
+            <td style="padding: 10px 12px;">
+              <form method="POST" style="display: inline-flex; gap: 8px; align-items: center;">
+                {% csrf_token %}
+                <input type="hidden" name="save_opening_balance" value="1">
+                <input type="hidden" name="owner_name" value="{{ ob.owner_name }}">
+                <div style="position: relative; display: inline-flex; align-items: center;">
+                  <span style="position: absolute; left: 10px; color: var(--tp-text-muted); font-size: 0.8rem; pointer-events: none;">₹</span>
+                  <input type="number" step="0.01" name="opening_balance" value="{{ ob.opening_balance }}" class="form-input" style="width: 150px; height: 34px; font-size: 0.84rem; padding-left: 24px; border-radius: 6px;">
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary" style="height: 34px; font-size: 0.78rem; padding: 0 12px;">Save</button>
+              </form>
+            </td>
+            <td style="padding: 10px 12px; text-align: center;">
+              <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">Active</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Total Budget — Forecast vs Actual -->
+  <div class="card tp-card-glass" id="section-budget" style="margin-bottom: 28px; padding: 22px;">
+    <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Total Budget — Forecast vs Actual</h3>
+    <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 3px 0 16px 0;">Forecasted budget per category for this branch; actual = approved expenditures</p>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px; width: 40px;">#</th>
+            <th style="padding: 10px 12px;">Particulars</th>
+            <th style="padding: 10px 12px; text-align: right;">Forecasted</th>
+            <th style="padding: 10px 12px; text-align: right;">Actual Spent</th>
+            <th style="padding: 10px 12px; text-align: right;">Variance</th>
+            <th style="padding: 10px 12px; text-align: center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b_row in budget_rows %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+            <td style="padding: 10px 12px;">{{ forloop.counter }}</td>
+            <td style="padding: 10px 12px; font-weight: 700;">{{ b_row.category }}</td>
+            <td style="padding: 10px 12px; text-align: right; color: var(--tp-text-primary);">₹{{ b_row.forecasted|floatformat:2 }}</td>
+            <td style="padding: 10px 12px; text-align: right; color: #dc2626; font-weight: 700;">₹{{ b_row.actual|floatformat:2 }}</td>
+            <td style="padding: 10px 12px; text-align: right; font-weight: 800; {% if b_row.variance < 0 %}color: #dc2626;{% else %}color: #059669;{% endif %}">
+              ₹{{ b_row.variance|floatformat:2 }}
+            </td>
+            <td style="padding: 10px 12px; text-align: center;">
+              <span class="badge" style="{% if b_row.status == 'On Track' %}background: rgba(16, 185, 129, 0.15); color: #059669;{% elif b_row.status == 'Over Budget' %}background: rgba(220, 38, 38, 0.15); color: #dc2626;{% else %}background: rgba(0,0,0,0.06); color: var(--tp-text-muted);{% endif %} font-size: 0.72rem; padding: 3px 8px; border-radius: 4px;">
+                {{ b_row.status }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+          <tr style="background: rgba(0,0,0,0.02); font-weight: 800; font-size: 0.88rem;">
+            <td colspan="2" style="padding: 12px;">TOTAL</td>
+            <td style="padding: 12px; text-align: right;">₹{{ tot_forecast|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; color: #dc2626;">₹{{ tot_actual|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; {% if tot_variance < 0 %}color: #dc2626;{% else %}color: #059669;{% endif %}">
+              ₹{{ tot_variance|floatformat:2 }}
+            </td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ledger (Opening + Income - Expense = Remaining) -->
+  <div class="card tp-card-glass" id="section-ledger" style="margin-bottom: 28px; padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Ledger Balance Calculation</h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 2px 0 0 0;">Formula: Opening + Verified Income &minus; Approved Expense = Remaining</p>
+      </div>
+      <a href="{% url 'finance_audit_export' %}?report=ledger" class="btn btn-sm btn-secondary" style="font-size: 0.78rem; display: inline-flex; align-items: center; gap: 5px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Export Ledger</span>
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px;">Owner Account</th>
+            <th style="padding: 10px 12px; text-align: right;">Opening</th>
+            <th style="padding: 10px 12px; text-align: right;">Income (+)</th>
+            <th style="padding: 10px 12px; text-align: right;">Expense (&minus;)</th>
+            <th style="padding: 10px 12px; text-align: right;">Remaining (=)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l_row in ledger_rows %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+            <td style="padding: 12px; font-weight: 700; color: var(--tp-text-primary);">{{ l_row.owner }}</td>
+            <td style="padding: 12px; text-align: right;">₹{{ l_row.opening|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; color: #059669; font-weight: 600;">₹{{ l_row.income|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; color: #dc2626; font-weight: 600;">₹{{ l_row.expense|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; font-weight: 800; font-size: 0.92rem; color: var(--tp-text-primary);">₹{{ l_row.remaining|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- GST Records Section -->
+  <div class="card tp-card-glass" id="section-gst" style="padding: 22px; border-top: 3px solid #d97706;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span class="badge" style="background: rgba(217, 119, 6, 0.15); color: #d97706; font-size: 0.72rem; padding: 2px 8px;">18% GST</span>
+          <span>GST Tax Filing Records</span>
+        </h3>
+        <p style="color: var(--tp-text-muted); font-size: 0.8rem; margin: 3px 0 0 0;">
+          All confirmed GST-bearing student fee collections tracked separately for statutory filing
+        </p>
+      </div>
+      <a href="{% url 'finance_audit_export' %}?report=gst" class="btn btn-sm btn-secondary" style="font-size: 0.78rem; display: inline-flex; align-items: center; gap: 5px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Export GST CSV</span>
+      </a>
+    </div>
+
+    <!-- 4 GST Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px;">
+      <div class="card" style="background: var(--bg-card); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+        <div style="font-size: 0.74rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">GST Collected (18%)</div>
+        <div style="font-size: 1.45rem; font-weight: 800; color: #d97706; margin-top: 4px;">₹{{ gst_collected|floatformat:2 }}</div>
+      </div>
+      <div class="card" style="background: var(--bg-card); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+        <div style="font-size: 0.74rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">Taxable Base</div>
+        <div style="font-size: 1.45rem; font-weight: 800; color: var(--tp-text-primary); margin-top: 4px;">₹{{ gst_taxable_base|floatformat:2 }}</div>
+      </div>
+      <div class="card" style="background: var(--bg-card); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+        <div style="font-size: 0.74rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">Gross Incl. GST</div>
+        <div style="font-size: 1.45rem; font-weight: 800; color: #059669; margin-top: 4px;">₹{{ gst_gross|floatformat:2 }}</div>
+      </div>
+      <div class="card" style="background: var(--bg-card); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+        <div style="font-size: 0.74rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">Invoices Filed</div>
+        <div style="font-size: 1.45rem; font-weight: 800; color: var(--tp-text-primary); margin-top: 4px;">{{ gst_invoices_count }}</div>
+      </div>
+    </div>
+
+    <!-- Bulk Download Buttons -->
+    <div style="display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;">
+      <a href="{% url 'finance_audit_export' %}?report=gst_invoices" class="btn btn-sm btn-primary" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: none; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Download GST Invoices (ZIP)</span>
+      </a>
+      <a href="{% url 'finance_audit_export' %}?report=nongst_invoices" class="btn btn-sm btn-secondary" style="font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>Download Non-GST Invoices (ZIP)</span>
+      </a>
+    </div>
+
+    <!-- GST Table -->
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px;">Date</th>
+            <th style="padding: 10px 12px;">Receipt No</th>
+            <th style="padding: 10px 12px;">Student</th>
+            <th style="padding: 10px 12px;">Course</th>
+            <th style="padding: 10px 12px; text-align: right;">Base Amount</th>
+            <th style="padding: 10px 12px; text-align: right;">GST (18%)</th>
+            <th style="padding: 10px 12px; text-align: right;">Total Paid</th>
+            <th style="padding: 10px 12px;">Payment Mode</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in gst_rows %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;" class="tp-table-row-hover">
+            <td style="padding: 12px;">{{ r.date|date:"d M Y"|default:r.date }}</td>
+            <td style="padding: 12px; font-weight: 700; font-family: monospace;">{{ r.receipt }}</td>
+            <td style="padding: 12px; font-weight: 600;">{{ r.student }}</td>
+            <td style="padding: 12px;">{{ r.course }}</td>
+            <td style="padding: 12px; text-align: right;">₹{{ r.base|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; color: #d97706; font-weight: 700;">₹{{ r.gst|floatformat:2 }}</td>
+            <td style="padding: 12px; text-align: right; color: #059669; font-weight: 800;">₹{{ r.total|floatformat:2 }}</td>
+            <td style="padding: 12px;">
+              <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-size: 0.72rem;">{{ r.mode }}</span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding: 32px; text-align: center; color: var(--tp-text-muted);">
+              No GST collections recorded yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.tp-table-row-hover:hover {
+  background: rgba(0, 0, 0, 0.015);
+}
+[data-theme="dark"] .tp-table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var toggleBtn = document.getElementById('toggle-expense-form-btn');
+  var formContainer = document.getElementById('add-expense-form-container');
+  if (toggleBtn && formContainer) {
+    toggleBtn.addEventListener('click', function () {
+      if (formContainer.style.display === 'none') {
+        formContainer.style.display = 'block';
+        toggleBtn.textContent = 'Collapse Form';
+      } else {
+        formContainer.style.display = 'none';
+        toggleBtn.textContent = '+ Expand Form';
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

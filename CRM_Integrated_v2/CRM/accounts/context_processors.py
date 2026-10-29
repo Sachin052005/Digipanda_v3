@@ -8,9 +8,12 @@ def crm_context(request):
         'is_admin': False,
         'is_manager': False,
         'is_branch_head': False,
+        'is_branch_admin': False,
         'is_counselor': False,
         'is_telecaller': False,
         'is_receptionist': False,
+        'is_accountant': False,
+        'is_finance_head': False,
         'user_role': '',
         'pending_followups_count': 0,
         'overdue_followups_count': 0,
@@ -21,9 +24,12 @@ def crm_context(request):
         context['is_admin'] = request.user.is_admin_user
         context['is_manager'] = request.user.is_sales_head_user
         context['is_branch_head'] = request.user.is_branch_head_user
+        context['is_branch_admin'] = request.user.is_branch_admin_user
         context['is_counselor'] = request.user.is_counselor_user
         context['is_telecaller'] = request.user.is_telecaller_user
         context['is_receptionist'] = request.user.is_receptionist_user
+        context['is_accountant'] = request.user.is_accountant_user
+        context['is_finance_head'] = request.user.is_finance_head_user
         context['user_role'] = request.user.display_role
 
         if request.user.is_admin_user:

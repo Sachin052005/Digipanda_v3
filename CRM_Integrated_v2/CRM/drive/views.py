@@ -10,7 +10,7 @@ and table so existing recordings stay playable.
     drive_stream_recording  streams one recording after role checks (audio player source)
 """
 import logging
-from datetime import datetime
+from datetime import datetime, time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -65,9 +65,11 @@ def call_recordings_list(request):
         qs = qs.filter(direction=f['direction'])
     d_from, d_to = _parse_date(f['date_from']), _parse_date(f['date_to'])
     if d_from:
-        qs = qs.filter(recording_date__date__gte=d_from)
+        dt_from = timezone.make_aware(datetime.combine(d_from, time.min))
+        qs = qs.filter(recording_date__gte=dt_from)
     if d_to:
-        qs = qs.filter(recording_date__date__lte=d_to)
+        dt_to = timezone.make_aware(datetime.combine(d_to, time.max))
+        qs = qs.filter(recording_date__lte=dt_to)
 
     total = qs.count()
     unmatched = qs.filter(match_status='UNMATCHED').count() if can_see_unmatched else 0

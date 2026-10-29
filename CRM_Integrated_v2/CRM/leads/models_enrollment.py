@@ -51,8 +51,11 @@ class PaymentMethod(models.TextChoices):
 
 
 class PaymentTransactionStatus(models.TextChoices):
-    SUCCESS = 'Success', 'Success'
-    PENDING = 'Pending', 'Pending'
+    PENDING_VERIFICATION = 'Pending Verification', 'Pending Verification'
+    APPROVED = 'Approved', 'Approved'
+    REJECTED = 'Rejected', 'Rejected'
+    SUCCESS = 'Success', 'Approved (Legacy)'
+    PENDING = 'Pending', 'Pending (Legacy)'
     FAILED = 'Failed', 'Failed'
     REFUNDED = 'Refunded', 'Refunded'
 
@@ -266,9 +269,9 @@ class Enrollment(models.Model):
         Recalculates total paid, outstanding balance, next installment date,
         and overall payment status from actual records.
         """
-        paid = self.payments.filter(status=PaymentTransactionStatus.SUCCESS).aggregate(
-            total=models.Sum('amount')
-        )['total'] or Decimal('0.00')
+        paid = self.payments.filter(
+            status__in=[PaymentTransactionStatus.APPROVED, PaymentTransactionStatus.SUCCESS]
+        ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
 
         self.total_paid = paid.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         remaining = self.total_payable - self.total_paid
@@ -343,9 +346,9 @@ class Installment(models.Model):
         return f"{self.enrollment.enrollment_number} - Inst #{self.installment_number}: ₹{self.scheduled_amount} due {self.due_date}"
 
     def update_balance(self):
-        paid = self.payments.filter(status=PaymentTransactionStatus.SUCCESS).aggregate(
-            total=models.Sum('amount')
-        )['total'] or Decimal('0.00')
+        paid = self.payments.filter(
+            status__in=[PaymentTransactionStatus.APPROVED, PaymentTransactionStatus.SUCCESS]
+        ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
 
         self.amount_paid = paid.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         rem = self.scheduled_amount - self.amount_paid
@@ -395,9 +398,9 @@ class PaymentTransaction(models.Model):
     transaction_reference = models.CharField(max_length=100, blank=True, default='', db_index=True)
     receipt_number = models.CharField(max_length=100, unique=True, db_index=True)
     status = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=PaymentTransactionStatus.choices,
-        default=PaymentTransactionStatus.SUCCESS
+        default=PaymentTransactionStatus.PENDING_VERIFICATION
     )
     notes = models.TextField(blank=True, default='')
 
@@ -408,6 +411,24 @@ class PaymentTransaction(models.Model):
         blank=True,
         related_name='recorded_payments'
     )
+
+    # Payment Proof & Verification Workflow
+    payment_proof = models.FileField(
+        upload_to='payment_proofs/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text="Uploaded payment screenshot or bank receipt proof"
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_payments'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    rejection_comment = models.TextField(blank=True, default='')
+    resubmission_count = models.PositiveIntegerField(default=0)
 
     # Email notification tracking
     email_sent = models.BooleanField(default=False)
@@ -421,7 +442,52 @@ class PaymentTransaction(models.Model):
         ordering = ['-payment_date', '-created_at']
 
     def __str__(self):
-        return f"Receipt {self.receipt_number} - ₹{self.amount} ({self.payment_method}) for {self.enrollment.student_name}"
+        return f"Receipt {self.receipt_number} - ₹{self.amount} ({self.payment_method}) for {self.enrollment.student_name} [{self.status}]"
+
+    @property
+    def is_pending_verification(self):
+        return self.status == PaymentTransactionStatus.PENDING_VERIFICATION
+
+    @property
+    def is_approved(self):
+        return self.status in (PaymentTransactionStatus.APPROVED, PaymentTransactionStatus.SUCCESS)
+
+    @property
+    def is_rejected(self):
+        return self.status == PaymentTransactionStatus.REJECTED
+
+
+class PaymentVerificationHistory(models.Model):
+    """
+    Audit log of payment verification actions (Submitted, Approved, Rejected, Resubmitted).
+    """
+    class Action(models.TextChoices):
+        SUBMITTED = 'SUBMITTED', 'Submitted'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+        RESUBMITTED = 'RESUBMITTED', 'Resubmitted'
+
+    payment = models.ForeignKey(
+        PaymentTransaction,
+        on_delete=models.CASCADE,
+        related_name='verification_history'
+    )
+    action = models.CharField(max_length=30, choices=Action.choices)
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+'
+    )
+    comment = models.TextField(blank=True, default='')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.action} on {self.payment.receipt_number} by {self.performed_by} at {self.timestamp}"
 
 
 class InstallmentScheduleHistory(models.Model):

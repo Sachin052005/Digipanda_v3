@@ -31,221 +31,437 @@
 
     // Default Fallback Template (Admissions & Training Graph)
     const DEFAULT_TEMPLATE = {
-        name: "Admissions & Training Flow",
-        trigger_type: "first_incoming_message",
-        trigger_keywords: "hi, hello, hey, start, menu, info, admission, course, training",
-        flow_data: {
-            nodes: [
-                {
-                    id: "trigger_1",
-                    type: "trigger",
-                    title: "First Incoming Message Trigger",
-                    position: { x: 240, y: 40 },
-                    x: 240,
-                    y: 40,
-                    data: { trigger_type: "first_incoming_message" }
+    "name": "Digipanda",
+    "trigger_type": "first_incoming_message",
+    "trigger_keywords": "hi, hello, course, restart, start",
+    "flow_data": {
+        "nodes": [
+            {
+                "x": 100,
+                "y": 80,
+                "id": "trigger_1",
+                "data": {
+                    "title": "Trigger",
+                    "keywords": "hi, hello, course, restart, start",
+                    "trigger_type": "first_incoming_message"
                 },
-                {
-                    id: "greeting_1",
-                    type: "message",
-                    title: "Welcome Greeting",
-                    body: "👋 Welcome to *Tech Academy & Training Institute*!\n\nWe provide industry-led software engineering and technical training with assured placement assistance.\n\nLet's get you set up with the right career path! 🚀",
-                    position: { x: 240, y: 180 },
-                    x: 240,
-                    y: 180,
-                    data: {
-                        text: "👋 Welcome to *Tech Academy & Training Institute*!\n\nWe provide industry-led software engineering and technical training with assured placement assistance.\n\nLet's get you set up with the right career path! 🚀"
-                    }
+                "type": "trigger",
+                "title": "Trigger",
+                "position": {
+                    "x": 100,
+                    "y": 80
                 },
-                {
-                    id: "looking_for_1",
-                    type: "buttons",
-                    title: "What are you looking for?",
-                    header: "Career Track",
-                    body: "Please choose what you are looking for:",
-                    footer: "Select an option below",
-                    variable_name: "looking_for",
-                    position: { x: 240, y: 360 },
-                    x: 240,
-                    y: 360,
-                    options: [
-                        { id: "opt_training", title: "Training", next_node_id: "course_list_1" },
-                        { id: "opt_placement", title: "Train + Placement", next_node_id: "course_list_1" },
-                        { id: "opt_internship", title: "Train + Internship", next_node_id: "course_list_1" },
-                        { id: "opt_internship_placement", title: "Train+Intern+Place", next_node_id: "course_list_1" }
+                "next_node_id": "msg_1",
+                "trigger_type": "first_incoming_message",
+                "trigger_keywords": "hi, hello, course, restart, start"
+            },
+            {
+                "x": 380,
+                "y": 80,
+                "id": "msg_1",
+                "body": "Hey there! \ud83d\udc4b\n\nWelcome to Digipanda Academy!\ud83d\ude80\n\nReady to level up your digital marketing skills?\n\nExplore hands-on training in SEO, Google Ads, Meta Ads, Social Media, Content Creation, Video Editing & AI Tools.\n\nLet's help you get started! \u2728",
+                "data": {
+                    "text": "Hey there! \ud83d\udc4b\n\nWelcome to Digipanda Academy!\ud83d\ude80\n\nReady to level up your digital marketing skills?\n\nExplore hands-on training in SEO, Google Ads, Meta Ads, Social Media, Content Creation, Video Editing & AI Tools.\n\nLet's help you get started! \u2728",
+                    "title": "Welcome Message"
+                },
+                "type": "message",
+                "title": "Welcome Message",
+                "position": {
+                    "x": 380,
+                    "y": 80
+                },
+                "next_node_id": "node_buttons_7461"
+            },
+            {
+                "x": 380,
+                "y": 360,
+                "id": "node_buttons_7461",
+                "body": "What are you looking for?",
+                "data": {
+                    "text": "What are you looking for?",
+                    "title": "Q1: What are you looking for?",
+                    "footer": "Select an option",
+                    "header": "Question 1",
+                    "options": [
+                        {
+                            "id": "opt_1",
+                            "title": "Training",
+                            "next_node_id": "node_buttons_8415"
+                        },
+                        {
+                            "id": "opt_2",
+                            "title": "Train + Placement",
+                            "next_node_id": "node_buttons_8415"
+                        }
                     ],
-                    data: {
-                        header: "Career Track",
-                        text: "Please choose what you are looking for:",
-                        footer: "Select an option below",
-                        variable_name: "looking_for",
-                        options: [
-                            { id: "opt_training", title: "Training" },
-                            { id: "opt_placement", title: "Train + Placement" },
-                            { id: "opt_internship", title: "Train + Internship" },
-                            { id: "opt_internship_placement", title: "Train+Intern+Place" }
-                        ]
-                    }
+                    "variable_name": "interest_type"
                 },
-                {
-                    id: "course_list_1",
-                    type: "list",
-                    title: "Available Courses",
-                    header: "Available Courses",
-                    body: "Select the technology you want to specialize in:",
-                    button_text: "View Courses",
-                    footer: "Industry-Standard Curriculums",
-                    variable_name: "course",
-                    source: "database",
-                    position: { x: 240, y: 560 },
-                    x: 240,
-                    y: 560,
-                    data: {
-                        source: "database",
-                        header: "Available Courses",
-                        text: "Select the technology you want to specialize in:",
-                        button_text: "View Courses",
-                        footer: "Industry-Standard Curriculums",
-                        variable_name: "course"
+                "type": "buttons",
+                "title": "Q1: What are you looking for?",
+                "footer": "Select an option",
+                "header": "Question 1",
+                "options": [
+                    {
+                        "id": "opt_1",
+                        "title": "Training",
+                        "next_node_id": "node_buttons_8415"
+                    },
+                    {
+                        "id": "opt_2",
+                        "title": "Train + Placement",
+                        "next_node_id": "node_buttons_8415"
                     }
+                ],
+                "position": {
+                    "x": 380,
+                    "y": 360
                 },
-                {
-                    id: "branch_visit_1",
-                    type: "buttons",
-                    title: "Campus Visit?",
-                    header: "Campus Tour & Counseling",
-                    body: "Would you like to schedule a free in-person counseling session at our nearest branch?",
-                    footer: "Free 1-on-1 counseling",
-                    variable_name: "branch_visit",
-                    position: { x: 240, y: 760 },
-                    x: 240,
-                    y: 760,
-                    options: [
-                        { id: "visit_yes", title: "YES, Schedule Visit", next_node_id: "condition_branch_visit" },
-                        { id: "visit_no", title: "NO, Online Only", next_node_id: "condition_branch_visit" }
+                "next_node_id": null,
+                "variable_name": "interest_type"
+            },
+            {
+                "x": 720,
+                "y": 360,
+                "id": "node_buttons_8415",
+                "body": "When are you planning to join?",
+                "data": {
+                    "text": "When are you planning to join?",
+                    "title": "Q2: When are you planning to join?",
+                    "footer": "Select timeframe",
+                    "header": "Question 2",
+                    "options": [
+                        {
+                            "id": "opt_1",
+                            "title": "Immediately",
+                            "next_node_id": "node_list_q3"
+                        },
+                        {
+                            "id": "opt_2",
+                            "title": "Within 7 Days",
+                            "next_node_id": "node_list_q3"
+                        },
+                        {
+                            "id": "opt_3",
+                            "title": "Within 15 Days",
+                            "next_node_id": "node_list_q3"
+                        }
                     ],
-                    data: {
-                        header: "Campus Tour & Counseling",
-                        text: "Would you like to schedule a free in-person counseling session at our nearest branch?",
-                        footer: "Free 1-on-1 counseling",
-                        variable_name: "branch_visit",
-                        options: [
-                            { id: "visit_yes", title: "YES, Schedule Visit" },
-                            { id: "visit_no", title: "NO, Online Only" }
-                        ]
-                    }
+                    "variable_name": "joining_timeframe"
                 },
-                {
-                    id: "condition_branch_visit",
-                    type: "condition",
-                    title: "Check Campus Visit",
-                    variable_name: "branch_visit",
-                    operator: "contains",
-                    value: "YES",
-                    yes_node_id: "date_time_1",
-                    no_node_id: "summary_1",
-                    position: { x: 240, y: 960 },
-                    x: 240,
-                    y: 960,
-                    data: {
-                        variable: "branch_visit",
-                        operator: "contains",
-                        value: "YES"
+                "type": "buttons",
+                "title": "Q2: When are you planning to join?",
+                "footer": "Select timeframe",
+                "header": "Question 2",
+                "options": [
+                    {
+                        "id": "opt_1",
+                        "title": "Immediately",
+                        "next_node_id": "node_list_q3"
+                    },
+                    {
+                        "id": "opt_2",
+                        "title": "Within 7 Days",
+                        "next_node_id": "node_list_q3"
+                    },
+                    {
+                        "id": "opt_3",
+                        "title": "Within 15 Days",
+                        "next_node_id": "node_list_q3"
                     }
+                ],
+                "position": {
+                    "x": 720,
+                    "y": 360
                 },
-                {
-                    id: "date_time_1",
-                    type: "question",
-                    title: "Preferred Date & Time",
-                    body: "📅 Great! Please reply with your preferred *Date & Time* for the campus visit (e.g., *Tomorrow 11:30 AM* or *Saturday 3 PM*):",
-                    variable_name: "visit_slot",
-                    position: { x: 460, y: 1120 },
-                    x: 460,
-                    y: 1120,
-                    data: {
-                        text: "📅 Great! Please reply with your preferred *Date & Time* for the campus visit (e.g., *Tomorrow 11:30 AM* or *Saturday 3 PM*):",
-                        variable_name: "visit_slot"
-                    }
+                "next_node_id": null,
+                "variable_name": "joining_timeframe"
+            },
+            {
+                "x": 1060,
+                "y": 360,
+                "id": "node_list_q3",
+                "body": "What is your current status?",
+                "data": {
+                    "text": "What is your current status?",
+                    "title": "Q3: What is your current status?",
+                    "footer": "Tap button to view choices",
+                    "header": "Current Status",
+                    "source": "custom",
+                    "sections": [
+                        {
+                            "rows": [
+                                {
+                                    "id": "row_1",
+                                    "title": "College Student",
+                                    "description": "Currently enrolled"
+                                },
+                                {
+                                    "id": "row_2",
+                                    "title": "Fresher / Job Seeker",
+                                    "description": "Looking for employment"
+                                },
+                                {
+                                    "id": "row_3",
+                                    "title": "Working Professional",
+                                    "description": "Up-skilling"
+                                },
+                                {
+                                    "id": "row_4",
+                                    "title": "Business Owner / Entrep",
+                                    "description": "Entrepreneur or business"
+                                }
+                            ],
+                            "title": "Status Options"
+                        }
+                    ],
+                    "button_text": "Select Status",
+                    "variable_name": "student_status"
                 },
-                {
-                    id: "summary_1",
-                    type: "message",
-                    title: "Registration Summary",
-                    body: "✅ *Thank you for sharing your preferences!*\n\nHere is your registration summary:\n• *Goal:* {{looking_for}}\n• *Course:* {{course_name}}\n• *Campus Visit:* {{branch_visit}}\n• *Schedule Slot:* {{visit_slot}}\n\nOur Senior Career Counselor will reach out shortly to guide your roadmap! 🎯",
-                    position: { x: 240, y: 1300 },
-                    x: 240,
-                    y: 1300,
-                    data: {
-                        text: "✅ *Thank you for sharing your preferences!*\n\nHere is your registration summary:\n• *Goal:* {{looking_for}}\n• *Course:* {{course_name}}\n• *Campus Visit:* {{branch_visit}}\n• *Schedule Slot:* {{visit_slot}}\n\nOur Senior Career Counselor will reach out shortly to guide your roadmap! 🎯"
-                    }
+                "type": "list",
+                "title": "Q3: What is your current status?",
+                "footer": "Tap button to view choices",
+                "header": "Current Status",
+                "source": "custom",
+                "position": {
+                    "x": 1060,
+                    "y": 360
                 },
-                {
-                    id: "course_brochure_1",
-                    type: "media",
-                    title: "Send Course Brochure",
-                    source: "selected_course_brochure",
-                    caption: "📄 Here is the official curriculum brochure for *{{course_name}}*.",
-                    position: { x: 240, y: 1480 },
-                    x: 240,
-                    y: 1480,
-                    data: {
-                        source: "selected_course_brochure",
-                        caption: "📄 Here is the official curriculum brochure for *{{course_name}}*.",
-                        fallback_url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                "sections": [
+                    {
+                        "rows": [
+                            {
+                                "id": "row_1",
+                                "title": "College Student",
+                                "description": "Currently enrolled"
+                            },
+                            {
+                                "id": "row_2",
+                                "title": "Fresher / Job Seeker",
+                                "description": "Looking for employment"
+                            },
+                            {
+                                "id": "row_3",
+                                "title": "Working Professional",
+                                "description": "Up-skilling"
+                            },
+                            {
+                                "id": "row_4",
+                                "title": "Business Owner / Entrep",
+                                "description": "Entrepreneur or business"
+                            }
+                        ],
+                        "title": "Status Options"
                     }
+                ],
+                "button_text": "Select Status",
+                "next_node_id": "node_buttons_q4",
+                "variable_name": "student_status"
+            },
+            {
+                "x": 1060,
+                "y": 680,
+                "id": "node_buttons_q4",
+                "body": "Preferred training mode?",
+                "data": {
+                    "text": "Preferred training mode?",
+                    "title": "Q4: Preferred training mode?",
+                    "footer": "Select your mode",
+                    "header": "Training Mode",
+                    "options": [
+                        {
+                            "id": "opt_1",
+                            "title": "Classroom (Chennai)",
+                            "next_node_id": "node_buttons_q5"
+                        },
+                        {
+                            "id": "opt_2",
+                            "title": "Online Training",
+                            "next_node_id": "node_buttons_q5"
+                        }
+                    ],
+                    "variable_name": "training_mode"
                 },
-                {
-                    id: "branch_location_1",
-                    type: "location",
-                    title: "Send Branch Location",
-                    source: "dynamic_branch",
-                    position: { x: 240, y: 1660 },
-                    x: 240,
-                    y: 1660,
-                    data: {
-                        source: "dynamic_branch",
-                        fallback_name: "Tech Academy Headquarters",
-                        fallback_address: "45 Tech Park Avenue, Anna Salai, Chennai, Tamil Nadu 600002",
-                        fallback_latitude: 13.0827,
-                        fallback_longitude: 80.2707
+                "type": "buttons",
+                "title": "Q4: Preferred training mode?",
+                "footer": "Select your mode",
+                "header": "Training Mode",
+                "options": [
+                    {
+                        "id": "opt_1",
+                        "title": "Classroom (Chennai)",
+                        "next_node_id": "node_buttons_q5"
+                    },
+                    {
+                        "id": "opt_2",
+                        "title": "Online Training",
+                        "next_node_id": "node_buttons_q5"
                     }
+                ],
+                "position": {
+                    "x": 1060,
+                    "y": 680
                 },
-                {
-                    id: "end_1",
-                    type: "end",
-                    title: "Session Completed",
-                    body: "If you have any other questions, feel free to message our team anytime. Thank you! 🌟",
-                    position: { x: 240, y: 1840 },
-                    x: 240,
-                    y: 1840,
-                    data: {
-                        text: "If you have any other questions, feel free to message our team anytime. Thank you! 🌟"
+                "next_node_id": null,
+                "variable_name": "training_mode"
+            },
+            {
+                "x": 720,
+                "y": 680,
+                "id": "node_buttons_q5",
+                "body": "Which program interests you?",
+                "data": {
+                    "text": "Which program interests you?",
+                    "title": "Q5: Which program interests you?",
+                    "footer": "Career vs Pro",
+                    "header": "Select Program",
+                    "options": [
+                        {
+                            "id": "opt_1",
+                            "title": "45 Days Career Prog",
+                            "next_node_id": "end_1"
+                        },
+                        {
+                            "id": "opt_2",
+                            "title": "60 Days Pro Program",
+                            "next_node_id": "end_1"
+                        }
+                    ],
+                    "variable_name": "program_duration"
+                },
+                "type": "buttons",
+                "title": "Q5: Which program interests you?",
+                "footer": "Career vs Pro",
+                "header": "Select Program",
+                "options": [
+                    {
+                        "id": "opt_1",
+                        "title": "45 Days Career Prog",
+                        "next_node_id": "end_1"
+                    },
+                    {
+                        "id": "opt_2",
+                        "title": "60 Days Pro Program",
+                        "next_node_id": "end_1"
                     }
-                }
-            ],
-            connections: [
-                { source: "trigger_1", source_output: "default", target: "greeting_1", target_input: "input" },
-                { source: "greeting_1", source_output: "default", target: "looking_for_1", target_input: "input" },
-                { source: "looking_for_1", source_output: "opt_training", target: "course_list_1", target_input: "input" },
-                { source: "looking_for_1", source_output: "opt_placement", target: "course_list_1", target_input: "input" },
-                { source: "looking_for_1", source_output: "opt_internship", target: "course_list_1", target_input: "input" },
-                { source: "looking_for_1", source_output: "opt_internship_placement", target: "course_list_1", target_input: "input" },
-                { source: "course_list_1", source_output: "default", target: "branch_visit_1", target_input: "input" },
-                { source: "branch_visit_1", source_output: "visit_yes", target: "condition_branch_visit", target_input: "input" },
-                { source: "branch_visit_1", source_output: "visit_no", target: "condition_branch_visit", target_input: "input" },
-                { source: "condition_branch_visit", source_output: "YES", target: "date_time_1", target_input: "input" },
-                { source: "condition_branch_visit", source_output: "NO", target: "summary_1", target_input: "input" },
-                { source: "date_time_1", source_output: "default", target: "summary_1", target_input: "input" },
-                { source: "summary_1", source_output: "default", target: "course_brochure_1", target_input: "input" },
-                { source: "course_brochure_1", source_output: "default", target: "branch_location_1", target_input: "input" },
-                { source: "branch_location_1", source_output: "default", target: "end_1", target_input: "input" }
-            ],
-            settings: {
-                session_timeout_hours: 24,
-                handover_keywords: ["agent", "human", "talk to human", "support", "help"]
+                ],
+                "position": {
+                    "x": 720,
+                    "y": 680
+                },
+                "next_node_id": null,
+                "variable_name": "program_duration"
+            },
+            {
+                "x": 380,
+                "y": 680,
+                "id": "end_1",
+                "body": "Thank you for your interest in **DigiPanda Academy!** \ud83d\udc99\n\nOur team will help you with course details, available batches and career guidance.\n\n\ud83d\udcde Need assistance? Call or WhatsApp **74488 88593**.\n\n\ud83c\udf10 Website: https://digipandaacademy.com/\n\nLet's build your digital future! \ud83d\ude80",
+                "data": {
+                    "text": "Thank you for your interest in **DigiPanda Academy!** \ud83d\udc99\n\nOur team will help you with course details, available batches and career guidance.\n\n\ud83d\udcde Need assistance? Call or WhatsApp **74488 88593**.\n\n\ud83c\udf10 Website: https://digipandaacademy.com/\n\nLet's build your digital future! \ud83d\ude80",
+                    "title": "End Session"
+                },
+                "type": "end",
+                "title": "End Session",
+                "position": {
+                    "x": 380,
+                    "y": 680
+                },
+                "next_node_id": null
             }
-        }
-    };
+        ],
+        "viewport": {
+            "x": 0,
+            "y": 0,
+            "zoom": 1
+        },
+        "connections": [
+            {
+                "id": "c_trig_msg",
+                "source": "trigger_1",
+                "target": "msg_1",
+                "target_input": "input",
+                "source_output": "default"
+            },
+            {
+                "id": "c_msg_q1",
+                "source": "msg_1",
+                "target": "node_buttons_7461",
+                "target_input": "input",
+                "source_output": "default"
+            },
+            {
+                "id": "c_q1_opt1_q2",
+                "source": "node_buttons_7461",
+                "target": "node_buttons_8415",
+                "target_input": "input",
+                "source_output": "opt_1"
+            },
+            {
+                "id": "c_q1_opt2_q2",
+                "source": "node_buttons_7461",
+                "target": "node_buttons_8415",
+                "target_input": "input",
+                "source_output": "opt_2"
+            },
+            {
+                "id": "c_q2_opt1_q3",
+                "source": "node_buttons_8415",
+                "target": "node_list_q3",
+                "target_input": "input",
+                "source_output": "opt_1"
+            },
+            {
+                "id": "c_q2_opt2_q3",
+                "source": "node_buttons_8415",
+                "target": "node_list_q3",
+                "target_input": "input",
+                "source_output": "opt_2"
+            },
+            {
+                "id": "c_q2_opt3_q3",
+                "source": "node_buttons_8415",
+                "target": "node_list_q3",
+                "target_input": "input",
+                "source_output": "opt_3"
+            },
+            {
+                "id": "c_q3_q4",
+                "source": "node_list_q3",
+                "target": "node_buttons_q4",
+                "target_input": "input",
+                "source_output": "default"
+            },
+            {
+                "id": "c_q4_opt1_q5",
+                "source": "node_buttons_q4",
+                "target": "node_buttons_q5",
+                "target_input": "input",
+                "source_output": "opt_1"
+            },
+            {
+                "id": "c_q4_opt2_q5",
+                "source": "node_buttons_q4",
+                "target": "node_buttons_q5",
+                "target_input": "input",
+                "source_output": "opt_2"
+            },
+            {
+                "id": "c_q5_opt1_end",
+                "source": "node_buttons_q5",
+                "target": "end_1",
+                "target_input": "input",
+                "source_output": "opt_1"
+            },
+            {
+                "id": "c_q5_opt2_end",
+                "source": "node_buttons_q5",
+                "target": "end_1",
+                "target_input": "input",
+                "source_output": "opt_2"
+            }
+        ]
+    }
+};
 
     // DOM Elements
     const elements = {
@@ -370,6 +586,8 @@
         btnBottomUndo: document.getElementById('btnBottomUndo'),
         btnBottomRedo: document.getElementById('btnBottomRedo'),
         btnZoomFit: document.getElementById('btnZoomFit'),
+        flowBranchSelect: document.getElementById('flowBranchSelect'),
+        branchSavedIndicator: document.getElementById('branchSavedIndicator'),
         paletteSearchInput: document.getElementById('paletteSearchInput'),
         flowOverviewPanel: document.getElementById('flowOverviewPanel'),
         overviewFlowName: document.getElementById('overviewFlowName'),
@@ -410,7 +628,25 @@
         aiPromptInput: document.getElementById('aiPromptInput'),
         editQuestionExpectedType: document.getElementById('editQuestionExpectedType'),
         editQuestionRetryLimit: document.getElementById('editQuestionRetryLimit'),
-        editQuestionInvalidMessage: document.getElementById('editQuestionInvalidMessage')
+        editQuestionInvalidMessage: document.getElementById('editQuestionInvalidMessage'),
+
+        // Validation & Version Management
+        btnValidateFlow: document.getElementById('btnValidateFlow'),
+        btnVersionHistory: document.getElementById('btnVersionHistory'),
+        versionHistoryModal: document.getElementById('versionHistoryModal'),
+        btnCloseVersionHistory: document.getElementById('btnCloseVersionHistory'),
+        versionHistoryList: document.getElementById('versionHistoryList'),
+        builderApp: document.getElementById('builderApp'),
+        btnNewFlow: document.getElementById('btnNewFlow'),
+        newFlowModal: document.getElementById('newFlowModal'),
+        btnCloseNewFlowModal: document.getElementById('btnCloseNewFlowModal'),
+        btnCancelNewFlowModal: document.getElementById('btnCancelNewFlowModal'),
+        btnConfirmCreateNewFlow: document.getElementById('btnConfirmCreateNewFlow'),
+        newFlowNameInput: document.getElementById('newFlowNameInput'),
+        newFlowTriggerSelect: document.getElementById('newFlowTriggerSelect'),
+        newFlowKeywordsWrap: document.getElementById('newFlowKeywordsWrap'),
+        newFlowKeywordsInput: document.getElementById('newFlowKeywordsInput'),
+        newFlowTemplateSelect: document.getElementById('newFlowTemplateSelect')
     };
 
     // Node Type Metadata
@@ -453,6 +689,12 @@
             const data = await resp.json();
             crmOptions.statuses = data.statuses || [];
             crmOptions.telecallers = data.telecallers || [];
+            crmOptions.branches = data.branches || [];
+            if (elements.flowBranchSelect) {
+                elements.flowBranchSelect.innerHTML = '<option value="">-- No Branch Assigned --</option>' +
+                    crmOptions.branches.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
+                updateBranchSelectForActiveAccount();
+            }
             if (elements.editLeadStatus) {
                 elements.editLeadStatus.innerHTML = crmOptions.statuses
                     .map(s => `<option value="${escapeHtml(s.value)}">${escapeHtml(s.label)}</option>`).join('');
@@ -465,6 +707,17 @@
             if (state.selectedNodeId && typeof selectNode === 'function') selectNode(state.selectedNodeId);
         } catch (err) {
             console.warn('Could not load CRM options', err);
+        }
+    }
+
+    function updateBranchSelectForActiveAccount() {
+        if (!elements.flowBranchSelect) return;
+        const currentAcc = (state.businessAccounts || []).find(a => a.id === state.selectedBusinessAccountId);
+        if (currentAcc) {
+            const bId = currentAcc.crm_branch_id || currentAcc.crm_branch || '';
+            elements.flowBranchSelect.value = bId ? String(bId) : '';
+        } else {
+            elements.flowBranchSelect.value = '';
         }
     }
 
@@ -526,6 +779,7 @@
                 });
                 state.selectedBusinessAccountId = state.businessAccounts[0].id;
             }
+            updateBranchSelectForActiveAccount();
 
             await loadFlowForCurrentAccount();
         } catch (err) {
@@ -538,7 +792,8 @@
     async function loadFlowForCurrentAccount() {
         try {
             const urlParams = new URLSearchParams(window.location.search);
-            const queryFlowId = urlParams.get('id');
+            const pathMatches = window.location.pathname.match(/\/(?:chat\/)?automations?\/(\d+)/i) || window.location.pathname.match(/\/automation\/(\d+)/i);
+            const queryFlowId = elements.builderApp?.dataset?.flowId || urlParams.get('id') || (pathMatches ? pathMatches[1] : null);
             if (queryFlowId) {
                 const flowRes = await fetch(`/api/flows/${queryFlowId}/`);
                 if (flowRes.ok) {
@@ -547,6 +802,7 @@
                     renderCanvas();
                     recordHistory();
                     setSaveStatus('saved');
+                    setTimeout(() => zoomFit(), 150);
                     return;
                 }
             }
@@ -560,12 +816,14 @@
             const data = await resp.json();
             const flows = Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : (Array.isArray(data?.flows) ? data.flows : []));
             if (flows && flows.length > 0) {
-                // Pick the most recent flow (or active published one)
-                state.currentFlow = flows[0];
+                // Prefer active published flow first, or the newest flow
+                const activeFlow = flows.find(f => f.is_active && f.status === 'published');
+                state.currentFlow = activeFlow || flows[0];
                 renderFlowMetadata();
                 renderCanvas();
                 recordHistory();
                 setSaveStatus('saved');
+                setTimeout(() => zoomFit(), 150);
             } else {
                 // Seed default
                 await createDefaultFlowOnServer();
@@ -613,6 +871,7 @@
         state.currentFlow.status = 'draft';
         renderFlowMetadata();
         renderCanvas();
+        setTimeout(() => zoomFit(), 150);
     }
 
     function renderFlowMetadata() {
@@ -681,10 +940,15 @@
         const meta = NODE_TYPES[node.type] || { label: node.type, icon: '📦', color: '#94a3b8' };
 
         const card = document.createElement('div');
-        card.className = `flow-node ${node.id === 'START' ? 'start-node' : ''} ${state.selectedNodeId === node.id ? 'selected' : ''}`;
+        card.className = `flow-node node-type-${node.type || 'message'} ${node.id === 'START' || node.type === 'trigger' ? 'start-node' : ''} ${state.selectedNodeId === node.id ? 'selected' : ''}`;
         card.id = `node-${node.id}`;
-        card.style.left = `${node.x}px`;
-        card.style.top = `${node.y}px`;
+        const posX = typeof node.x === 'number' ? node.x : (node.position && typeof node.position.x === 'number' ? node.position.x : 100);
+        const posY = typeof node.y === 'number' ? node.y : (node.position && typeof node.position.y === 'number' ? node.position.y : 100);
+        node.x = posX;
+        node.y = posY;
+        if (!node.position) node.position = { x: posX, y: posY };
+        card.style.left = `${posX}px`;
+        card.style.top = `${posY}px`;
 
         // Card Header
         let choicesHtml = '';
@@ -698,15 +962,21 @@
                 `).join('') + `</div>`;
         } else if (node.type === 'list' && Array.isArray(node.sections)) {
             const allRows = [];
-            node.sections.forEach(s => (s.rows || []).forEach(r => allRows.push(r.title)));
-            choicesHtml = `<div class="node-choices-preview">` +
-                allRows.slice(0, 3).map(r => `
-                    <div class="choice-chip">
-                        <span>📋 ${escapeHtml(r)}</span>
-                    </div>
-                `).join('') +
-                (allRows.length > 3 ? `<div class="choice-chip"><span>+ ${allRows.length - 3} more...</span></div>` : '') +
-                `</div>`;
+            node.sections.forEach(s => (s.rows || []).forEach(r => allRows.push(r)));
+            if (allRows.length > 0) {
+                choicesHtml = `<div class="node-choices-preview">` +
+                    allRows.map((r, rIdx) => {
+                        const targetId = r.next_node_id || getNodeTarget(node.id, r.id || `row_${rIdx + 1}`) || (node.next_node_id || '');
+                        const targetNode = (state.currentFlow?.flow_data?.nodes || []).find(n => n.id === targetId);
+                        const targetLabel = targetNode ? (targetNode.title || targetNode.id) : (targetId ? targetId : 'Next');
+                        return `
+                            <div class="choice-chip">
+                                <span>📋 ${escapeHtml(r.title || `Option ${rIdx + 1}`)}</span>
+                                <span class="choice-target">➔ ${escapeHtml(targetLabel)}</span>
+                            </div>
+                        `;
+                    }).join('') + `</div>`;
+            }
         }
 
         let bodyPreview = '';
@@ -729,13 +999,38 @@
             nextIndicator = `<span style="color: #64748b;">🏁 Complete</span>`;
         }
 
+        // Real-time canvas connectivity linting
+        const conns = state.currentFlow?.flow_data?.connections || [];
+        const hasIncoming = conns.some(c => c.target === node.id);
+        const hasOutgoing = conns.some(c => c.source === node.id) || Boolean(node.next_node_id || node.yes_node_id || node.no_node_id);
+        const isTrigger = ['trigger', 'start'].includes(node.type) || node.id === 'trigger_1' || node.id === 'START';
+        const isEnd = ['end', 'human_handover'].includes(node.type);
+
+        let warningBadge = '';
+        if (!isTrigger && !hasIncoming) {
+            warningBadge = `<span class="node-warning-badge" title="Warning: No step leads into this step.">⚠️</span>`;
+        } else if (!isEnd && !hasOutgoing) {
+            warningBadge = `<span class="node-warning-badge" title="Warning: This step has no outgoing connection.">⚠️</span>`;
+        }
+
         card.innerHTML = `
+            ${warningBadge}
             <div class="flow-node-header">
                 <div class="node-title-group">
                     <span class="node-icon">${meta.icon}</span>
                     <span class="node-title" title="${escapeHtml(node.title)}">${escapeHtml(node.title || node.id)}</span>
                 </div>
-                <span class="node-badge" style="border-left: 2px solid ${meta.color}">${meta.label}</span>
+                <div class="node-header-right">
+                    <span class="node-badge" style="border-left: 2px solid ${meta.color}">${meta.label}</span>
+                    <div class="node-quick-actions">
+                        <button type="button" class="node-quick-btn btn-node-edit" title="Configure Step">
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        ${!isTrigger ? `<button type="button" class="node-quick-btn btn-node-del" title="Delete Step">
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>` : ''}
+                    </div>
+                </div>
             </div>
             <div class="flow-node-body">
                 ${bodyPreview}
@@ -746,6 +1041,22 @@
                 ${nextIndicator}
             </div>
         `;
+
+        // Wire quick header action buttons
+        const btnEditQuick = card.querySelector('.btn-node-edit');
+        if (btnEditQuick) {
+            btnEditQuick.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectNode(node.id);
+            });
+        }
+        const btnDelQuick = card.querySelector('.btn-node-del');
+        if (btnDelQuick) {
+            btnDelQuick.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteNode(node.id);
+            });
+        }
 
         // Render n8n-Style Interactive Port Handles
         const portsContainer = document.createElement('div');
@@ -835,6 +1146,24 @@
                 optPort.appendChild(optBadge);
                 optPort.addEventListener('mousedown', (e) => startConnectionDrag(node.id, opt.id || `opt_${optIdx + 1}`, e));
                 portsContainer.appendChild(optPort);
+            });
+        } else if (node.type === 'list' && Array.isArray(node.sections) && (node.sections[0]?.rows?.length || 0) > 0) {
+            const rows = node.sections[0].rows;
+            rows.forEach((r, rIdx) => {
+                const rowPort = document.createElement('div');
+                rowPort.className = 'node-port port-output';
+                const topPct = Math.round(((rIdx + 1) / (rows.length + 1)) * 100);
+                rowPort.style.top = `${topPct}%`;
+                rowPort.setAttribute('data-port-type', 'output');
+                rowPort.setAttribute('data-port-id', r.id || `row_${rIdx + 1}`);
+                rowPort.setAttribute('data-node-id', node.id);
+                rowPort.title = `Option ${rIdx + 1}: "${r.title}" (Drag to connect)`;
+                const rowBadge = document.createElement('span');
+                rowBadge.className = 'port-badge';
+                rowBadge.textContent = `${rIdx + 1}`;
+                rowPort.appendChild(rowBadge);
+                rowPort.addEventListener('mousedown', (e) => startConnectionDrag(node.id, r.id || `row_${rIdx + 1}`, e));
+                portsContainer.appendChild(rowPort);
             });
         } else if (node.type !== 'end' && node.type !== 'human_handover') {
             const defPort = document.createElement('div');
@@ -997,6 +1326,10 @@
             } else if (sourceNode.type === 'buttons' && Array.isArray(sourceNode.options)) {
                 const opt = sourceNode.options.find(o => o.id === outPort);
                 if (opt) opt.next_node_id = targetId;
+            } else if (sourceNode.type === 'list' && Array.isArray(sourceNode.sections)) {
+                const row = (sourceNode.sections[0]?.rows || []).find(r => r.id === outPort);
+                if (row) row.next_node_id = targetId;
+                else sourceNode.next_node_id = targetId;
             } else {
                 sourceNode.next_node_id = targetId;
             }
@@ -1034,6 +1367,10 @@
             } else if (sourceNode.type === 'buttons' && Array.isArray(sourceNode.options)) {
                 const opt = sourceNode.options.find(o => o.id === removedConn.source_output);
                 if (opt) opt.next_node_id = null;
+            } else if (sourceNode.type === 'list' && Array.isArray(sourceNode.sections)) {
+                const row = (sourceNode.sections[0]?.rows || []).find(r => r.id === removedConn.source_output);
+                if (row) row.next_node_id = null;
+                else if (sourceNode.next_node_id === removedConn.target) sourceNode.next_node_id = null;
             } else {
                 if (sourceNode.next_node_id === removedConn.target) {
                     sourceNode.next_node_id = null;
@@ -1156,6 +1493,27 @@
                             });
                         }
                     });
+                } else if (source.type === 'list' && Array.isArray(source.sections)) {
+                    (source.sections[0]?.rows || []).forEach((r, rIdx) => {
+                        if (r.next_node_id && nodeMap[r.next_node_id]) {
+                            state.currentFlow.flow_data.connections.push({
+                                id: `conn_${source.id}_${r.id || rIdx + 1}_${r.next_node_id}`,
+                                source: source.id,
+                                source_output: r.id || `row_${rIdx + 1}`,
+                                target: r.next_node_id,
+                                target_input: 'input'
+                            });
+                        }
+                    });
+                    if (source.next_node_id && nodeMap[source.next_node_id]) {
+                        state.currentFlow.flow_data.connections.push({
+                            id: `conn_${source.id}_default_${source.next_node_id}`,
+                            source: source.id,
+                            source_output: 'default',
+                            target: source.next_node_id,
+                            target_input: 'input'
+                        });
+                    }
                 } else if (source.next_node_id && nodeMap[source.next_node_id]) {
                     state.currentFlow.flow_data.connections.push({
                         id: `conn_${source.id}_default_${source.next_node_id}`,
@@ -1249,6 +1607,10 @@
        Property Inspector (Editing Nodes)
        ========================================================================== */
 
+    function getNodeTargetId(nodeId, outputPort = 'default') {
+        return getNodeTarget(nodeId, outputPort);
+    }
+
     function getNodeTarget(nodeId, outputPort = 'default') {
         const conns = state.currentFlow?.flow_data?.connections || [];
         const match = conns.find(c => c.source === nodeId && (c.source_output === outputPort || (!c.source_output && outputPort === 'default')));
@@ -1280,6 +1642,9 @@
     }
 
     function selectNode(nodeId) {
+        if (state.selectedNodeId && state.selectedNodeId !== nodeId) {
+            applyInspectorChanges(false);
+        }
         state.selectedNodeId = nodeId;
 
         // Highlight selected card
@@ -1303,6 +1668,7 @@
         if (elements.flowOverviewPanel) elements.flowOverviewPanel.style.display = 'none';
         if (elements.emptyInspectorState) elements.emptyInspectorState.style.display = 'none';
         elements.inspectorForm.style.display = 'flex';
+        refreshNextNodeOptions();
 
         const meta = NODE_TYPES[node.type] || { label: node.type, icon: '📦' };
         elements.inspectorNodeBadge.textContent = `${meta.icon} ${meta.label}`;
@@ -1473,11 +1839,20 @@
         });
 
         elements.btnAddOptionBtn.style.display = options.length >= 3 ? 'none' : 'block';
+        let limitNotice = elements.buttonsOptionsList.querySelector('.meta-button-limit-notice');
+        if (!limitNotice) {
+            limitNotice = document.createElement('div');
+            limitNotice.className = 'meta-button-limit-notice';
+            limitNotice.style.cssText = 'font-size: 11px; color: #f59e0b; padding: 6px 8px; background: rgba(245, 158, 11, 0.1); border-radius: 4px; margin-top: 8px; border-left: 2px solid #f59e0b;';
+            limitNotice.innerHTML = '⚠️ <strong>Meta WhatsApp rule:</strong> Maximum 3 quick-reply buttons allowed. For questions with 4 to 10 choices, use a <strong>List Menu</strong> step.';
+            elements.buttonsOptionsList.appendChild(limitNotice);
+        }
+        limitNotice.style.display = options.length >= 3 ? 'block' : 'none';
     }
 
     function renderListRowsEditor(sections) {
         elements.listRowsContainer.innerHTML = '';
-        if (sections.length === 0) sections.push({ title: 'Available Programs', rows: [] });
+        if (sections.length === 0) sections.push({ title: 'Options', rows: [] });
 
         const section = sections[0];
         const rows = section.rows || [];
@@ -1485,21 +1860,43 @@
         rows.forEach((rowItem, idx) => {
             const rowEl = document.createElement('div');
             rowEl.className = 'inspector-option-row';
+            const curTitle = rowItem.title || '';
             rowEl.innerHTML = `
                 <div class="option-row-inputs">
-                    <input type="text" class="form-control list-title-input" placeholder="Course Title" value="${escapeHtml(rowItem.title)}">
-                    <button type="button" class="option-remove-btn" title="Remove" data-idx="${idx}">&times;</button>
+                    <input type="text" class="form-control list-title-input" placeholder="Option Title (max 24 chars)" maxlength="24" value="${escapeHtml(curTitle)}">
+                    <button type="button" class="option-remove-btn" title="Remove option" data-idx="${idx}">&times;</button>
                 </div>
-                <input type="text" class="form-control list-desc-input" placeholder="Short description" value="${escapeHtml(rowItem.description || '')}" style="font-size: 11px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; gap: 8px;">
+                    <input type="text" class="form-control list-desc-input" placeholder="Short description (optional, max 72)" maxlength="72" value="${escapeHtml(rowItem.description || '')}" style="font-size: 11px; flex: 1;">
+                    <span class="char-count-pill" style="font-size: 10px; color: var(--text-muted);">${curTitle.length}/24</span>
+                </div>
             `;
+
+            const titleInput = rowEl.querySelector('.list-title-input');
+            const countPill = rowEl.querySelector('.char-count-pill');
+            titleInput.addEventListener('input', () => {
+                countPill.textContent = `${titleInput.value.length}/24`;
+                if (titleInput.value.length >= 24) {
+                    countPill.style.color = '#ef4444';
+                } else {
+                    countPill.style.color = 'var(--text-muted)';
+                }
+            });
 
             rowEl.querySelector('.option-remove-btn').addEventListener('click', () => {
                 rows.splice(idx, 1);
                 renderListRowsEditor(sections);
+                renderCanvas();
+                recordHistory();
+                setSaveStatus('unsaved');
             });
 
             elements.listRowsContainer.appendChild(rowEl);
         });
+
+        if (elements.btnAddListRowBtn) {
+            elements.btnAddListRowBtn.style.display = rows.length >= 10 ? 'none' : 'block';
+        }
     }
 
     function refreshNextNodeOptions() {
@@ -1516,7 +1913,7 @@
         });
     }
 
-    function applyInspectorChanges() {
+    function applyInspectorChanges(showNotification = true) {
         if (!state.selectedNodeId || !state.currentFlow) return;
         const nodes = state.currentFlow.flow_data.nodes || [];
         const node = nodes.find(n => n.id === state.selectedNodeId);
@@ -1680,7 +2077,9 @@
 
         renderCanvas();
         recordHistory();
-        showToast(`Updated "${node.title}"`);
+        if (showNotification) {
+            showToast(`Updated "${node.title}"`);
+        }
     }
 
     function deleteSelectedNode() {
@@ -1742,19 +2141,32 @@
 
         const newId = `node_${type || 'step'}_${Date.now().toString().slice(-4)}`;
 
-        // Place below lowest node or at custom position or in clear view
+        // Place below lowest node, near selected node, or in visible viewport center
         let posX = 240;
         let posY = 100;
         if (customPos && typeof customPos.x === 'number' && typeof customPos.y === 'number') {
             posX = customPos.x;
             posY = customPos.y;
         } else {
-            let maxY = 40;
-            nodes.forEach(n => {
-                const ny = n.position ? n.position.y : (n.y || 0);
-                if (ny > maxY) maxY = ny;
-            });
-            posY = maxY + 180;
+            const vp = elements.canvasViewport;
+            if (state.selectedNodeId) {
+                const sel = nodes.find(n => n.id === state.selectedNodeId);
+                if (sel) {
+                    posX = (sel.x || sel.position?.x || 240);
+                    posY = (sel.y || sel.position?.y || 100) + 160;
+                }
+            } else if (vp) {
+                const vpRect = vp.getBoundingClientRect();
+                posX = Math.max(40, Math.round((vp.scrollLeft + vpRect.width / 2) / state.scale) - 120);
+                posY = Math.max(40, Math.round((vp.scrollTop + vpRect.height / 2) / state.scale) - 60);
+            } else {
+                let maxY = 40;
+                nodes.forEach(n => {
+                    const ny = n.position ? n.position.y : (n.y || 0);
+                    if (ny > maxY) maxY = ny;
+                });
+                posY = maxY + 180;
+            }
         }
 
         const newNode = {
@@ -1882,34 +2294,106 @@
     function autoLayoutGraph() {
         if (!state.currentFlow?.flow_data?.nodes) return;
         const nodes = state.currentFlow.flow_data.nodes;
+        if (nodes.length === 0) return;
 
-        // Traverse linearly from START
-        let startNode = nodes.find(n => n.id === 'START') || nodes[0];
-        let current = startNode;
-        let y = 60;
+        const conns = state.currentFlow.flow_data.connections || [];
+        const nodeMap = {};
+        nodes.forEach(n => nodeMap[n.id] = n);
+
+        // Find incoming connection count
+        const incomingCount = {};
+        nodes.forEach(n => incomingCount[n.id] = 0);
+        conns.forEach(c => {
+            if (incomingCount[c.target] !== undefined) incomingCount[c.target]++;
+        });
+
+        // Roots: trigger/start nodes or nodes with 0 incoming connections
+        const rootNodes = nodes.filter(n => ['trigger', 'start'].includes(n.type) || incomingCount[n.id] === 0);
+        if (rootNodes.length === 0) rootNodes.push(nodes[0]);
+
+        // BFS traversal to assign DAG levels
+        const levels = {};
+        const queue = [];
+        rootNodes.forEach(r => {
+            levels[r.id] = 0;
+            queue.push(r.id);
+        });
+
         const visited = new Set();
+        while (queue.length > 0) {
+            const currId = queue.shift();
+            if (visited.has(currId)) continue;
+            visited.add(currId);
 
-        while (current && !visited.has(current.id)) {
-            visited.add(current.id);
-            current.x = 220;
-            current.y = y;
-            y += 180;
-            current = nodes.find(n => n.id === current.next_node_id);
+            const currLevel = levels[currId] || 0;
+            const targets = [];
+            conns.forEach(c => {
+                if (c.source === currId && c.target && nodeMap[c.target]) {
+                    targets.push(c.target);
+                }
+            });
+            const nodeObj = nodeMap[currId];
+            if (nodeObj) {
+                if (nodeObj.next_node_id && nodeMap[nodeObj.next_node_id]) targets.push(nodeObj.next_node_id);
+                if (nodeObj.yes_node_id && nodeMap[nodeObj.yes_node_id]) targets.push(nodeObj.yes_node_id);
+                if (nodeObj.no_node_id && nodeMap[nodeObj.no_node_id]) targets.push(nodeObj.no_node_id);
+                if (Array.isArray(nodeObj.options)) {
+                    nodeObj.options.forEach(o => {
+                        if (o.next_node_id && nodeMap[o.next_node_id]) targets.push(o.next_node_id);
+                    });
+                }
+            }
+
+            targets.forEach(tgtId => {
+                const nextLevel = currLevel + 1;
+                if (levels[tgtId] === undefined || levels[tgtId] < nextLevel) {
+                    levels[tgtId] = nextLevel;
+                }
+                if (!visited.has(tgtId)) {
+                    queue.push(tgtId);
+                }
+            });
         }
 
-        // Place any remaining nodes
+        // Handle any unvisited nodes
+        let maxLvl = 0;
+        Object.values(levels).forEach(l => { if (l > maxLvl) maxLvl = l; });
         nodes.forEach(n => {
-            if (!visited.has(n.id)) {
-                n.x = 550;
-                n.y = y;
-                y += 180;
-                visited.add(n.id);
+            if (levels[n.id] === undefined) {
+                maxLvl++;
+                levels[n.id] = maxLvl;
             }
+        });
+
+        // Group nodes by level
+        const columns = {};
+        nodes.forEach(n => {
+            const lvl = levels[n.id] !== undefined ? levels[n.id] : 0;
+            if (!columns[lvl]) columns[lvl] = [];
+            columns[lvl].push(n);
+        });
+
+        const X_GAP = 360;
+        const Y_GAP = 230;
+        const START_X = 80;
+        const START_Y = 80;
+
+        Object.keys(columns).sort((a, b) => Number(a) - Number(b)).forEach(lvlStr => {
+            const lvl = Number(lvlStr);
+            const colNodes = columns[lvl];
+            colNodes.forEach((node, idx) => {
+                node.x = START_X + lvl * X_GAP;
+                node.y = START_Y + idx * Y_GAP;
+                if (!node.position) node.position = {};
+                node.position.x = node.x;
+                node.position.y = node.y;
+            });
         });
 
         renderCanvas();
         recordHistory();
-        showToast('Nodes auto-aligned.');
+        setSaveStatus('unsaved');
+        showToast('Workflows automatically organized into clean graph layout.');
     }
 
     function setZoom(newScale) {
@@ -1926,6 +2410,7 @@
     async function saveDraft() {
         if (!state.currentFlow) return;
 
+        applyInspectorChanges(false);
         setSaveStatus('saving');
 
         // Sync metadata
@@ -1934,6 +2419,12 @@
         state.currentFlow.trigger_keywords = elements.triggerKeywordsInput.value.trim();
         state.currentFlow.business_account = state.selectedBusinessAccountId;
 
+        const isPublished = state.currentFlow.status === 'published';
+        const payload = {
+            ...state.currentFlow,
+            auto_fork_draft: isPublished
+        };
+
         try {
             const method = state.currentFlow.id ? 'PUT' : 'POST';
             const endpoint = state.currentFlow.id ? `/api/flows/${state.currentFlow.id}/` : '/api/flows/';
@@ -1941,19 +2432,25 @@
             const resp = await fetch(endpoint, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(state.currentFlow)
+                body: JSON.stringify(payload)
             });
 
-            if (!resp.ok) throw new Error('Save failed');
+            if (!resp.ok) {
+                const errData = await resp.json().catch(() => ({}));
+                if (errData.code === 'PUBLISHED_IMMUTABLE') {
+                    return await createNewDraft();
+                }
+                throw new Error(errData.error || 'Save failed');
+            }
             const data = await resp.json();
             state.currentFlow = data;
             renderFlowMetadata();
             setSaveStatus('saved');
-            showToast('Draft saved successfully!');
+            showToast(isPublished ? `Forked into editable draft v${state.currentFlow.version}!` : 'Draft saved successfully!');
         } catch (err) {
             console.error('Error saving draft:', err);
             setSaveStatus('unsaved');
-            showToast('Error saving draft.', true);
+            showToast('Error saving draft: ' + (err.message || 'Server error'), true);
         }
     }
 
@@ -1981,8 +2478,157 @@
         }
     }
 
+    function renderValidationIssues(errors) {
+        if (!elements.validationErrorList || !elements.validationModalBackdrop) return;
+        elements.validationErrorList.innerHTML = '';
+        errors.forEach(err => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.alignItems = 'center';
+            li.style.gap = '8px';
+            li.style.marginBottom = '6px';
+
+            const span = document.createElement('span');
+            const errText = typeof err === 'string' ? err : (err.message || JSON.stringify(err));
+            span.textContent = errText;
+            li.appendChild(span);
+
+            let nodeId = typeof err === 'object' && err.node_id ? err.node_id : null;
+            if (!nodeId && typeof err === 'string') {
+                const match = err.match(/node\s+["']?([a-zA-Z0-9_-]+)["']?/i) || err.match(/#([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) nodeId = match[1];
+            }
+
+            if (nodeId && nodeId !== 'root' && nodeId !== 'connections') {
+                const fixBtn = document.createElement('button');
+                fixBtn.type = 'button';
+                fixBtn.textContent = 'Fix';
+                fixBtn.className = 'btn-fix-node';
+                fixBtn.addEventListener('click', () => {
+                    elements.validationModalBackdrop.style.display = 'none';
+                    focusAndSelectNode(nodeId);
+                });
+                li.appendChild(fixBtn);
+            }
+            elements.validationErrorList.appendChild(li);
+        });
+        elements.validationModalBackdrop.style.display = 'flex';
+        showToast('Validation failed: check issues', true);
+    }
+
+    async function validateFlowAction() {
+        if (!state.currentFlow?.flow_data) return;
+        applyInspectorChanges(false);
+        try {
+            showToast('Validating workflow...');
+            const resp = await fetch('/api/flows/validate/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ flow_data: state.currentFlow.flow_data })
+            });
+            const data = await resp.json();
+            if (data.valid) {
+                showToast('✓ Workflow is completely valid and ready to publish!');
+            } else {
+                renderValidationIssues(data.errors || []);
+            }
+        } catch (err) {
+            console.error('Validation error:', err);
+            showToast('Failed to validate flow.', true);
+        }
+    }
+
+    async function openVersionHistory() {
+        if (!state.currentFlow?.id) {
+            showToast('Save a flow before viewing versions.', true);
+            return;
+        }
+        if (!elements.versionHistoryModal || !elements.versionHistoryList) return;
+        elements.versionHistoryList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading version history...</div>';
+        elements.versionHistoryModal.style.display = 'flex';
+
+        try {
+            const resp = await fetch(`/api/flows/${state.currentFlow.id}/versions/`);
+            if (!resp.ok) throw new Error('Failed to load version history');
+            const versions = await resp.json();
+            if (!Array.isArray(versions) || versions.length === 0) {
+                elements.versionHistoryList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 20px;">No version records found.</div>';
+                return;
+            }
+
+            elements.versionHistoryList.innerHTML = '';
+            versions.forEach(v => {
+                const card = document.createElement('div');
+                card.className = 'version-item-card';
+                const isCurrent = v.id === state.currentFlow.id;
+                const statusBadge = v.status === 'published' 
+                    ? '<span class="status-badge status-published">Published</span>' 
+                    : '<span class="status-badge status-draft">Draft</span>';
+                
+                const createdDate = v.created_at ? new Date(v.created_at).toLocaleString() : 'Recent';
+                const nodeCount = (v.flow_data?.nodes || []).length;
+
+                card.innerHTML = `
+                    <div class="version-item-meta">
+                        <div class="version-item-title">
+                            <span>v${v.version} — ${escapeHtml(v.name)}</span>
+                            ${statusBadge}
+                            ${isCurrent ? '<span style="font-size: 11px; color: #10b981; font-weight: 700;">(Current)</span>' : ''}
+                        </div>
+                        <div class="version-item-date">Created: ${createdDate} • ${nodeCount} steps</div>
+                    </div>
+                    <div>
+                        ${!isCurrent ? `<button type="button" class="btn-restore-version" data-id="${v.id}">Restore as Draft</button>` : '<span style="color: var(--text-muted); font-size: 12px;">Active</span>'}
+                    </div>
+                `;
+
+                const restoreBtn = card.querySelector('.btn-restore-version');
+                if (restoreBtn) {
+                    restoreBtn.addEventListener('click', async () => {
+                        restoreVersionToDraft(v.id);
+                    });
+                }
+                elements.versionHistoryList.appendChild(card);
+            });
+        } catch (err) {
+            console.error('Version error:', err);
+            elements.versionHistoryList.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 20px;">Failed to load versions.</div>';
+        }
+    }
+
+    async function restoreVersionToDraft(flowId) {
+        showConfirmDialog(
+            'Restore Version',
+            'This will clone this historical version into a new editable draft without modifying the live active flow. Continue?',
+            'Restore Version',
+            false,
+            async () => {
+                try {
+                    const resp = await fetch(`/api/flows/${flowId}/restore-version/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    if (!resp.ok) throw new Error('Restore failed');
+                    const data = await resp.json();
+                    state.currentFlow = data.flow;
+                    if (elements.versionHistoryModal) elements.versionHistoryModal.style.display = 'none';
+                    renderFlowMetadata();
+                    renderCanvas();
+                    recordHistory();
+                    setSaveStatus('saved');
+                    showToast(data.message || 'Restored version successfully!');
+                } catch (err) {
+                    showToast('Failed to restore version.', true);
+                }
+            }
+        );
+    }
+
     async function publishFlow() {
         if (!state.currentFlow) return;
+
+        applyInspectorChanges(false);
 
         // First save if draft
         if (state.currentFlow.status !== 'published') {
@@ -2009,34 +2655,7 @@
                     if (!resp.ok) {
                         const data = await resp.json().catch(() => ({}));
                         if (data.details && Array.isArray(data.details)) {
-                            elements.validationErrorList.innerHTML = '';
-                            data.details.forEach(err => {
-                                const li = document.createElement('li');
-                                li.style.display = 'flex';
-                                li.style.justifyContent = 'space-between';
-                                li.style.alignItems = 'center';
-                                li.style.gap = '8px';
-                                li.style.marginBottom = '6px';
-
-                                const span = document.createElement('span');
-                                span.textContent = err;
-                                li.appendChild(span);
-
-                                const match = err.match(/node\s+["']?([a-zA-Z0-9_-]+)["']?/i) || err.match(/#([a-zA-Z0-9_-]+)/);
-                                if (match && match[1]) {
-                                    const nodeId = match[1];
-                                    const fixBtn = document.createElement('button');
-                                    fixBtn.type = 'button';
-                                    fixBtn.textContent = 'Fix';
-                                    fixBtn.className = 'btn-fix-node';
-                                    fixBtn.addEventListener('click', () => focusAndSelectNode(nodeId));
-                                    li.appendChild(fixBtn);
-                                }
-
-                                elements.validationErrorList.appendChild(li);
-                            });
-                            elements.validationModalBackdrop.style.display = 'flex';
-                            showToast('Validation failed: check errors', true);
+                            renderValidationIssues(data.details);
                             return;
                         }
                         throw new Error(data.error || 'Publish failed');
@@ -2324,7 +2943,15 @@
         bubble.className = 'sim-bubble sim-bubble-user';
         bubble.innerHTML = `
             <div>${escapeHtml(text)}</div>
-            <div class="sim-bubble-time">${getCurrentTime()}</div>
+            <div class="sim-bubble-meta">
+                <span class="sim-bubble-time">${getCurrentTime()}</span>
+                <span class="sim-double-tick" title="Read">
+                    <svg viewBox="0 0 16 15" width="15" height="14" fill="none">
+                        <path d="M15.01 3.316l-7.79 7.789a.5.5 0 01-.707 0L2.99 7.581a.5.5 0 11.707-.707l3.17 3.17 7.436-7.435a.5.5 0 11.707.707z" fill="#53bdeb"/>
+                        <path d="M12.01 3.316l-7.79 7.789a.5.5 0 01-.707 0L.09 7.581a.5.5 0 11.707-.707l3.17 3.17 7.436-7.435a.5.5 0 11.707.707z" fill="#53bdeb"/>
+                    </svg>
+                </span>
+            </div>
         `;
         elements.simMessages.appendChild(bubble);
         scrollSimToBottom();
@@ -2336,7 +2963,11 @@
 
         let btnsHtml = `<div class="sim-buttons-wrap">`;
         (node.options || []).forEach(opt => {
-            btnsHtml += `<button type="button" class="sim-btn-choice" data-id="${opt.id}">${escapeHtml(opt.title)}</button>`;
+            btnsHtml += `
+            <button type="button" class="sim-btn-choice" data-id="${opt.id}">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+                <span>${escapeHtml(opt.title)}</span>
+            </button>`;
         });
         btnsHtml += `</div>`;
 
@@ -2368,8 +2999,8 @@
             ${node.header ? `<div style="font-size: 11px; font-weight: 700; color: #34d399; margin-bottom: 4px;">${escapeHtml(node.header)}</div>` : ''}
             <div>${formatWhatsAppMarkdown(bodyText)}</div>
             <button type="button" class="sim-list-btn">
-                <span>📋</span>
-                <span>${escapeHtml(node.button_text || 'View Courses')}</span>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>${escapeHtml(node.button_text || 'View Options')}</span>
             </button>
             <div class="sim-bubble-time">${getCurrentTime()}</div>
         `;
@@ -2546,15 +3177,34 @@
     function updateLivePreview() {
         if (!elements.messageLivePreview) return;
         const bodyVal = elements.editNodeBody?.value || '';
-        if (!bodyVal.trim()) {
-            elements.messageLivePreview.textContent = '(Empty message body)';
-            elements.messageLivePreview.style.fontStyle = 'italic';
-            elements.messageLivePreview.style.color = 'var(--text-muted)';
-        } else {
-            elements.messageLivePreview.textContent = bodyVal;
-            elements.messageLivePreview.style.fontStyle = 'normal';
-            elements.messageLivePreview.style.color = 'var(--text-main)';
+        const headerVal = elements.editNodeHeader?.value || '';
+        const footerVal = elements.editNodeFooter?.value || '';
+        const selectedNode = (state.currentFlow?.flow_data?.nodes || []).find(n => n.id === state.selectedNodeId);
+
+        let optionsHtml = '';
+        if (selectedNode && selectedNode.type === 'buttons' && Array.isArray(selectedNode.options) && selectedNode.options.length > 0) {
+            optionsHtml = `<div class="wa-preview-buttons">` +
+                selectedNode.options.map(opt => `<button type="button" class="wa-preview-btn">🔘 ${escapeHtml(opt.title || 'Option')}</button>`).join('') +
+                `</div>`;
+        } else if (selectedNode && selectedNode.type === 'list' && Array.isArray(selectedNode.sections) && selectedNode.sections.length > 0) {
+            optionsHtml = `<div class="wa-preview-list-btn"><button type="button" class="wa-preview-btn-menu">📋 View Options</button></div>`;
         }
+
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        elements.messageLivePreview.innerHTML = `
+            <div class="wa-bubble-card">
+                ${headerVal ? `<div class="wa-bubble-header">${escapeHtml(headerVal)}</div>` : ''}
+                <div class="wa-bubble-body">${bodyVal ? escapeHtml(bodyVal).replace(/\n/g, '<br>') : '<span style="color:#94a3b8; font-style:italic;">(Enter message text above...)</span>'}</div>
+                ${footerVal ? `<div class="wa-bubble-footer">${escapeHtml(footerVal)}</div>` : ''}
+                <div class="wa-bubble-meta">
+                    <span class="wa-bubble-time">${timeStr}</span>
+                    <span class="wa-bubble-ticks">✓✓</span>
+                </div>
+                ${optionsHtml}
+            </div>
+        `;
     }
 
     function showConfirmDialog(title, message, confirmText = 'Confirm', isDanger = true, onConfirm = null) {
@@ -2690,12 +3340,116 @@
        Event Listeners Binding
        ========================================================================== */
 
+    
+    async function handleCreateNewFlowInEditor() {
+        const name = (elements.newFlowNameInput?.value || '').trim() || 'New Automation Flow';
+        const trigger = elements.newFlowTriggerSelect?.value || 'first_incoming_message';
+        const keywords = (elements.newFlowKeywordsInput?.value || '').trim() || 'hi, hello, course';
+        const templateChoice = elements.newFlowTemplateSelect?.value || 'blank';
+
+        let initialFlowData;
+        if (templateChoice === 'admissions') {
+            useDefaultTemplate();
+            initialFlowData = state.currentFlow?.flow_data;
+        } else {
+            initialFlowData = {
+                nodes: [
+                    { id: "trigger_1", type: "trigger", title: trigger === 'keyword' ? "Keyword Trigger" : "Trigger", x: 150, y: 150, trigger_type: trigger, data: { trigger_type: trigger, keywords: keywords }, next_node_id: "msg_1" },
+                    { id: "msg_1", type: "message", title: "Welcome Message", body: "Hello! Welcome to TECHPANDA WhatsApp.", x: 420, y: 150, data: { text: "Hello! Welcome to TECHPANDA WhatsApp." }, next_node_id: "end_1" },
+                    { id: "end_1", type: "end", title: "End Session", body: "Thank you for connecting with us!", x: 700, y: 150, data: { text: "Thank you for connecting with us!" } }
+                ],
+                connections: [
+                    { id: "conn_trig_msg", source: "trigger_1", source_output: "default", target: "msg_1", target_input: "input" },
+                    { id: "conn_msg_end", source: "msg_1", source_output: "default", target: "end_1", target_input: "input" }
+                ]
+            };
+        }
+
+        try {
+            const resp = await fetch('/api/flows/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                    version: 1,
+                    trigger_type: trigger,
+                    trigger_keywords: keywords,
+                    business_account: state.selectedBusinessAccountId,
+                    flow_data: initialFlowData
+                })
+            });
+            if (!resp.ok) {
+                const errData = await resp.json().catch(() => ({}));
+                throw new Error(errData.error || errData.name?.[0] || 'Failed to create new flow');
+            }
+            const createdFlow = await resp.json();
+            state.currentFlow = createdFlow;
+            if (elements.newFlowModal) elements.newFlowModal.style.display = 'none';
+            history.pushState(null, '', `/chat/automation/${createdFlow.id}/`);
+            renderFlowMetadata();
+            renderCanvas();
+            recordHistory();
+            setSaveStatus('saved');
+            showToast(`✨ Created flow "${name}"!`);
+        } catch (err) {
+            console.error('Error creating new flow:', err);
+            showToast(err.message || 'Error creating flow', true);
+        }
+    }
+
     function bindEvents() {
         // Business Account selection change
         elements.flowBusinessAccountSelect.addEventListener('change', async (e) => {
             state.selectedBusinessAccountId = e.target.value ? parseInt(e.target.value, 10) : null;
+            updateBranchSelectForActiveAccount();
             await loadFlowForCurrentAccount();
         });
+
+        // Branch Selection Change for active WhatsApp Line
+        if (elements.flowBranchSelect) {
+            elements.flowBranchSelect.addEventListener('change', async (e) => {
+                const branchId = e.target.value ? parseInt(e.target.value, 10) : null;
+                if (!state.selectedBusinessAccountId) {
+                    showToast('Please select a WhatsApp line first', true);
+                    return;
+                }
+                try {
+                    const resp = await fetch(`/api/business-accounts/${state.selectedBusinessAccountId}/`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ crm_branch_id: branchId })
+                    });
+                    if (resp.ok) {
+                        const updatedAcc = await resp.json();
+                        const accIdx = state.businessAccounts.findIndex(a => a.id === state.selectedBusinessAccountId);
+                        if (accIdx !== -1) {
+                            state.businessAccounts[accIdx] = updatedAcc;
+                        }
+                        if (elements.branchSavedIndicator) {
+                            elements.branchSavedIndicator.classList.add('visible');
+                            setTimeout(() => elements.branchSavedIndicator.classList.remove('visible'), 2000);
+                        }
+                        showToast(`WhatsApp Line mapped to "${updatedAcc.crm_branch_name || 'Unassigned Branch'}".`);
+                    } else {
+                        showToast('Failed to update branch for WhatsApp line', true);
+                    }
+                } catch (err) {
+                    console.error('Error updating branch:', err);
+                    showToast('Network error updating branch', true);
+                }
+            });
+        }
+
+        // Flow Name input
+        if (elements.flowNameInput) {
+            elements.flowNameInput.addEventListener('input', (e) => {
+                if (state.currentFlow) {
+                    state.currentFlow.name = e.target.value.trim() || 'Untitled Flow';
+                }
+                setSaveStatus('unsaved');
+            });
+        }
 
         // Trigger Mode change
         elements.triggerTypeSelect.addEventListener('change', (e) => {
@@ -2703,9 +3457,67 @@
             setSaveStatus('unsaved');
         });
 
-        // Save & Publish
+        // Save, Publish, Validate, & Version History
         elements.btnSaveDraft.addEventListener('click', saveDraft);
         elements.btnPublishFlow.addEventListener('click', publishFlow);
+        if (elements.btnValidateFlow) {
+            elements.btnValidateFlow.addEventListener('click', validateFlowAction);
+        }
+        if (elements.btnNewFlow) {
+            elements.btnNewFlow.addEventListener('click', () => {
+                if (elements.newFlowModal) {
+                    if (elements.newFlowNameInput) elements.newFlowNameInput.value = '';
+                    if (elements.newFlowKeywordsInput) elements.newFlowKeywordsInput.value = '';
+                    if (elements.newFlowKeywordsWrap) elements.newFlowKeywordsWrap.style.display = 'none';
+                    if (elements.newFlowTriggerSelect) elements.newFlowTriggerSelect.value = 'first_incoming_message';
+                    elements.newFlowModal.style.display = 'flex';
+                    if (elements.newFlowNameInput) elements.newFlowNameInput.focus();
+                }
+            });
+        }
+        if (elements.btnCloseNewFlowModal) {
+            elements.btnCloseNewFlowModal.addEventListener('click', () => {
+                if (elements.newFlowModal) elements.newFlowModal.style.display = 'none';
+            });
+        }
+        if (elements.btnCancelNewFlowModal) {
+            elements.btnCancelNewFlowModal.addEventListener('click', () => {
+                if (elements.newFlowModal) elements.newFlowModal.style.display = 'none';
+            });
+        }
+        if (elements.newFlowTriggerSelect) {
+            elements.newFlowTriggerSelect.addEventListener('change', (e) => {
+                if (elements.newFlowKeywordsWrap) {
+                    elements.newFlowKeywordsWrap.style.display = e.target.value === 'keyword' ? 'block' : 'none';
+                }
+            });
+        }
+        if (elements.btnConfirmCreateNewFlow) {
+            elements.btnConfirmCreateNewFlow.addEventListener('click', handleCreateNewFlowInEditor);
+        }
+        if (elements.newFlowModal) {
+            elements.newFlowModal.addEventListener('click', (e) => {
+                if (e.target === elements.newFlowModal) {
+                    elements.newFlowModal.style.display = 'none';
+                }
+            });
+        }
+
+        if (elements.btnVersionHistory) {
+            elements.btnVersionHistory.addEventListener('click', openVersionHistory);
+        }
+        if (elements.btnCloseVersionHistory) {
+            elements.btnCloseVersionHistory.addEventListener('click', () => {
+                if (elements.versionHistoryModal) elements.versionHistoryModal.style.display = 'none';
+            });
+        }
+        if (elements.versionHistoryModal) {
+            elements.versionHistoryModal.addEventListener('click', (e) => {
+                if (e.target === elements.versionHistoryModal) {
+                    elements.versionHistoryModal.style.display = 'none';
+                }
+            });
+        }
 
         // Reset Template
         elements.btnResetTemplate.addEventListener('click', () => {
@@ -2821,11 +3633,26 @@
             });
         }
 
-        // Inspector Form
+        // Inspector Form Submit & Debounced Live Auto-Sync
         elements.inspectorForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            applyInspectorChanges();
+            applyInspectorChanges(true);
         });
+
+        let inspectorSyncTimer = null;
+        elements.inspectorForm.addEventListener('input', () => {
+            clearTimeout(inspectorSyncTimer);
+            inspectorSyncTimer = setTimeout(() => {
+                applyInspectorChanges(false);
+            }, 250);
+        });
+        elements.inspectorForm.addEventListener('change', () => {
+            clearTimeout(inspectorSyncTimer);
+            inspectorSyncTimer = setTimeout(() => {
+                applyInspectorChanges(false);
+            }, 100);
+        });
+
         elements.btnCloseInspector.addEventListener('click', () => {
             selectNode(null);
         });
@@ -3101,6 +3928,10 @@
                     elements.confirmDialogModal.style.display = 'none';
                 } else if (elements.validationModalBackdrop && elements.validationModalBackdrop.style.display === 'flex') {
                     elements.validationModalBackdrop.style.display = 'none';
+                } else if (elements.newFlowModal && elements.newFlowModal.style.display === 'flex') {
+                    elements.newFlowModal.style.display = 'none';
+                } else if (elements.versionHistoryModal && elements.versionHistoryModal.style.display === 'flex') {
+                    elements.versionHistoryModal.style.display = 'none';
                 } else if (elements.aiAssistantModal && elements.aiAssistantModal.style.display === 'flex') {
                     elements.aiAssistantModal.style.display = 'none';
                 } else if (state.simState.isOpen) {
@@ -3110,6 +3941,15 @@
                 } else if (state.selectedNodeId) {
                     selectNode(null);
                 }
+            }
+        });
+
+        // Prompt user before closing tab if there are unsaved workflow changes
+        window.addEventListener('beforeunload', (e) => {
+            if (state.saveStatus === 'unsaved') {
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes in your WhatsApp workflow.';
+                return e.returnValue;
             }
         });
     }

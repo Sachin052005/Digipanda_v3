@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}New Leads - TECHPANDA CRM{% endblock %}
+{% block title %}New Leads - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
@@ -29,6 +29,7 @@
 <div class="filter-card" style="margin-bottom: 20px;">
   <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
     {% if sort_by %}<input type="hidden" name="sort" value="{{ sort_by }}">{% endif %}
+    {% if page_size %}<input type="hidden" name="page_size" value="{{ page_size }}">{% endif %}
     <div class="filter-col" style="flex: 2 1 200px;">
       <label>Search</label>
       <input type="text" name="search" class="form-control" placeholder="Search name, phone, notes..." value="{{ search_query }}">
@@ -203,21 +204,6 @@
     </table>
   </div>
 
-  {% if page_obj.has_other_pages %}
-  <div class="pagination-wrapper" style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
-    <div style="font-size: 0.85rem; color: var(--text-muted);">
-      Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} new leads
-    </div>
-    <div style="display: flex; gap: 4px;">
-      {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&branch={{ branch_filter }}&telecaller={{ telecaller_filter }}&counselor={{ counselor_filter }}&category={{ category_filter }}&source={{ source_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-secondary">Prev</a>
-      {% endif %}
-      <span class="btn btn-sm btn-primary" style="pointer-events: none;">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-      {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&branch={{ branch_filter }}&telecaller={{ telecaller_filter }}&counselor={{ counselor_filter }}&category={{ category_filter }}&source={{ source_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-secondary">Next</a>
-      {% endif %}
-    </div>
-  </div>
-  {% endif %}
+  {% include 'partials/pagination.html' %}
 </div>
 {% endblock %}

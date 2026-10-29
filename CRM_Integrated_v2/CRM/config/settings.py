@@ -14,8 +14,10 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',') if h.strip()]
 # Browser logins/forms over https through ngrok or the live domain (comma-separated, with https://)
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv(
-    'CSRF_TRUSTED_ORIGINS', 'https://*.ngrok-free.app,https://*.ngrok.app,https://crm.techpanda.academy'
+    'CSRF_TRUSTED_ORIGINS', 'https://*.ngrok-free.app,https://*.ngrok.app,https://digipandacrm.in,https://www.digipandacrm.in,https://crm.techpanda.academy'
 ).split(',') if o.strip()]
+if 'https://digipandacrm.in' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.extend(['https://digipandacrm.in', 'https://www.digipandacrm.in'])
 
 # Application definition
 INSTALLED_APPS = [
@@ -29,12 +31,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
 
     # Third-party: REST API + login tokens for the CRM Call Sync Android app
     'rest_framework',
     'rest_framework.authtoken',
     
-    # TECHPANDA CRM Core Apps
+    # DIGIPANDA CRM Core Apps
     'accounts.apps.AccountsConfig',
     'branches.apps.BranchesConfig',
     'lead_channels.apps.ChannelsConfig',
@@ -53,6 +56,7 @@ INSTALLED_APPS = [
     # WhatsApp inbox + no-code automation (WhatsApp leads) and Facebook Lead Ads (Facebook leads)
     'chat.apps.ChatConfig',
     'fb_leads.apps.FbLeadsConfig',
+    'finance.apps.FinanceConfig',
 ]
 
 MIDDLEWARE = [
@@ -81,6 +85,9 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.crm_context',
             ],
+            'libraries': {
+                'breadcrumb_tags': 'accounts.templatetags.breadcrumb_tags',
+            },
         },
     },
 ]
@@ -132,6 +139,12 @@ else:
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
+# Authentication Backends (Email-based primary login)
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # Authentication URLs
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'login_redirect'
@@ -182,7 +195,17 @@ CALLS = {
     'CALLBACK_WITHIN_MINUTES': 15,      # missed Google call -> follow-up due this soon
     'MATCH_WINDOW_SECONDS': 600,        # recording <-> call matching tolerance
     'GOOGLE_CALL_SOURCE': 'Google Call',
-    'APP_LOGIN_ROLES': ('TELECALLER', 'COUNSELOR', 'BRANCH_HEAD'),
+    'APP_LOGIN_ROLES': (
+        'SUPERADMIN',
+        'ADMIN',
+        'SALES_HEAD',
+        'BRANCH_HEAD',
+        'BRANCH_ADMIN',
+        'COUNSELOR',
+        'TELECALLER',
+        'RECEPTIONIST',
+        'ACCOUNTANT',
+    ),
     'ON_MISSED_CALL': None,             # optional dotted path to function(call_event)
 }
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # bigger recordings stream to a temp file
@@ -208,6 +231,7 @@ REST_FRAMEWORK = {
 # WhatsApp Cloud API (Meta). Per-number tokens can also be saved on each Business Account.
 # ---------------------------------------------------------------------------
 WHATSAPP_ACCESS_TOKEN = os.getenv('WHATSAPP_ACCESS_TOKEN', '')
+WHATSAPP_APP_SECRET = os.getenv('WHATSAPP_APP_SECRET', os.getenv('FB_APP_SECRET', ''))
 WHATSAPP_PHONE_NUMBER_ID = os.getenv('WHATSAPP_PHONE_NUMBER_ID', '')
 WHATSAPP_BUSINESS_ACCOUNT_ID = os.getenv('WHATSAPP_BUSINESS_ACCOUNT_ID', '')
 WHATSAPP_VERIFY_TOKEN = os.getenv('WHATSAPP_VERIFY_TOKEN', '')
@@ -271,14 +295,14 @@ EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'idpsachin@gmail.com')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'admin@digipandaacademy.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', '20'))
 
 # CRM Public Application URL & Branding for Email Invitations
 CRM_BASE_URL = os.getenv('CRM_BASE_URL', 'http://127.0.0.1:8000')
-COMPANY_NAME = os.getenv('COMPANY_NAME', 'TECHPANDA')
+COMPANY_NAME = os.getenv('COMPANY_NAME', 'DIGIPANDA')
 PASSWORD_RESET_TIMEOUT = int(os.getenv('PASSWORD_RESET_TIMEOUT', '86400'))  # 24 Hours Single-Use Expiration
 
 # Google Sheets & OAuth 2.0 Desktop Configuration

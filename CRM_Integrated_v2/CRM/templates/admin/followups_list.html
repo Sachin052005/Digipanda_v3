@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Follow-ups - TECHPANDA CRM{% endblock %}
+{% block title %}Follow-ups - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
@@ -7,12 +7,12 @@
     <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Follow-up Pipeline</h1>
     <p style="color: var(--text-muted); font-size: 0.875rem;">Monitor scheduled client callbacks, demo sessions, and overdue inquiries</p>
   </div>
-  <div class="page-actions">
+  <!-- <div class="page-actions">
     <a href="{% url 'admin_followup_create' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
        Schedule Follow-up
     </a>
-  </div>
+  </div> -->
 </div>
 
 <!-- KPI Cards -->
@@ -61,7 +61,7 @@
 <!-- Filters -->
 <div class="filter-card">
   <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
-    <div class="filter-col" style="flex: 1 1 180px;">
+    <div class="filter-col" style="flex: 0 0 auto; width: 220px;">
       <label>Search</label>
       <input type="text" name="search" class="form-control" placeholder="Search lead, phone, notes..." value="{{ search_query }}">
     </div>
@@ -107,7 +107,7 @@
         {% endfor %}
       </select>
     </div>
-    <div class="filter-col" style="flex: 1 1 130px;">
+    <!-- <div class="filter-col" style="flex: 1 1 130px;">
       <label>Product / Course</label>
       <select name="product" class="form-select">
         <option value="">All Products</option>
@@ -115,7 +115,7 @@
         <option value="{{ p.id }}" {% if product_filter == p.id|stringformat:"i" %}selected{% endif %}>{{ p.name }}</option>
         {% endfor %}
       </select>
-    </div>
+    </div> -->  
     <div class="filter-col" style="flex: 1 1 130px;">
       <label>Channel / Source</label>
       <select name="channel" class="form-select">
@@ -125,13 +125,12 @@
         {% endfor %}
       </select>
     </div>
-    <div class="filter-col" style="flex: 1 1 130px;">
-      <label>From Date</label>
-      <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
-    </div>
-    <div class="filter-col" style="flex: 1 1 130px;">
-      <label>To Date</label>
-      <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+    <div class="filter-col" style="flex: 0 0 auto; width: 220px;">
+      <label>Date Range</label>
+      <div class="tp-smart-date-container w-100">
+        <input type="date" name="date_from" value="{{ date_from }}" style="display: none;">
+        <input type="date" name="date_to" value="{{ date_to }}" style="display: none;">
+      </div>
     </div>
     <div style="display: flex; gap: 8px; align-items: flex-end;">
       <a href="{% url 'admin_followups_list' %}" class="btn btn-secondary">Reset</a>

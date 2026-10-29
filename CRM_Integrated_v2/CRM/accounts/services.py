@@ -1,5 +1,5 @@
 """
-Accounts Service Layer for TECHPANDA CRM.
+Accounts Service Layer for DigiPanda CRM.
 Handles:
 - Automatic unique login ID / username generation
 - User creation with credential onboarding
@@ -134,7 +134,7 @@ def send_user_welcome_email(user, request=None):
         setup_url = f"{base_url}{relative_url}"
         login_url = f"{base_url}/login/"
 
-    company_name = getattr(settings, 'COMPANY_NAME', 'TECHPANDA')
+    company_name = getattr(settings, 'COMPANY_NAME', 'DIGIPANDA')
 
     context = {
         'user': user,
@@ -153,7 +153,7 @@ def send_user_welcome_email(user, request=None):
         html_content = render_to_string('emails/user_welcome.html', context)
         text_content = render_to_string('emails/user_welcome.txt', context)
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or f"{company_name} CRM <no-reply@techpanda.academy>"
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or f"{company_name} CRM <no-reply@digipanda.academy>"
 
         msg = EmailMultiAlternatives(
             subject=subject,
@@ -260,3 +260,83 @@ def create_user_with_generated_credentials(
     # Dispatch welcome email with setup token
     email_sent, email_msg = send_user_welcome_email(user, request=request)
     return user, email_sent, email_msg
+
+
+def send_password_reset_email_for_user(target_user, request=None, admin_user=None):
+    """
+    Sends a secure, time-limited single-use password reset link to the target user's registered email.
+    Records audit logging without exposing secrets.
+    Returns:
+        tuple (bool email_sent, str message)
+    """
+    if not target_user.email:
+        err_msg = f"User '{target_user.username}' does not have a registered email address."
+        logger.warning(err_msg)
+        return False, err_msg
+
+    uidb64 = urlsafe_base64_encode(force_bytes(target_user.pk))
+    token = default_token_generator.make_token(target_user)
+    relative_url = reverse('password_reset_confirm', kwargs={'uidb64': uidb64, 'token': token})
+
+    if request:
+        protocol = 'https' if request.is_secure() else 'http'
+        domain = request.get_host()
+        reset_url = request.build_absolute_uri(relative_url)
+    else:
+        base_url = getattr(settings, 'CRM_BASE_URL', 'http://127.0.0.1:8000').rstrip('/')
+        reset_url = f"{base_url}{relative_url}"
+        protocol = 'https' if base_url.startswith('https') else 'http'
+        domain = base_url.split('://')[-1]
+
+    company_name = getattr(settings, 'COMPANY_NAME', 'DIGIPANDA')
+
+    context = {
+        'email': target_user.email,
+        'user': target_user,
+        'domain': domain,
+        'protocol': protocol,
+        'uid': uidb64,
+        'token': token,
+        'reset_url': reset_url,
+        'company_name': company_name,
+    }
+
+    subject = f"Password Reset Request — {company_name} CRM"
+
+    try:
+        html_content = render_to_string('registration/password_reset_email.html', context)
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or f"{company_name} CRM <no-reply@digipanda.academy>"
+
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=html_content,
+            from_email=from_email,
+            to=[target_user.email],
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=False)
+
+        actor_str = f"Administrator '{admin_user.username}'" if admin_user else "System"
+        log_activity(
+            user=admin_user or target_user,
+            action="Password Reset Link Sent",
+            description=f"{actor_str} sent password reset link to user '{target_user.username}' ({target_user.email}).",
+            object_type="User",
+            object_id=str(target_user.pk),
+            request=request
+        )
+        logger.info("Password reset link sent to %s (%s).", target_user.username, target_user.email)
+        return True, "Password reset link sent successfully."
+
+    except Exception as e:
+        logger.error("Failed to send password reset link to %s (%s): %s", target_user.username, target_user.email, str(e), exc_info=True)
+        actor_str = f"Administrator '{admin_user.username}'" if admin_user else "System"
+        log_activity(
+            user=admin_user or target_user,
+            action="Password Reset Delivery Failed",
+            description=f"{actor_str} failed to send password reset link to '{target_user.username}' ({target_user.email}): {str(e)}",
+            object_type="User",
+            object_id=str(target_user.pk),
+            request=request
+        )
+        return False, str(e)

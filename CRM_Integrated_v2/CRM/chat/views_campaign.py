@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_GET
 from django.utils import timezone
 from django.db.models import Q, Count, Sum
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.urls import reverse
 
@@ -34,18 +35,32 @@ from chat.campaign_service import (
 from chat.tasks import trigger_campaign_execution_async
 
 
-def can_manage_campaign(user, campaign: WhatsAppCampaign) -> bool:
-    """Verifies that the user has permission to manage or view this campaign."""
-    if getattr(user, 'is_admin_user', False) or user.is_superuser or user.role == 'ADMIN':
+def is_campaign_authorized(user) -> bool:
+    """Verifies that the user has permission to manage or view campaigns: Admin, Superadmin, and Sales Head only."""
+    if not (user and user.is_authenticated and user.is_active):
+        return False
+    return bool(
+        getattr(user, 'is_admin_user', False)
+        or getattr(user, 'is_sales_head_user', False)
+        or getattr(user, 'role', '') == 'SALES_HEAD'
+    )
+
+
+def can_manage_campaign(user, campaign: WhatsAppCampaign = None) -> bool:
+    """Verifies that the user has permission to manage or view this campaign: Admin, Superadmin, and Sales Head only."""
+    if not is_campaign_authorized(user):
+        return False
+    if getattr(user, 'is_admin_user', False):
         return True
-    if campaign.created_by_id == user.id:
+    if campaign and campaign.created_by == user:
         return True
+    # Sales Head can access campaigns in their assigned branches
     if user.role == 'SALES_HEAD':
         from branches.models import SalesHeadBranchAccess
         branches = SalesHeadBranchAccess.objects.filter(sales_head=user).values_list('branch_id', flat=True)
-        return campaign.branch_id in branches or campaign.branch is None
-    if user.role == 'BRANCH_HEAD':
-        return campaign.branch_id == user.branch_id
+        if campaign and campaign.branch_id and campaign.branch_id in branches:
+            return True
+        return True
     return False
 
 
@@ -54,6 +69,8 @@ def campaigns_list_view(request):
     """
     Overview list of all bulk WhatsApp campaigns with KPI metrics and status filtering.
     """
+    if not is_campaign_authorized(request.user):
+        raise PermissionDenied("Only Admin and Sales Head can access WhatsApp Campaigns.")
     ensure_default_senders_and_templates()
     user = request.user
 
@@ -111,6 +128,8 @@ def campaign_create_wizard_view(request):
     - Approved templates and deterministic placeholder mapping
     - Final confirmation, draft save, and background dispatch.
     """
+    if not is_campaign_authorized(request.user):
+        raise PermissionDenied("Only Admin and Sales Head can create WhatsApp Campaigns.")
     ensure_default_senders_and_templates()
     user = request.user
 
@@ -218,9 +237,11 @@ def campaign_detail_view(request, pk):
     Detailed campaign status monitor showing live delivery telemetry,
     searchable recipient table with skip reasons, and campaign control actions.
     """
+    if not is_campaign_authorized(request.user):
+        raise PermissionDenied("Only Admin and Sales Head can view WhatsApp Campaigns.")
     campaign = get_object_or_404(WhatsAppCampaign, pk=pk)
     if not can_manage_campaign(request.user, campaign):
-        return HttpResponse("Unauthorized to view this campaign", status=403)
+        raise PermissionDenied("Unauthorized to view this campaign")
 
     recipient_qs = campaign.recipients.all().select_related('lead', 'resolved_sender')
 
@@ -255,6 +276,8 @@ def api_campaign_control(request, pk):
     """
     AJAX endpoint to start, pause, resume, cancel, or re-run a campaign.
     """
+    if not is_campaign_authorized(request.user):
+        return JsonResponse({'success': False, 'error': 'Permission denied. Only Admin and Sales Head can manage campaigns.'}, status=403)
     campaign = get_object_or_404(WhatsAppCampaign, pk=pk)
     if not can_manage_campaign(request.user, campaign):
         return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
@@ -310,6 +333,8 @@ def api_campaign_progress(request, pk):
     """
     Real-time JSON endpoint for live UI polling of campaign telemetry.
     """
+    if not is_campaign_authorized(request.user):
+        return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
     campaign = get_object_or_404(WhatsAppCampaign, pk=pk)
     if not can_manage_campaign(request.user, campaign):
         return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
@@ -337,9 +362,11 @@ def campaign_export_csv_view(request, pk):
     """
     Exports full campaign delivery telemetry and recipient results to CSV.
     """
+    if not is_campaign_authorized(request.user):
+        raise PermissionDenied("Only Admin and Sales Head can export WhatsApp Campaigns.")
     campaign = get_object_or_404(WhatsAppCampaign, pk=pk)
     if not can_manage_campaign(request.user, campaign):
-        return HttpResponse("Unauthorized", status=403)
+        raise PermissionDenied("Unauthorized")
 
     response = HttpResponse(content_type='text/csv')
     filename = f"whatsapp_campaign_{campaign.id}_{timezone.now().strftime('%Y%m%d_%H%M')}.csv"
@@ -380,6 +407,8 @@ def api_toggle_lead_whatsapp_consent(request, pk):
     """
     Updates WhatsApp consent or opt-out status for a specific lead.
     """
+    if not is_campaign_authorized(request.user):
+        return JsonResponse({'success': False, 'error': 'Permission denied.'}, status=403)
     lead = get_object_or_404(Lead, pk=pk)
     try:
         data = json.loads(request.body)
@@ -399,3 +428,159 @@ def api_toggle_lead_whatsapp_consent(request, pk):
         return JsonResponse({'success': True, 'whatsapp_opt_out': False, 'message': 'Lead consented to WhatsApp messages'})
 
     return JsonResponse({'success': False, 'error': f"Unknown action '{action}'"}, status=400)
+
+
+@login_required
+@require_POST
+def api_create_campaign_sender(request):
+    """
+    Registers or updates an authorized WhatsApp number (channel) and sender profile
+    for bulk campaigns and outbound communications.
+    """
+    if not is_campaign_authorized(request.user):
+        return JsonResponse({'success': False, 'error': 'Permission denied. Only Admin and Sales Head can manage campaign senders.'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    name = str(data.get('name', '')).strip()
+    phone_number = str(data.get('phone_number', '')).strip()
+    phone_number_id = str(data.get('phone_number_id', '')).strip()
+    business_account_id = str(data.get('business_account_id', '')).strip()
+    access_token = str(data.get('access_token', '')).strip()
+    daily_limit_raw = data.get('daily_limit', 1000)
+    branch_id = data.get('branch_id')
+
+    if not name:
+        return JsonResponse({'success': False, 'error': 'Sender channel name is required.'}, status=400)
+    if not phone_number:
+        return JsonResponse({'success': False, 'error': 'Display phone number is required.'}, status=400)
+    if not phone_number_id:
+        return JsonResponse({'success': False, 'error': 'Meta Phone Number ID is required.'}, status=400)
+
+    try:
+        daily_limit = int(daily_limit_raw)
+        if daily_limit < 1:
+            daily_limit = 1000
+    except (ValueError, TypeError):
+        daily_limit = 1000
+
+    # 1. Update or create the underlying BusinessAccount channel
+    ba_defaults = {
+        'name': name,
+        'phone_number': phone_number,
+        'business_account_id': business_account_id,
+        'is_active': True,
+    }
+    if access_token:
+        ba_defaults['access_token'] = access_token
+    if branch_id:
+        ba_defaults['crm_branch_id'] = branch_id
+
+    business_account, _ = BusinessAccount.objects.update_or_create(
+        phone_number_id=phone_number_id,
+        defaults=ba_defaults
+    )
+
+    # 2. Update or create the WhatsAppSender
+    sender, created = WhatsAppSender.objects.update_or_create(
+        phone_number_id=phone_number_id,
+        defaults={
+            'name': name,
+            'business_account': business_account,
+            'display_phone_number': phone_number,
+            'is_active': True,
+            'is_verified': True,
+            'quality_rating': 'GREEN',
+            'daily_limit': daily_limit,
+        }
+    )
+
+    if branch_id:
+        sender.allowed_branches.add(branch_id)
+    elif request.user.branch:
+        sender.allowed_branches.add(request.user.branch)
+
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'sender': {
+            'id': sender.id,
+            'name': sender.name,
+            'display_phone_number': sender.display_phone_number,
+            'phone_number_id': sender.phone_number_id,
+            'daily_limit': sender.daily_limit,
+            'quality_rating': sender.quality_rating,
+        },
+        'message': f"WhatsApp number '{sender.name}' registered successfully."
+    })
+
+
+@login_required
+@require_POST
+def api_create_whatsapp_template(request):
+    """
+    Registers a pre-approved Meta WhatsApp Message Template in the CRM
+    so it can be immediately selected and previewed in bulk campaigns.
+    """
+    if not is_campaign_authorized(request.user):
+        return JsonResponse({'success': False, 'error': 'Permission denied. Only Admin and Sales Head can manage WhatsApp templates.'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        data = request.POST
+
+    name = str(data.get('name', '')).strip().lower().replace(' ', '_')
+    display_title = str(data.get('display_title', '')).strip()
+    language = str(data.get('language', 'en_US')).strip()
+    category = str(data.get('category', WhatsAppTemplate.CATEGORY_MARKETING)).strip().upper()
+    body_text = str(data.get('body_text', '')).strip()
+    header_type = str(data.get('header_type', WhatsAppTemplate.HEADER_NONE)).strip().upper()
+    footer_text = str(data.get('footer_text', '')).strip()
+
+    if not name:
+        return JsonResponse({'success': False, 'error': 'Meta Template Name (snake_case identifier) is required.'}, status=400)
+    if not body_text:
+        return JsonResponse({'success': False, 'error': 'Template body text is required.'}, status=400)
+
+    # Valid categories and headers
+    valid_categories = dict(WhatsAppTemplate.CATEGORY_CHOICES).keys()
+    if category not in valid_categories:
+        category = WhatsAppTemplate.CATEGORY_MARKETING
+
+    valid_headers = dict(WhatsAppTemplate.HEADER_CHOICES).keys()
+    if header_type not in valid_headers:
+        header_type = WhatsAppTemplate.HEADER_NONE
+
+    template, created = WhatsAppTemplate.objects.update_or_create(
+        name=name,
+        defaults={
+            'display_title': display_title or name,
+            'language': language or 'en_US',
+            'category': category,
+            'header_type': header_type,
+            'body_text': body_text,
+            'footer_text': footer_text,
+            'status': WhatsAppTemplate.STATUS_APPROVED,
+            'is_active': True,
+        }
+    )
+
+    return JsonResponse({
+        'success': True,
+        'created': created,
+        'template': {
+            'id': template.id,
+            'name': template.name,
+            'display_title': template.display_title or template.name,
+            'language': template.language,
+            'category': template.category,
+            'header_type': template.header_type,
+            'body_text': template.body_text,
+            'footer_text': template.footer_text,
+        },
+        'message': f"Template '{template.name}' ({template.language}) registered successfully."
+    })

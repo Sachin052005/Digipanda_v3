@@ -1,4 +1,4 @@
-TECHPANDA – Learning Today, Building Tomorrow
+DIGIPANDA – Learning Today, Building Tomorrow
 
 Fee Payment Reminder — {{ course_name }}
 
@@ -21,19 +21,19 @@ STUDENT DETAILS:
 
 PAYMENT INSTRUCTIONS:
 1. Click the link below to make your payment securely:
-   {{ payment_url|default:"https://pay.techpanda.in" }}
+   {{ payment_url|default:"https://pay.digipanda.in" }}
 2. You can pay using UPI, Card, Net Banking or Wallets.
 3. After payment, you will receive a confirmation notification and updated receipt.
 
 NEED HELP?
 Contact our support team:
 - Phone: {{ accounts_phone|default:"+91 98765 43210" }}
-- Email: {{ accounts_email|default:"support@techpanda.in" }}
-- Website: https://www.techpanda.in
+- Email: {{ accounts_email|default:"support@digipanda.in" }}
+- Website: https://www.digipanda.in
 
-Thank you for being a part of TECHPANDA!
+Thank you for being a part of DIGIPANDA!
 We're here to support you at every step.
 
 ---
-TECHPANDA | Learn | Build | Grow
-© 2026 TECHPANDA. All rights reserved.
+DIGIPANDA | Learn | Build | Grow
+© 2026 DIGIPANDA. All rights reserved.

@@ -113,12 +113,14 @@ def admin_followups_list(request):
             Q(lead__phone__icontains=search_query) |
             Q(notes__icontains=search_query)
         )
-    if status_filter == 'overdue':
+    if status_filter.lower() == 'overdue':
         followups_qs = followups_qs.filter(
             Q(status=FollowUpStatus.OVERDUE) | Q(status=FollowUpStatus.PENDING, follow_up_date__lt=today)
         )
-    elif status_filter == 'today':
+    elif status_filter.lower() == 'today':
         followups_qs = followups_qs.filter(follow_up_date=today, status=FollowUpStatus.PENDING)
+    elif status_filter.lower() == 'pending':
+        followups_qs = followups_qs.filter(status=FollowUpStatus.PENDING)
     elif status_filter:
         followups_qs = followups_qs.filter(status=status_filter)
 
@@ -251,7 +253,7 @@ def admin_followup_reschedule(request, pk):
     followup = get_object_or_404(FollowUp, pk=pk)
 
     if request.method == 'POST':
-        form = FollowUpRescheduleForm(request.POST)
+        form = FollowUpRescheduleForm(request.POST, followup=followup)
         if form.is_valid():
             old_date = followup.follow_up_date
             followup.follow_up_date = form.cleaned_data['follow_up_date']
@@ -277,7 +279,7 @@ def admin_followup_reschedule(request, pk):
         form = FollowUpRescheduleForm(initial={
             'follow_up_date': followup.follow_up_date,
             'follow_up_time': followup.follow_up_time,
-        })
+        }, followup=followup)
 
     return render(request, 'admin/followup_reschedule.html', {
         'form': form,
@@ -311,12 +313,14 @@ def manager_followups_list(request):
     status_filter = request.GET.get('status', '').strip()
     telecaller_filter = request.GET.get('telecaller', '').strip()
 
-    if status_filter == 'overdue':
+    if status_filter.lower() == 'overdue':
         followups_qs = followups_qs.filter(
             Q(status=FollowUpStatus.OVERDUE) | Q(status=FollowUpStatus.PENDING, follow_up_date__lt=today)
         )
-    elif status_filter == 'today':
+    elif status_filter.lower() == 'today':
         followups_qs = followups_qs.filter(follow_up_date=today, status=FollowUpStatus.PENDING)
+    elif status_filter.lower() == 'pending':
+        followups_qs = followups_qs.filter(status=FollowUpStatus.PENDING)
     elif status_filter:
         followups_qs = followups_qs.filter(status=status_filter)
 
@@ -361,12 +365,14 @@ def telecaller_followups_list(request):
     followups_qs = FollowUp.objects.filter(scope_filter).select_related('lead', 'telecaller', 'assigned_user')
 
     status_filter = request.GET.get('status', '').strip() or request.GET.get('filter', '').strip()
-    if status_filter == 'overdue':
+    if status_filter.lower() == 'overdue':
         followups_qs = followups_qs.filter(
             Q(status=FollowUpStatus.OVERDUE) | Q(status=FollowUpStatus.PENDING, follow_up_date__lt=today)
         )
-    elif status_filter == 'today':
+    elif status_filter.lower() == 'today':
         followups_qs = followups_qs.filter(follow_up_date=today, status=FollowUpStatus.PENDING)
+    elif status_filter.lower() == 'pending':
+        followups_qs = followups_qs.filter(status=FollowUpStatus.PENDING)
     elif status_filter:
         followups_qs = followups_qs.filter(status=status_filter)
 
@@ -428,12 +434,14 @@ def counselor_followups_list(request):
             Q(notes__icontains=search_query)
         )
 
-    if status_filter == 'overdue':
+    if status_filter.lower() == 'overdue':
         followups_qs = followups_qs.filter(
             Q(status=FollowUpStatus.OVERDUE) | Q(status=FollowUpStatus.PENDING, follow_up_date__lt=today)
         )
-    elif status_filter == 'today':
+    elif status_filter.lower() == 'today':
         followups_qs = followups_qs.filter(follow_up_date=today, status=FollowUpStatus.PENDING)
+    elif status_filter.lower() == 'pending':
+        followups_qs = followups_qs.filter(status=FollowUpStatus.PENDING)
     elif status_filter:
         followups_qs = followups_qs.filter(status=status_filter)
 
@@ -490,7 +498,7 @@ def counselor_followup_reschedule(request, pk):
         raise PermissionDenied("You do not have permission to reschedule this follow-up.")
 
     if request.method == 'POST':
-        form = FollowUpRescheduleForm(request.POST)
+        form = FollowUpRescheduleForm(request.POST, followup=followup)
         if form.is_valid():
             old_date = followup.follow_up_date
             followup.follow_up_date = form.cleaned_data['follow_up_date']

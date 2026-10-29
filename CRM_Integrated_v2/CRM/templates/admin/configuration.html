@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Configuration - TECHPANDA CRM{% endblock %}
+{% block title %}Configuration - DigipandaCRM{% endblock %}
 
 {% block content %}
 <!-- PAGE HEADER -->
@@ -114,7 +114,7 @@
               <tr style="border-bottom: 1px solid #edf2f7;">
                 <td style="padding: 6px 0; color: var(--text-muted); width: 110px;">Page:</td>
                 <td style="padding: 6px 0; font-weight: 600; color: var(--text-main);" id="cardPage-{{ conn.id }}">
-                  {{ conn.page_name|default:"TechPanda Academy" }}
+                  {{ conn.page_name|default:"DigiPanda Academy" }}
                 </td>
               </tr>
               {% endif %}
@@ -226,7 +226,7 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
         <div id="addPageField">
           <label class="form-label" style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Page / Account Name</label>
-          <input type="text" name="page_name" id="addPageName" class="form-control" placeholder="e.g. TechPanda Academy" style="width: 100%; padding: 8px 10px; font-size: 0.875rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <input type="text" name="page_name" id="addPageName" class="form-control" placeholder="e.g. DigiPanda Academy" style="width: 100%; padding: 8px 10px; font-size: 0.875rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
         </div>
 
         <div>
@@ -259,7 +259,7 @@
 
       <div style="margin-bottom: 20px;">
         <label class="form-label" style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main);">Incoming Webhook URL (Optional)</label>
-        <input type="text" name="webhook_url" id="addWebhookUrl" class="form-control" placeholder="https://crm.techpanda.academy/api/webhooks/meta-lead-ads/" style="width: 100%; padding: 8px 10px; font-size: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-family: monospace;">
+        <input type="text" name="webhook_url" id="addWebhookUrl" class="form-control" placeholder="https://crm.digipanda.academy/api/webhooks/meta-lead-ads/" style="width: 100%; padding: 8px 10px; font-size: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-family: monospace;">
         <div style="font-size: 0.725rem; color: var(--text-muted); margin-top: 4px;">Leave blank to use the CRM default endpoint automatically.</div>
       </div>
 
@@ -450,19 +450,19 @@ function handleTypeChange(val) {
 
   if (val === 'Meta') {
     if (!nameInput.value || nameInput.value.includes('Connection')) nameInput.value = 'Meta / Facebook';
-    pageInput.value = 'TechPanda Academy';
+    pageInput.value = 'DigiPanda Academy';
     sourceInput.value = 'Meta';
-    webhookInput.placeholder = 'https://crm.techpanda.academy/api/webhooks/meta-lead-ads/';
+    webhookInput.placeholder = 'https://crm.digipanda.academy/api/webhooks/meta-lead-ads/';
   } else if (val === 'Instagram') {
     if (!nameInput.value || nameInput.value.includes('Connection')) nameInput.value = 'Instagram Leads';
-    pageInput.value = 'TechPanda Academy';
+    pageInput.value = 'DigiPanda Academy';
     sourceInput.value = 'Instagram';
-    webhookInput.placeholder = 'https://crm.techpanda.academy/api/webhooks/meta/leads/';
+    webhookInput.placeholder = 'https://crm.digipanda.academy/api/webhooks/meta/leads/';
   } else if (val === 'Website') {
     if (!nameInput.value || nameInput.value.includes('Connection')) nameInput.value = 'Website';
     pageInput.value = '';
     sourceInput.value = 'Website Lead Form';
-    webhookInput.placeholder = 'https://crm.techpanda.academy/api/webhooks/website-lead-form/';
+    webhookInput.placeholder = 'https://crm.digipanda.academy/api/webhooks/website-lead-form/';
   } else if (val === 'Google Sheets') {
     if (!nameInput.value || nameInput.value.includes('Connection')) nameInput.value = 'Google Sheets Leads';
     pageInput.value = '';
@@ -531,7 +531,7 @@ function submitManageForm(e) {
     if (titleEl && data.name) titleEl.textContent = data.name;
 
     const pageEl = document.getElementById(`cardPage-${connId}`);
-    if (pageEl && data.page_name !== undefined) pageEl.textContent = data.page_name || 'TechPanda Academy';
+    if (pageEl && data.page_name !== undefined) pageEl.textContent = data.page_name || 'DigiPanda Academy';
 
     const sourceEl = document.getElementById(`cardSource-${connId}`);
     if (sourceEl && data.source_name) sourceEl.textContent = data.source_name;

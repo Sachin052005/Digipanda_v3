@@ -2,502 +2,246 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Fee Receipt #{{ txn.receipt_number }} - TECHPANDA</title>
+  <title>Tax Invoice {{ invoice_number }} - DigiPanda</title>
   <style>
     @page {
       size: a4 portrait;
-      margin: 8mm 12mm 8mm 12mm;
+      margin: 8mm 10mm 8mm 10mm;
+    }
+    @font-face {
+      font-family: 'ArialCustom';
+      src: url('{{ font_path }}');
     }
     body {
-      font-family: Helvetica, Arial, sans-serif;
-      font-size: 9.5pt;
-      color: #192B45;
+      font-family: 'ArialCustom', Arial, Helvetica, sans-serif;
+      font-size: 8.5pt;
+      color: #2d3748;
+      line-height: 1.35;
       margin: 0;
       padding: 0;
     }
-
-    /* 1. Header */
-    .header-table {
+    table {
       width: 100%;
-      background-color: #192B45;
-      color: #FFFFFF;
-      padding: 14px 18px;
     }
-    .header-table td {
-      vertical-align: middle;
-    }
-    .logo-brand {
-      font-size: 18pt;
+    .badge {
+      border: 1px solid #4a5568;
+      border-radius: 12px;
+      padding: 3px 10px;
+      font-size: 8pt;
       font-weight: bold;
-      color: #38BDF8;
-      letter-spacing: -0.5px;
-    }
-    .logo-brand-white {
-      color: #FFFFFF;
-    }
-    .header-divider {
-      color: #64748B;
-      font-size: 16pt;
-      padding: 0 10px;
-    }
-    .receipt-title {
-      font-size: 11pt;
-      font-weight: bold;
-      color: #FFFFFF;
+      color: #2d3748;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .receipt-sub {
-      font-size: 7.5pt;
-      color: #CBD5E1;
-      margin-top: 2px;
-    }
-
-    /* 2. Top Meta & QR */
-    .meta-qr-table {
-      width: 100%;
-      margin-top: 10px;
-      margin-bottom: 8px;
-    }
-    .meta-qr-table td {
-      vertical-align: top;
-    }
-    .verified-pill {
-      background-color: #E6F8F1;
-      color: #07865C;
-      font-size: 7.5pt;
-      font-weight: bold;
-      padding: 3px 8px;
       display: inline-block;
-      text-transform: uppercase;
-      border: 0.5px solid #A7F3D0;
-      margin-bottom: 4px;
     }
-    .doc-heading {
-      font-size: 15pt;
-      font-weight: bold;
-      color: #192B45;
-      margin: 2px 0;
-    }
-    .doc-meta {
-      font-size: 8pt;
-      color: #60718A;
-    }
-    .doc-meta strong {
-      color: #192B45;
-    }
-
-    .qr-box-table {
-      width: 100%;
-      background-color: #F4F8FD;
-      border: 1px solid #D0E5F5;
-      padding: 8px 10px;
-    }
-    .qr-box-table td {
-      vertical-align: middle;
-    }
-    .qr-title {
-      font-size: 8.5pt;
-      font-weight: bold;
-      color: #192B45;
-      margin-bottom: 2px;
-    }
-    .qr-desc {
-      font-size: 7pt;
-      color: #60718A;
-      margin-bottom: 3px;
-    }
-    .qr-secure {
-      font-size: 7pt;
-      font-weight: bold;
-      color: #07865C;
-    }
-
-    /* 3. Hero Amount Card */
-    .hero-table {
-      width: 100%;
-      background-color: #F0FDF8;
-      border: 1px solid #A7F3D0;
-      border-left: 5px solid #07865C;
-      padding: 10px 14px;
-      margin-top: 6px;
-      margin-bottom: 10px;
-    }
-    .hero-table td {
-      vertical-align: middle;
-    }
-    .rupee-circle {
-      width: 34px;
-      height: 34px;
-      background-color: #07865C;
-      color: #FFFFFF;
-      font-size: 18pt;
-      font-weight: bold;
-      text-align: center;
-      line-height: 34px;
-    }
-    .hero-label {
-      font-size: 7.5pt;
-      font-weight: bold;
-      text-transform: uppercase;
-      color: #60718A;
-      letter-spacing: 0.5px;
-    }
-    .hero-amount {
-      font-size: 18pt;
-      font-weight: bold;
-      color: #07865C;
-      margin: 1px 0;
-    }
-    .hero-sub {
-      font-size: 7.5pt;
-      color: #60718A;
-    }
-    .hero-right-box {
-      border-left: 1px solid #A7F3D0;
-      padding-left: 12px;
-    }
-    .hero-status {
-      font-size: 8pt;
-      font-weight: bold;
-      color: #07865C;
-      margin-bottom: 4px;
-    }
-    .hero-line {
-      font-size: 7.5pt;
-      color: #60718A;
-      padding: 1px 0;
-    }
-    .hero-line strong {
-      color: #192B45;
-    }
-
-    /* 4. Section Card */
-    .card-wrap {
-      width: 100%;
-      border: 1px solid #E2E8F0;
-      margin-bottom: 10px;
-    }
-    .card-header-bar {
-      background-color: #F4F8FD;
-      color: #192B45;
-      font-size: 8.5pt;
-      font-weight: bold;
-      padding: 5px 10px;
-      border-bottom: 1px solid #E2E8F0;
-    }
-    .info-table {
-      width: 100%;
-      font-size: 8pt;
-    }
-    .info-table td {
-      padding: 4px 10px;
-      border-bottom: 0.5px solid #F1F5F9;
-    }
-    .info-label {
-      color: #60718A;
-      width: 35%;
-    }
-    .info-val {
-      color: #192B45;
-      font-weight: bold;
-    }
-    .info-val-blue {
-      color: #2563EB;
-      font-weight: bold;
-    }
-
-    /* 5. Two column layout */
-    .two-col-table {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    .two-col-table td {
-      vertical-align: top;
-    }
-    .grid-cell {
-      border: 1px solid #E2E8F0;
-    }
-    .grid-data-table {
-      width: 100%;
-      font-size: 7.8pt;
-    }
-    .grid-data-table td {
-      padding: 4px 8px;
-      border-bottom: 0.5px solid #F1F5F9;
-    }
-    .text-right {
-      text-align: right;
-    }
-    .text-green {
-      color: #07865C;
-      font-weight: bold;
-    }
-    .text-orange {
-      color: #E45A08;
-      font-weight: bold;
-      font-size: 8.5pt;
-    }
-    .row-divider {
-      border-top: 1px solid #CBD5E1;
-    }
-
-    /* 6. Outstanding Balance Alert */
-    .alert-balance-table {
-      width: 100%;
-      background-color: #FFF5EB;
-      border: 1px solid #FCD9BD;
-      padding: 8px 12px;
-      margin-bottom: 10px;
-    }
-    .alert-balance-table td {
-      vertical-align: middle;
-    }
-    .alert-balance-title {
-      font-size: 8.5pt;
-      font-weight: bold;
-      color: #E45A08;
-    }
-    .alert-balance-sub {
-      font-size: 7.5pt;
-      color: #9A3412;
-      margin-top: 2px;
-    }
-    .alert-balance-amount {
-      font-size: 14pt;
-      font-weight: bold;
-      color: #E45A08;
-      text-align: right;
-    }
-
-    /* 7. Notice */
-    .notice-box {
-      width: 100%;
-      background-color: #EBF3FC;
-      border: 1px solid #CDE0F7;
+    .inv-bar {
+      background-color: #f3f4f6;
+      border: 1px solid #e5e7eb;
       padding: 6px 10px;
-      font-size: 7.5pt;
-      color: #1E40AF;
+      margin-top: 10px;
       margin-bottom: 10px;
     }
-
-    /* 8. Footer */
-    .footer-table {
-      width: 100%;
-      border-top: 1px solid #E2E8F0;
-      padding-top: 8px;
-    }
-    .footer-table td {
-      vertical-align: middle;
-    }
-    .footer-contact {
-      font-size: 7.5pt;
-      color: #60718A;
-    }
-    .footer-thankyou {
-      text-align: right;
-      font-size: 11pt;
+    .services-th {
+      border-bottom: 2px solid #000000;
       font-weight: bold;
-      color: #327BC4;
+      font-size: 8.5pt;
+      padding: 6px 4px;
+      color: #1a202c;
     }
-    .footer-sub {
-      font-size: 7pt;
-      color: #60718A;
+    .services-td {
+      padding: 8px 4px;
+      font-size: 8.5pt;
+      border-bottom: 0.5px solid #edf2f7;
+    }
+    .subtotal-td {
+      border-top: 2px solid #000000;
+      border-bottom: 2px solid #000000;
+      font-weight: bold;
+      font-size: 8.5pt;
+      padding: 6px 4px;
+      color: #1a202c;
+    }
+    .summary-table td {
+      padding: 3px 0;
+      font-size: 8.5pt;
+    }
+    .clause-text {
+      font-size: 7.2pt;
+      color: #4a5568;
+      margin-top: 3px;
+      line-height: 1.3;
     }
   </style>
 </head>
 <body>
 
-  <!-- 1. Brand Header -->
-  <table class="header-table" cellpadding="0" cellspacing="0">
+<!-- Header with Logo, Company Details & Badges -->
+<table>
+  <tr>
+    <td style="width: 58%; vertical-align: top;">
+      {% if logo_path %}
+      <img src="{{ logo_path }}" style="height: 38px;" /><br/>
+      {% endif %}
+      <div style="font-weight: bold; font-size: 9.5pt; margin-top: 3px; color: #1a202c;">{{ invoice_config.company_name }}</div>
+      <div style="font-size: 7.5pt; color: #4a5568; margin-top: 2px; line-height: 1.35;">
+        {{ invoice_config.address_lines.0 }}<br/>
+        {{ invoice_config.address_lines.1 }}<br/>
+        Mobile: {{ invoice_config.mobile }}<br/>
+        GSTIN: {{ invoice_config.gstin }}<br/>
+        PAN Number: {{ invoice_config.pan }}<br/>
+        Email: {{ invoice_config.email }}<br/>
+        Website: {{ invoice_config.website }}
+      </div>
+    </td>
+    <td style="width: 42%; vertical-align: top; text-align: right;">
+      <div style="margin-bottom: 6px;">
+        <span class="badge">TAX INVOICE</span>
+      </div>
+      <div>
+        <span class="badge">ORIGINAL FOR RECIPIENT</span>
+      </div>
+    </td>
+  </tr>
+</table>
+
+<!-- Full-Width Invoice Info Bar -->
+<div class="inv-bar">
+  <table>
     <tr>
-      <td style="width: 58%;">
-        <span class="logo-brand">tech<span class="logo-brand-white">panda</span></span>
-        <span class="header-divider">|</span>
-        <span class="receipt-title">OFFICIAL FEE RECEIPT</span>
-        <div class="receipt-sub">Your Learning Journey, Our Priority</div>
-      </td>
-      <td style="width: 42%; text-align: right;">
-        <div style="font-size: 7.5pt; color: #CBD5E1;">{{ branch_name }} &bull; {{ branch_address }}</div>
-      </td>
+      <td style="font-weight: bold; font-size: 8.5pt; color: #1a202c;">Invoice No.: {{ invoice_number }}</td>
+      <td style="text-align: right; font-weight: bold; font-size: 8.5pt; color: #1a202c;">Invoice Date: {{ invoice_date }}</td>
     </tr>
   </table>
+</div>
 
-  <!-- 2. Top Meta & QR Verification -->
-  <table class="meta-qr-table" cellpadding="0" cellspacing="0">
-    <tr>
-      <td style="width: 62%;">
-        <div class="verified-pill">&bull; PAYMENT VERIFIED</div>
-        <div class="doc-heading">Payment Receipt</div>
-        <div class="doc-meta">
-          Receipt Number: <strong>{{ txn.receipt_number }}</strong> &bull; Date: <strong>{{ txn.payment_date|date:"d M Y, h:i A" }}</strong>
-        </div>
-      </td>
-      <td style="width: 38%;">
-        <table class="qr-box-table" cellpadding="0" cellspacing="0">
-          <tr>
-            <td style="width: 54px; text-align: center;">
-              {% if qr_b64 %}
-              <img src="data:image/png;base64,{{ qr_b64 }}" width="50" height="50" style="display: block;" />
-              {% endif %}
-            </td>
-            <td style="padding-left: 8px;">
-              <div class="qr-title">Verify This Receipt</div>
-              <div class="qr-desc">Scan the QR code to verify this receipt online.</div>
-              <div class="qr-secure">&bull; Secure &amp; Authentic</div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-
-  <!-- 3. Hero Amount Card -->
-  <table class="hero-table" cellpadding="0" cellspacing="0">
-    <tr>
-      <td style="width: 58%;">
-        <table cellpadding="0" cellspacing="0">
-          <tr>
-            <td style="padding-right: 10px;">
-              <div class="rupee-circle">INR</div>
-            </td>
-            <td>
-              <div class="hero-label">Amount Received</div>
-              <div class="hero-amount">INR {{ txn.amount|floatformat:2 }}</div>
-              <div class="hero-sub">Paid via {{ txn.payment_method }} &bull; Transaction ID: {{ txn.transaction_reference|default:txn.receipt_number }}</div>
-            </td>
-          </tr>
-        </table>
-      </td>
-      <td style="width: 42%;">
-        <div class="hero-right-box">
-          <div class="hero-status">&bull; Payment Successful</div>
-          <div class="hero-line">Date &amp; Time: <strong>{{ txn.payment_date|date:"d M Y, h:i A" }}</strong></div>
-          <div class="hero-line">Payment Method: <strong>{{ txn.payment_method }}</strong></div>
-          <div class="hero-line">UPI / Txn Ref: <strong>{{ txn.transaction_reference|default:txn.receipt_number }}</strong></div>
-        </div>
-      </td>
-    </tr>
-  </table>
-
-  <!-- 4. Student Information -->
-  <div class="card-wrap">
-    <div class="card-header-bar">&bull; Student Information</div>
-    <table class="info-table" cellpadding="0" cellspacing="0">
-      <tr>
-        <td class="info-label">Student Name</td>
-        <td class="info-val">{{ enrollment.student_name }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">Student ID</td>
-        <td class="info-val">{{ student_id }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">Enrollment Number</td>
-        <td class="info-val-blue">{{ enrollment.enrollment_number }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">Course / Program</td>
-        <td class="info-val">{{ enrollment.product.name|default:"Course Program" }}</td>
-      </tr>
-      <tr>
-        <td class="info-label">Branch / Campus</td>
-        <td class="info-val">{{ branch_name }}</td>
-      </tr>
-    </table>
-  </div>
-
-  <!-- 5. Two-Column Grid: Fee Summary & GST Breakdown -->
-  <table class="two-col-table" cellpadding="0" cellspacing="6">
-    <tr>
-      <!-- Left: Fee Summary -->
-      <td style="width: 50%;">
-        <div class="grid-cell">
-          <div class="card-header-bar">&bull; Fee Summary</div>
-          <table class="grid-data-table" cellpadding="0" cellspacing="0">
-            <tr>
-              <td>Total Course Fee</td>
-              <td class="text-right"><strong>INR {{ total_payable|floatformat:2 }}</strong></td>
-            </tr>
-            <tr>
-              <td>Previously Paid Amount</td>
-              <td class="text-right">INR {{ prior_paid|floatformat:2 }}</td>
-            </tr>
-            <tr>
-              <td class="text-green">Current Paid Amount</td>
-              <td class="text-right text-green">INR {{ this_payment|floatformat:2 }}</td>
-            </tr>
-            <tr>
-              <td class="text-green">Total Paid to Date</td>
-              <td class="text-right text-green">INR {{ cumulative_paid|floatformat:2 }}</td>
-            </tr>
-            <tr class="row-divider">
-              <td><strong>Outstanding Balance</strong></td>
-              <td class="text-right text-orange">INR {{ remaining_balance_after_txn|floatformat:2 }}</td>
-            </tr>
-          </table>
-        </div>
-      </td>
-
-      <!-- Right: GST Breakdown -->
-      <td style="width: 50%;">
-        <div class="grid-cell">
-          <div class="card-header-bar">&bull; GST Breakdown</div>
-          <table class="grid-data-table" cellpadding="0" cellspacing="0">
-            <tr>
-              <td>GST Treatment</td>
-              <td class="text-right"><strong>{{ enrollment.get_gst_treatment_display|default:enrollment.gst_treatment }}</strong></td>
-            </tr>
-            <tr>
-              <td>Taxable Course Fee</td>
-              <td class="text-right">INR {{ taxable_amount|floatformat:2 }}</td>
-            </tr>
-            <tr>
-              <td>GST Rate &amp; Component</td>
-              <td class="text-right">INR {{ tax_amount|floatformat:2 }} ({{ tax_rate|floatformat:2 }}% GST)</td>
-            </tr>
-            <tr class="row-divider">
-              <td><strong>Total Payable</strong></td>
-              <td class="text-right"><strong>INR {{ total_payable|floatformat:2 }}</strong></td>
-            </tr>
-          </table>
-        </div>
-      </td>
-    </tr>
-  </table>
-
-  <!-- 6. Outstanding Balance Alert (Shown when balance > 0) -->
-  {% if remaining_balance_after_txn > 0 %}
-  <table class="alert-balance-table" cellpadding="0" cellspacing="0">
-    <tr>
-      <td style="width: 65%;">
-        <div class="alert-balance-title">Outstanding Balance</div>
-        <div class="alert-balance-sub">Next installment due date: <strong>{{ next_installment.due_date|date:"d M Y"|default:enrollment.next_installment_date|date:"d M Y"|default:"To be scheduled" }}</strong></div>
-      </td>
-      <td style="width: 35%;">
-        <div class="alert-balance-amount">INR {{ remaining_balance_after_txn|floatformat:2 }}</div>
-      </td>
-    </tr>
-  </table>
+<!-- Customer Billing Details (BILL TO) -->
+<div style="margin-top: 6px; margin-bottom: 12px;">
+  <div style="font-size: 7.5pt; font-weight: bold; color: #718096; text-transform: uppercase;">BILL TO</div>
+  <div style="font-size: 10pt; font-weight: bold; color: #1a202c; margin-top: 1px;">{{ customer_name }}</div>
+  {% if customer_mobile %}
+  <div style="font-size: 8pt; color: #4a5568; margin-top: 2px;">Mobile: {{ customer_mobile }}</div>
   {% endif %}
+  {% if customer_address %}
+  <div style="font-size: 8pt; color: #4a5568;">{{ customer_address }}</div>
+  {% endif %}
+  <div style="font-size: 8pt; color: #4a5568;">Place of Supply: {{ place_of_supply }}</div>
+</div>
 
-  <!-- 7. Notice -->
-  <div class="notice-box">
-    &bull; This is an official system generated electronic receipt issued by TECHPANDA. No signature is required.
-  </div>
-
-  <!-- 8. Footer -->
-  <table class="footer-table" cellpadding="0" cellspacing="0">
+<!-- Services / Course Table -->
+<table>
+  <thead>
     <tr>
-      <td style="width: 60%;" class="footer-contact">
-        www.techpanda.in &bull; support@techpanda.in &bull; +91 98765 43210
-      </td>
-      <td style="width: 40%; text-align: right;">
-        <div class="footer-thankyou">Thank You!</div>
-        <div class="footer-sub">for choosing TECHPANDA</div>
-      </td>
+      <th class="services-th" style="text-align: left; width: 45%;">SERVICES</th>
+      <th class="services-th" style="text-align: right; width: 18%;">RATE</th>
+      <th class="services-th" style="text-align: right; width: 18%;">TAX</th>
+      <th class="services-th" style="text-align: right; width: 19%;">AMOUNT</th>
     </tr>
-  </table>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="services-td" style="font-weight: bold; color: #1a202c;">{{ course_name }}</td>
+      <td class="services-td" style="text-align: right;">₹ {{ taxable_rate|floatformat:2 }}</td>
+      <td class="services-td" style="text-align: right;">₹ {{ tax_amount|floatformat:2 }} ({{ tax_rate|floatformat:0 }}%)</td>
+      <td class="services-td" style="text-align: right; font-weight: bold; color: #1a202c;">₹ {{ total_line_amount|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td class="subtotal-td">SUBTOTAL</td>
+      <td class="subtotal-td"></td>
+      <td class="subtotal-td" style="text-align: right;">₹ {{ tax_amount|floatformat:2 }}</td>
+      <td class="subtotal-td" style="text-align: right;">₹ {{ total_line_amount|floatformat:2 }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Bottom Split: Bank Details & Terms (Left) vs Financial Summary & Signature (Right) -->
+<table style="margin-top: 14px;">
+  <tr>
+    <!-- Left Column: Bank Details, Terms & Verification -->
+    <td style="width: 53%; vertical-align: top; padding-right: 15px;">
+      <div style="font-size: 8.5pt; font-weight: bold; color: #1a202c; text-transform: uppercase; margin-bottom: 4px;">
+        BANK DETAILS
+      </div>
+      <div style="font-size: 7.5pt; color: #2d3748; line-height: 1.4;">
+        <strong>Name:</strong> {{ bank_details.name }}<br/>
+        <strong>IFSC:</strong> {{ bank_details.ifsc }}<br/>
+        <strong>Account No:</strong> {{ bank_details.account_number }}<br/>
+        <strong>Bank:</strong> {{ bank_details.bank_name }}
+      </div>
+
+      <div style="font-size: 8.5pt; font-weight: bold; color: #1a202c; text-transform: uppercase; margin-top: 12px; margin-bottom: 4px;">
+        TERMS AND CONDITIONS
+      </div>
+      {% for clause in terms_and_conditions %}
+      <div class="clause-text">
+        <strong>{{ forloop.counter }}.</strong> {{ clause }}
+      </div>
+      {% endfor %}
+
+      {% if verification_code %}
+      <div style="margin-top: 15px; font-size: 6.5pt; color: #718096; line-height: 1.2;">
+        <strong>Digital Verification:</strong> {{ verification_code }}<br/>
+        Scan or verify online at CRM Portal
+      </div>
+      {% endif %}
+    </td>
+
+    <!-- Right Column: Financial Breakdown, Amount in Words & Signatory -->
+    <td style="width: 47%; vertical-align: top; padding-left: 10px;">
+      <table class="summary-table">
+        <tr>
+          <td style="color: #4a5568;">Taxable Amount</td>
+          <td style="text-align: right;">₹ {{ taxable_amount|floatformat:2 }}</td>
+        </tr>
+        {% if is_interstate %}
+        <tr>
+          <td style="color: #4a5568;">IGST @{{ igst_rate|floatformat:0 }}%</td>
+          <td style="text-align: right;">₹ {{ igst_amount|floatformat:2 }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td style="color: #4a5568;">CGST @{{ cgst_rate|floatformat:0 }}%</td>
+          <td style="text-align: right;">₹ {{ cgst_amount|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td style="color: #4a5568;">SGST @{{ sgst_rate|floatformat:0 }}%</td>
+          <td style="text-align: right;">₹ {{ sgst_amount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        <tr style="border-top: 1px solid #cbd5e0; border-bottom: 1px solid #cbd5e0;">
+          <td style="font-weight: bold; font-size: 9pt; padding: 4px 0; color: #1a202c;">Total Amount</td>
+          <td style="text-align: right; font-weight: bold; font-size: 9pt; padding: 4px 0; color: #1a202c;">₹ {{ total_invoice_amount|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td style="color: #4a5568; padding-top: 5px;">Received Amount</td>
+          <td style="text-align: right; padding-top: 5px; color: #2d3748;">₹ {{ received_amount|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: bold; color: #1a202c;">Balance</td>
+          <td style="text-align: right; font-weight: bold; color: #1a202c;">₹ {{ balance_amount|floatformat:2 }}</td>
+        </tr>
+      </table>
+
+      <!-- Total Amount in Words -->
+      <div style="margin-top: 10px; font-size: 7.5pt; color: #4a5568;">
+        <strong>Total Amount (in words)</strong><br/>
+        <span style="font-style: italic; color: #1a202c; font-size: 8pt;">{{ total_amount_in_words }}</span>
+      </div>
+
+      <!-- Authorised Signatory Block -->
+      <div style="margin-top: 10px; text-align: right;">
+        {% if signature_path %}
+        <div style="margin-bottom: -32px;">
+          <img src="{{ signature_path }}" width="125" height="125" style="width: 125px; height: 125px;" alt="Authorized Signatory" />
+        </div>
+        {% else %}
+        <div style="height: 35px;"></div>
+        {% endif %}
+        <div style="font-size: 7.2pt; font-weight: bold; color: #2d3748; border-top: 1px solid #718096; padding-top: 3px; display: inline-block; min-width: 150px;">
+          {{ signatory_label }}
+        </div>
+      </div>
+    </td>
+  </tr>
+</table>
 
 </body>
 </html>

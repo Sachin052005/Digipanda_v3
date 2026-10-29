@@ -49,6 +49,22 @@ class FollowUp(models.Model):
     class Meta:
         ordering = ['follow_up_date', 'follow_up_time']
 
+    def clean(self):
+        super().clean()
+        if self.lead_id and self.follow_up_date and self.status == FollowUpStatus.PENDING:
+            qs = FollowUp.objects.filter(
+                lead_id=self.lead_id,
+                follow_up_date=self.follow_up_date,
+                status=FollowUpStatus.PENDING
+            )
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                from django.core.exceptions import ValidationError
+                raise ValidationError({
+                    'follow_up_date': f"A pending follow-up is already scheduled for this lead on {self.follow_up_date}."
+                })
+
     def __str__(self):
         lead_name = self.lead.name if self.lead else "Unknown Lead"
         return f"Follow-up with {lead_name} on {self.follow_up_date} ({self.status})"

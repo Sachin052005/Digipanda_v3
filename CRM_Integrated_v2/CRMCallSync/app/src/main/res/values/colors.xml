@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Background & Canvas Surfaces -->
+    <color name="bg_canvas">#F1F5F9</color>
+    <color name="bg_canvas_subtle">#E2E8F0</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="card_bg_elevated">#F8FAFC</color>
+    <color name="card_border">#E2E8F0</color>
+    <color name="card_border_glow">#BFDBFE</color>
+
+    <!-- Brand Gradients & Dark Accents -->
+    <color name="primary_dark">#0F172A</color>
+    <color name="primary_navy">#1E293B</color>
+    <color name="primary_slate">#334155</color>
+    <color name="gradient_blue_start">#2563EB</color>
+    <color name="gradient_blue_end">#1D4ED8</color>
+    <color name="gradient_cyan_start">#06B6D4</color>
+    <color name="gradient_cyan_end">#0284C7</color>
+    <color name="gradient_emerald_start">#10B981</color>
+    <color name="gradient_emerald_end">#059669</color>
+    <color name="gradient_dark_start">#1E293B</color>
+    <color name="gradient_dark_end">#0F172A</color>
+
+    <!-- Vibrant Accents -->
+    <color name="accent_blue">#2563EB</color>
+    <color name="accent_blue_soft">#EFF6FF</color>
+    <color name="accent_blue_border">#BFDBFE</color>
+
+    <color name="accent_cyan">#06B6D4</color>
+    <color name="accent_cyan_soft">#ECFEFF</color>
+    <color name="accent_cyan_border">#A5F3FC</color>
+
+    <color name="accent_emerald">#10B981</color>
+    <color name="accent_emerald_soft">#ECFDF5</color>
+    <color name="accent_emerald_border">#A7F3D0</color>
+
+    <color name="accent_violet">#8B5CF6</color>
+    <color name="accent_violet_soft">#F5F3FF</color>
+    <color name="accent_violet_border">#DDD6FE</color>
+
+    <color name="accent_amber">#F59E0B</color>
+    <color name="accent_amber_soft">#FFFBEB</color>
+    <color name="accent_amber_border">#FDE68A</color>
+
+    <color name="danger_red">#EF4444</color>
+    <color name="danger_soft">#FEF2F2</color>
+    <color name="danger_border">#FECACA</color>
+
+    <!-- Typography -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- Form Inputs & Controls -->
+    <color name="input_bg">#F8FAFC</color>
+    <color name="input_bg_focused">#FFFFFF</color>
+    <color name="input_border">#CBD5E1</color>
+    <color name="input_border_focused">#2563EB</color>
+
+    <!-- Ripples & Shadows -->
+    <color name="ripple_light">#1A0F172A</color>
+    <color name="ripple_blue">#332563EB</color>
+    <color name="ripple_emerald">#3310B981</color>
+    <color name="radar_ping_glow">#4010B981</color>
+</resources>

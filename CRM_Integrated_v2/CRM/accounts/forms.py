@@ -4,19 +4,51 @@ from django.contrib.auth.password_validation import validate_password
 from .models import User, UserRole
 
 class LoginForm(forms.Form):
-    username = forms.CharField(
-        label="Username or Email",
-        max_length=150,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter username or email address', 'autofocus': True})
+    email = forms.CharField(
+        label="Email Address",
+        max_length=254,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter your email address',
+            'autofocus': True,
+            'autocomplete': 'email',
+            'id': 'id_email',
+        })
     )
     password = forms.CharField(
         label="Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter password'})
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter password',
+            'autocomplete': 'current-password',
+            'id': 'id_password',
+        })
     )
     remember_me = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Transparently accept 'username' parameter if submitted by legacy or automated tests
+        if self.data:
+            if 'email' not in self.data and 'username' in self.data:
+                self.data = self.data.copy()
+                self.data['email'] = self.data['username']
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if not email:
+            raise ValidationError("Email address is required.")
+        return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        email_val = cleaned_data.get('email')
+        if email_val:
+            cleaned_data['username'] = email_val
+        return cleaned_data
 
 class BaseRegistrationForm(forms.ModelForm):
     password = forms.CharField(
@@ -38,10 +70,21 @@ class BaseRegistrationForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+91 XXXXX XXXXX'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'username' in self.fields:
+            self.fields['username'].required = False
+
     def clean_username(self):
-        username = self.cleaned_data.get('username')
-        if User.objects.filter(username__iexact=username).exists():
-            raise ValidationError("A user with this username already exists.")
+        username = (self.cleaned_data.get('username') or '').strip()
+        from accounts.services import generate_unique_username
+        if not username:
+            first = self.cleaned_data.get('first_name') or ''
+            last = self.cleaned_data.get('last_name') or ''
+            email = self.cleaned_data.get('email') or ''
+            username = generate_unique_username(first_name=first, last_name=last, email=email)
+        elif User.objects.filter(username__iexact=username).exists():
+            username = generate_unique_username(first_name=username)
         return username
 
     def clean_email(self):
@@ -156,10 +199,21 @@ class AdminReceptionistCreateForm(forms.ModelForm):
                 role=UserRole.RECEPTIONIST,
                 email=user.email
             )
-        user.set_unusable_password()
-        user.must_change_password = True
-        user.is_active = False
-        user.invitation_status = 'PENDING'
+        password = self.data.get('password')
+        if password:
+            user.set_password(password)
+            user.must_change_password = False
+            user.invitation_status = 'ACCEPTED'
+        else:
+            user.set_unusable_password()
+            user.must_change_password = True
+            user.invitation_status = 'PENDING'
+
+        if 'is_active' in self.cleaned_data:
+            user.is_active = self.cleaned_data['is_active']
+        elif user.is_active is None:
+            user.is_active = True
+
         if commit:
             user.save()
         return user
@@ -299,3 +353,37 @@ class AdminCreateUserForm(forms.ModelForm):
 
 
 
+
+
+class UserProfileUpdateForm(forms.ModelForm):
+    """
+    Self-service profile update form for authenticated users.
+    Permits editing personal details (first name, last name, email, phone)
+    while strictly guarding immutable system attributes (username, role, branch, permissions).
+    """
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'phone']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'user@example.com'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+91 XXXXX XXXXX'}),
+        }
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip()
+        if not email:
+            raise ValidationError("Email address cannot be empty.")
+        existing = User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).first()
+        if existing:
+            raise ValidationError("This email address is already in use by another user.")
+        return email
+
+    def clean_phone(self):
+        phone = (self.cleaned_data.get('phone') or '').strip()
+        if phone:
+            digits = ''.join(c for c in phone if c.isdigit())
+            if len(digits) < 10 or len(digits) > 15:
+                raise ValidationError("Please enter a valid phone number (10 to 15 digits).")
+        return phone

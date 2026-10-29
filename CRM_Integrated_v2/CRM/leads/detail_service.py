@@ -17,7 +17,7 @@ from products.models import Product
 from accounts.permissions import can_edit_lead, can_assign_lead, get_accessible_branch_ids
 from leads.duplicates import normalize_phone, normalize_email, find_duplicate_lead
 from activities.utils import log_activity
-from .models import Lead, LeadStatus, LeadOwnerType
+from .models import Lead, LeadStatus, LeadOwnerType, PipelineStatus
 from calls.models import CallHistory, CallOutcome, CallStatus
 from followups.models import FollowUp, FollowUpStatus
 from .handoff_service import change_lead_status, reassign_lead
@@ -216,13 +216,18 @@ def build_lead_detail_context(lead, user=None):
     two-column structured fields (Column 1 and Column 2), inline edit metadata,
     and call-logging context.
     """
-    # 1. Notes parsed attributes lookup
+    # 1. Notes parsed attributes lookup & custom_fields inspection
     notes_attrs = extract_parsed_lead_attributes(lead.notes)
+    cf = dict(lead.custom_fields or {})
+    field_origins = dict(cf.get('_field_origins') or {})
 
     def find_val(keys, default=''):
         for k in keys:
-            if k in notes_attrs and notes_attrs[k]:
-                return notes_attrs[k]
+            if k in cf and cf[k] and str(cf[k]).strip() not in ('', 'Empty', 'None', 'null'):
+                return str(cf[k]).strip()
+        for k in keys:
+            if k in notes_attrs and notes_attrs[k] and str(notes_attrs[k]).strip() not in ('', 'Empty', 'None', 'null'):
+                return str(notes_attrs[k]).strip()
         return default
 
     # 2. Assignee info & avatar initials
@@ -282,14 +287,14 @@ def build_lead_detail_context(lead, user=None):
 
     # 5. Field values mapping
     val_degree = find_val(['degree', 'qualification', 'education'])
-    val_passed_out = find_val(['passedout', 'passed out', 'year of pass', 'passing year', 'yop'])
+    val_passed_out = find_val(['passed_out', 'passedout', 'passed out', 'year of pass', 'passing year', 'yop'])
     val_purpose = find_val(['purpose', 'objective', 'reason', 'intent'])
     val_base_branch = lead.branch.name if lead.branch else find_val(['branch', 'base branch'])
-    val_pref_branch = ", ".join(lead.get_all_branch_names()) if lead.secondary_branches.exists() else find_val(['preferred branch', 'pref branch'])
-    val_working_status = find_val(['working status', 'employment status', 'working', 'job status', 'status of work'])
-    val_total_exp = find_val(['total experience', 'experience', 'exp', 'work experience'])
-    val_pref_exam_loc = find_val(['preferred exam location', 'exam location', 'exam city'])
-    val_join_pref = find_val(['how would you like to join the course', 'joining preference', 'mode', 'course mode', 'batch mode'])
+    val_pref_branch = ", ".join(lead.get_all_branch_names()) if lead.secondary_branches.exists() else find_val(['pref_branch', 'preferred branch', 'pref branch'])
+    val_working_status = find_val(['working_status', 'working status', 'employment status', 'working', 'job status', 'status of work'])
+    val_total_exp = find_val(['total_experience', 'total experience', 'experience', 'exp', 'work experience'])
+    val_pref_exam_loc = find_val(['pref_exam_loc', 'preferred exam location', 'exam location', 'exam city'])
+    val_join_pref = find_val(['join_preference', 'how would you like to join the course', 'joining preference', 'mode', 'course mode', 'batch mode'])
     val_lead_source = lead.channel.name if lead.channel else (lead.source or find_val(['lead source', 'source']))
     val_college = find_val(['college', 'university', 'institution', 'college name'])
     val_retargeted = find_val(['retargeted', 'retarget', 're-target', 'is retargeted'])
@@ -313,7 +318,17 @@ def build_lead_detail_context(lead, user=None):
     branch_options = [{'value': b.name, 'label': b.name} for b in Branch.objects.filter(status='Active').order_by('name')]
     product_options = [{'value': p.name, 'label': p.name} for p in Product.objects.filter(status='Active').order_by('name')]
     channel_options = [{'value': c.name, 'label': c.name} for c in Channel.objects.filter(status='Active').order_by('name')]
-    status_options = [{'value': s[0], 'label': s[1]} for s in LeadStatus.choices]
+    
+    # Load customizable pipeline statuses from PipelineStatus model with fallback
+    active_pipeline_statuses = list(PipelineStatus.objects.filter(is_active=True).order_by('sort_order', 'name'))
+    if active_pipeline_statuses:
+        status_options = [{'value': s.name, 'label': s.name} for s in active_pipeline_statuses]
+        # Guarantee that if lead's current status is not in the active list, it is still represented so it doesn't get wiped
+        if lead.status and not any(opt['value'] == lead.status for opt in status_options):
+            status_options.insert(0, {'value': lead.status, 'label': f"{lead.status} (Current)"})
+    else:
+        status_options = [{'value': s[0], 'label': s[1]} for s in LeadStatus.choices]
+
     working_status_options = [{'value': s, 'label': s} for s in ['Working professional', 'Student', 'Looking for job', 'Fresher', 'Career Gap', 'Freelancer', 'Other']]
     purpose_options = [{'value': p, 'label': p} for p in ['Career Transition', 'Upskilling', 'Placement Assistance', 'Higher Studies', 'Certification', 'Interview Preparation', 'Other']]
     join_pref_options = [{'value': j, 'label': j} for j in ['Online', 'Classroom', 'Hybrid', 'Weekend Batch', 'Weekday Batch']]
@@ -331,7 +346,7 @@ def build_lead_detail_context(lead, user=None):
 
     can_change_base_branch = user.is_admin_user or getattr(user, 'role', '') == UserRole.SALES_HEAD if user and user.is_authenticated else False
 
-    # 6. Column 1 Fields (Left Column)
+    # 6. Column 1 Fields (Left Column) - Aligned to TeleCRM Reference
     col1_fields = [
         {
             'key': 'phone',
@@ -339,6 +354,7 @@ def build_lead_detail_context(lead, user=None):
             'type': 'phone',
             'control_type': 'phone',
             'is_editable': True,
+            'is_primary': True,
             'icon': 'phone',
             'badge': 'SIM',
             'flag': '🇮🇳',
@@ -347,26 +363,41 @@ def build_lead_detail_context(lead, user=None):
             'is_empty': not bool(lead.phone),
         },
         {
-            'key': 'degree',
-            'label': 'Degree',
-            'type': 'text',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'T',
-            'value': val_degree or 'Empty',
-            'raw_value': val_degree or '',
-            'is_empty': not bool(val_degree),
-        },
-        {
             'key': 'passed_out',
             'label': 'PassedOut',
             'type': 'text',
             'control_type': 'number',
             'is_editable': True,
+            'is_primary': True,
             'icon': 'T',
             'value': val_passed_out or 'Empty',
             'raw_value': val_passed_out or '',
             'is_empty': not bool(val_passed_out),
+        },
+        {
+            'key': 'working_status',
+            'label': 'Working status',
+            'type': 'select',
+            'control_type': 'select',
+            'is_editable': True,
+            'is_primary': True,
+            'options': working_status_options,
+            'icon': 'select',
+            'value': val_working_status or 'Empty',
+            'raw_value': val_working_status or '',
+            'is_empty': not bool(val_working_status),
+        },
+        {
+            'key': 'designation',
+            'label': 'Designation',
+            'type': 'text',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': True,
+            'icon': 'T',
+            'value': val_designation or 'Empty',
+            'raw_value': val_designation or '',
+            'is_empty': not bool(val_designation),
         },
         {
             'key': 'base_branch',
@@ -374,6 +405,7 @@ def build_lead_detail_context(lead, user=None):
             'type': 'select',
             'control_type': 'select',
             'is_editable': can_change_base_branch,
+            'is_primary': False,
             'read_only_reason': 'Base Branch modification requires administrator or sales head authorization.' if not can_change_base_branch else '',
             'options': branch_options,
             'icon': 'select',
@@ -382,23 +414,12 @@ def build_lead_detail_context(lead, user=None):
             'is_empty': not bool(val_base_branch),
         },
         {
-            'key': 'working_status',
-            'label': 'Working status',
-            'type': 'select',
-            'control_type': 'select',
-            'is_editable': True,
-            'options': working_status_options,
-            'icon': 'select',
-            'value': val_working_status or 'Empty',
-            'raw_value': val_working_status or '',
-            'is_empty': not bool(val_working_status),
-        },
-        {
             'key': 'assignee_name',
             'label': 'Assignee Name',
             'type': 'text',
             'control_type': 'select',
             'is_editable': can_assign,
+            'is_primary': False,
             'read_only_reason': 'Lead reassignment requires manager or administrator authorization.' if not can_assign else '',
             'options': assignee_options,
             'icon': 'T',
@@ -412,6 +433,7 @@ def build_lead_detail_context(lead, user=None):
             'type': 'text',
             'control_type': 'select',
             'is_editable': True,
+            'is_primary': False,
             'options': join_pref_options,
             'icon': 'T',
             'value': val_join_pref or 'Empty',
@@ -424,6 +446,7 @@ def build_lead_detail_context(lead, user=None):
             'type': 'select',
             'control_type': 'select',
             'is_editable': True,
+            'is_primary': False,
             'options': channel_options,
             'icon': 'select',
             'value': val_lead_source or 'Empty',
@@ -436,6 +459,7 @@ def build_lead_detail_context(lead, user=None):
             'type': 'select',
             'control_type': 'select',
             'is_editable': True,
+            'is_primary': False,
             'options': retargeted_options,
             'icon': 'select',
             'value': val_retargeted or 'Empty',
@@ -443,10 +467,23 @@ def build_lead_detail_context(lead, user=None):
             'is_empty': not bool(val_retargeted),
         },
         {
+            'key': 'location',
+            'label': 'Location',
+            'type': 'text',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': False,
+            'icon': 'T',
+            'value': val_location or 'Empty',
+            'raw_value': val_location or '',
+            'is_empty': not bool(val_location),
+        },
+        {
             'key': 'captured_on',
             'label': 'Captured On',
             'type': 'date',
             'is_editable': False,
+            'is_primary': False,
             'read_only_reason': 'System-managed field: Automatically calculated from intake timestamp.',
             'icon': 'calendar',
             'value': captured_on_str,
@@ -454,11 +491,139 @@ def build_lead_detail_context(lead, user=None):
             'info_tooltip': lead.created_at.strftime('%Y-%m-%d %H:%M') if lead.created_at else '',
             'is_empty': False,
         },
+    ]
+
+    # 7. Column 2 Fields (Right Column) - Aligned to TeleCRM Reference
+    col2_fields = [
+        {
+            'key': 'degree',
+            'label': 'Degree',
+            'type': 'text',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': True,
+            'icon': 'T',
+            'value': val_degree or 'Empty',
+            'raw_value': val_degree or '',
+            'is_empty': not bool(val_degree),
+        },
+        {
+            'key': 'purpose',
+            'label': 'Purpose',
+            'type': 'select',
+            'control_type': 'select',
+            'is_editable': True,
+            'is_primary': True,
+            'options': purpose_options,
+            'icon': 'select',
+            'value': val_purpose or 'Empty',
+            'raw_value': val_purpose or '',
+            'is_empty': not bool(val_purpose),
+        },
+        {
+            'key': 'total_experience',
+            'label': 'Total Experience',
+            'type': 'text',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': True,
+            'icon': 'T',
+            'value': val_total_exp or 'Empty',
+            'raw_value': val_total_exp or '',
+            'is_empty': not bool(val_total_exp),
+        },
+        {
+            'key': 'courses',
+            'label': 'Courses',
+            'type': 'select',
+            'control_type': 'select',
+            'is_editable': True,
+            'is_primary': True,
+            'options': product_options,
+            'icon': 'select',
+            'value': val_courses or 'Empty',
+            'raw_value': lead.product.name if lead.product else (val_courses or ''),
+            'is_empty': not bool(val_courses),
+        },
+        {
+            'key': 'pref_branch',
+            'label': 'Preferred Branch',
+            'type': 'select',
+            'control_type': 'select',
+            'is_editable': True,
+            'is_primary': False,
+            'options': branch_options,
+            'icon': 'select',
+            'value': val_pref_branch or 'Empty',
+            'raw_value': val_pref_branch or '',
+            'is_empty': not bool(val_pref_branch),
+        },
+        {
+            'key': 'pref_exam_loc',
+            'label': 'Preferred Exam Location',
+            'type': 'text',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': False,
+            'icon': 'T',
+            'value': val_pref_exam_loc or 'Empty',
+            'raw_value': val_pref_exam_loc or '',
+            'is_empty': not bool(val_pref_exam_loc),
+        },
+        {
+            'key': 'college',
+            'label': 'College',
+            'type': 'select',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': False,
+            'icon': 'select',
+            'value': val_college or 'Empty',
+            'raw_value': val_college or '',
+            'is_empty': not bool(val_college),
+        },
+        {
+            'key': 'current_ctc',
+            'label': 'Current CTC',
+            'type': 'text',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': False,
+            'icon': 'T',
+            'value': val_current_ctc or 'Empty',
+            'raw_value': val_current_ctc or '',
+            'is_empty': not bool(val_current_ctc),
+        },
+        {
+            'key': 'expected_ctc',
+            'label': 'Expected CTC',
+            'type': 'text',
+            'control_type': 'text',
+            'is_editable': True,
+            'is_primary': False,
+            'icon': 'T',
+            'value': val_expected_ctc or 'Empty',
+            'raw_value': val_expected_ctc or '',
+            'is_empty': not bool(val_expected_ctc),
+        },
+        {
+            'key': 'center_visit',
+            'label': 'Center Visit Scheduled Date',
+            'type': 'date',
+            'control_type': 'datetime',
+            'is_editable': True,
+            'is_primary': False,
+            'icon': 'calendar',
+            'value': val_center_visit or 'Empty',
+            'raw_value': val_center_visit_raw or '',
+            'is_empty': not bool(val_center_visit),
+        },
         {
             'key': 'last_activity_on',
             'label': 'Last Activity On',
             'type': 'date',
             'is_editable': False,
+            'is_primary': False,
             'read_only_reason': 'System-managed field: Automatically updated from calls and interactions.',
             'icon': 'calendar',
             'value': last_activity_on_str,
@@ -471,6 +636,7 @@ def build_lead_detail_context(lead, user=None):
             'label': 'Modified On',
             'type': 'date',
             'is_editable': False,
+            'is_primary': False,
             'read_only_reason': 'System-managed field: Automatically updated on record save.',
             'icon': 'calendar',
             'value': modified_on_str,
@@ -478,196 +644,26 @@ def build_lead_detail_context(lead, user=None):
             'info_tooltip': lead.updated_at.strftime('%Y-%m-%d %H:%M') if lead.updated_at else '',
             'is_empty': False,
         },
-        {
-            'key': 'designation',
-            'label': 'Designation',
-            'type': 'text',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'T',
-            'value': val_designation or 'Empty',
-            'raw_value': val_designation or '',
-            'is_empty': not bool(val_designation),
-        },
-        {
-            'key': 'location',
-            'label': 'Location',
-            'type': 'text',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'T',
-            'value': val_location or 'Empty',
-            'raw_value': val_location or '',
-            'is_empty': not bool(val_location),
-        },
-        {
-            'key': 'expected_ctc',
-            'label': 'Expected CTC',
-            'type': 'text',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'T',
-            'value': val_expected_ctc or 'Empty',
-            'raw_value': val_expected_ctc or '',
-            'is_empty': not bool(val_expected_ctc),
-        },
-    ]
-
-    # 7. Column 2 Fields (Right Column)
-    col2_fields = [
-        {
-            'key': 'pref_exam_loc',
-            'label': 'Preferred Exam Location',
-            'type': 'text',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'T',
-            'value': val_pref_exam_loc or 'Empty',
-            'raw_value': val_pref_exam_loc or '',
-            'is_empty': not bool(val_pref_exam_loc),
-        },
-        {
-            'key': 'purpose',
-            'label': 'Purpose',
-            'type': 'select',
-            'control_type': 'select',
-            'is_editable': True,
-            'options': purpose_options,
-            'icon': 'select',
-            'value': val_purpose or 'Empty',
-            'raw_value': val_purpose or '',
-            'is_empty': not bool(val_purpose),
-        },
-        {
-            'key': 'pref_branch',
-            'label': 'Preferred Branch',
-            'type': 'select',
-            'control_type': 'select',
-            'is_editable': True,
-            'options': branch_options,
-            'icon': 'select',
-            'value': val_pref_branch or 'Empty',
-            'raw_value': val_pref_branch or '',
-            'is_empty': not bool(val_pref_branch),
-        },
-        {
-            'key': 'total_experience',
-            'label': 'Total Experience',
-            'type': 'text',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'T',
-            'value': val_total_exp or 'Empty',
-            'raw_value': val_total_exp or '',
-            'is_empty': not bool(val_total_exp),
-        },
-        {
-            'key': 'pipeline_substatus',
-            'label': 'Pipeline Sub-Status',
-            'type': 'select',
-            'control_type': 'select',
-            'is_editable': True,
-            'options': status_options,
-            'icon': 'select',
-            'value': lead.status or 'Empty',
-            'raw_value': lead.status or '',
-            'is_empty': not bool(lead.status),
-        },
-        {
-            'key': 'college',
-            'label': 'College',
-            'type': 'select',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'select',
-            'value': val_college or 'Empty',
-            'raw_value': val_college or '',
-            'is_empty': not bool(val_college),
-        },
-        {
-            'key': 'capture_frequency',
-            'label': 'Capture Frequency',
-            'type': 'number',
-            'is_editable': False,
-            'read_only_reason': 'System-managed field: Automatically calculated from lead deduplication frequency.',
-            'icon': '#',
-            'value': val_capture_freq or '1',
-            'raw_value': val_capture_freq or '1',
-            'is_empty': False,
-        },
-        {
-            'key': 'created_on',
-            'label': 'Created On',
-            'type': 'date',
-            'is_editable': False,
-            'read_only_reason': 'System-managed field: Original record creation timestamp.',
-            'icon': 'calendar',
-            'value': created_on_str,
-            'raw_value': str(lead.created_at),
-            'info_tooltip': lead.created_at.strftime('%Y-%m-%d %H:%M') if lead.created_at else '',
-            'is_empty': False,
-        },
-        {
-            'key': 'last_activity_type',
-            'label': 'Last Activity Type',
-            'type': 'select',
-            'is_editable': False,
-            'read_only_reason': 'System-managed field: Generated automatically based on the latest interaction type.',
-            'icon': 'select',
-            'value': last_activity_type,
-            'raw_value': last_activity_type,
-            'is_empty': False,
-        },
-        {
-            'key': 'status_updated_on',
-            'label': 'Status Last Updated On',
-            'type': 'date',
-            'is_editable': False,
-            'read_only_reason': 'System-managed field: Timestamp of when the pipeline status last changed.',
-            'icon': 'calendar',
-            'value': status_updated_str,
-            'raw_value': status_updated_str,
-            'info_tooltip': 'Timestamp of last status modification',
-            'is_empty': False,
-        },
-        {
-            'key': 'courses',
-            'label': 'Courses',
-            'type': 'select',
-            'control_type': 'select',
-            'is_editable': True,
-            'options': product_options,
-            'icon': 'select',
-            'value': val_courses or 'Empty',
-            'raw_value': lead.product.name if lead.product else (val_courses or ''),
-            'is_empty': not bool(val_courses),
-        },
-        {
-            'key': 'current_ctc',
-            'label': 'Current CTC',
-            'type': 'text',
-            'control_type': 'text',
-            'is_editable': True,
-            'icon': 'T',
-            'value': val_current_ctc or 'Empty',
-            'raw_value': val_current_ctc or '',
-            'is_empty': not bool(val_current_ctc),
-        },
-        {
-            'key': 'center_visit',
-            'label': 'Center Visit Scheduled Date',
-            'type': 'date',
-            'control_type': 'datetime',
-            'is_editable': True,
-            'icon': 'calendar',
-            'value': val_center_visit or 'DD/MM/YYYY HH:mm:ss',
-            'raw_value': val_center_visit_raw,
-            'is_empty': not bool(val_center_visit),
-        },
     ]
 
     # 8. Navigation position (< Prev, Next >, position "X of Y")
     nav = get_lead_navigation(lead, user)
+
+    # 9. Status and Activity History defaults
+    status_history = list(lead.status_history.select_related('changed_by').order_by('-created_at')[:25])
+    calls = list(lead.calls.select_related('caller').order_by('-call_started_at'))
+    followups = list(lead.followups.order_by('-created_at'))
+    timeline_count = len(calls) + len(status_history) + len(followups)
+    if hasattr(lead, 'enrollment') and lead.enrollment:
+        timeline_count += lead.enrollment.payments.count()
+
+    # 10. Tag fields with origin (Facebook, WhatsApp, Google Sheets, etc.)
+    for f in col1_fields + col2_fields:
+        f['origin'] = field_origins.get(f['key'], '')
+
+    # 11. Generate Smart Pre-Call Pitch
+    from .qualification import generate_smart_precall_pitch
+    smart_pitch = generate_smart_precall_pitch(lead)
 
     return {
         'lead': lead,
@@ -675,6 +671,10 @@ def build_lead_detail_context(lead, user=None):
         'assignee_initials': assignee_initials,
         'col1_fields': col1_fields,
         'col2_fields': col2_fields,
+        'status_history': status_history,
+        'calls': calls,
+        'followups': followups,
+        'timeline_count': timeline_count,
         'whatsapp_phone': whatsapp_phone,
         'phone_display': phone_display,
         'chat_conversation': chat_conversation,
@@ -682,7 +682,9 @@ def build_lead_detail_context(lead, user=None):
         'call_outcome_choices': CallOutcome.choices,
         'call_status_choices': CallStatus.choices,
         'nav': nav,
+        'smart_pitch': smart_pitch,
     }
+
 
 
 def update_lead_attribute(lead, user, field_key, new_value, request=None):
@@ -804,7 +806,9 @@ def update_lead_attribute(lead, user, field_key, new_value, request=None):
     # 6. Status / Pipeline Sub-Status
     elif field_key in ('status', 'pipeline_substatus'):
         valid_choices = [c[0] for c in LeadStatus.choices]
-        if val_str not in valid_choices:
+        custom_choices = list(PipelineStatus.objects.filter(is_active=True).values_list('name', flat=True))
+        all_valid = set(valid_choices + custom_choices)
+        if val_str not in all_valid:
             raise ValidationError(f"Invalid status '{val_str}'.")
         old_display = lead.status
         change_lead_status(lead, val_str, user, remarks="Updated via Inline Lead Details Edit")
@@ -824,7 +828,20 @@ def update_lead_attribute(lead, user, field_key, new_value, request=None):
         lead.notes = update_lead_notes_attribute(lead.notes, 'courses', new_display if new_display != 'Empty' else '')
         lead.save(update_fields=['notes'])
 
-    # 8. Lead Source 1
+    # 8. Rating (1-5 Stars Priority)
+    elif field_key == 'rating':
+        try:
+            r_int = int(val_str)
+            if not (0 <= r_int <= 5):
+                r_int = 0
+        except (ValueError, TypeError):
+            r_int = 0
+        old_display = str(lead.rating or 0)
+        lead.rating = r_int
+        lead.save(update_fields=['rating', 'updated_at'])
+        new_display = str(r_int)
+
+    # 9. Lead Source 1
     elif field_key == 'lead_source':
         old_display = lead.channel.name if lead.channel else (lead.source or 'Empty')
         if val_str and val_str != 'Empty':
@@ -908,6 +925,15 @@ def update_lead_attribute(lead, user, field_key, new_value, request=None):
         lead.notes = update_lead_notes_attribute(lead.notes, field_key, val_str if val_str != 'Empty' else '')
         lead.save(update_fields=['notes', 'updated_at'])
         new_display = val_str if val_str != 'Empty' else 'Empty'
+
+    # Synchronize to lead.custom_fields with 'Manual' origin
+    cf = dict(lead.custom_fields or {})
+    cf[field_key] = val_str if val_str != 'Empty' else ''
+    field_origins = dict(cf.get('_field_origins') or {})
+    field_origins[field_key] = 'Manual'
+    cf['_field_origins'] = field_origins
+    lead.custom_fields = cf
+    lead.save(update_fields=['custom_fields', 'updated_at'])
 
     # Record Activity Log
     log_activity(

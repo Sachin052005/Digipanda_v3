@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Add Receptionist - TECHPANDA CRM{% endblock %}
+{% block title %}Add Receptionist - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 24px;">
@@ -32,15 +32,7 @@
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-        <div class="form-group">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 0;">Username / Login ID</label>
-            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.72rem; font-weight: 600;">Auto-generated</span>
-          </div>
-          {{ form.username }}
-          {% if form.username.errors %}<div style="color: #dc2626; font-size: 0.8rem; margin-top: 4px;">{{ form.username.errors.0 }}</div>{% endif %}
-          <div id="username-preview-hint" style="color: #64748b; font-size: 0.775rem; margin-top: 4px;">Generated automatically from First &amp; Last Name</div>
-        </div>
+        {{ form.username.as_hidden }}
         <div class="form-group">
           <label style="display: block; font-size: 0.825rem; font-weight: 600; color: #334155; margin-bottom: 6px;">Assigned Branch *</label>
           {{ form.branch }}

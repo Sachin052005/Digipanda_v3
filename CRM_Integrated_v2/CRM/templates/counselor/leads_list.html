@@ -1,19 +1,19 @@
 {% extends 'base.html' %}
-{% block title %}My Leads - TECHPANDA CRM{% endblock %}
+{% block title %}My Leads - DigipandaCRM{% endblock %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
   <div class="page-title-group">
-    <h1>My Leads</h1>
-    <p>Leads handed off to you for counseling</p>
+    <h1 style="font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0 0 4px 0;">My Leads</h1>
+    <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 0;">Leads handed off to you for counseling</p>
   </div>
-  <div class="page-actions">
+  <div class="page-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
     <div style="display: inline-flex; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-md); padding: 3px; box-shadow: var(--tp-shadow-sm);">
-      <span class="btn btn-sm" style="padding: 5px 12px; font-weight: 700; color: #ffffff; background: var(--tp-primary-600); border: none; border-radius: var(--tp-radius-sm);">
+      <span class="btn btn-sm tp-btn-sm" style="padding: 5px 12px; font-weight: 700; color: #ffffff; background: var(--tp-primary-600); border: none; border-radius: var(--tp-radius-sm);">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
         Table View
       </span>
-      <a href="{% url 'leads_kanban' %}" class="btn btn-sm" style="padding: 5px 12px; font-weight: 600; color: var(--tp-text-muted); background: transparent; border: none; border-radius: var(--tp-radius-sm);">
+      <a href="{% url 'leads_kanban' %}" class="btn btn-sm tp-btn-sm" style="padding: 5px 12px; font-weight: 600; color: var(--tp-text-muted); background: transparent; border: none; border-radius: var(--tp-radius-sm);">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
         Kanban Board
       </a>
@@ -21,15 +21,15 @@
   </div>
 </div>
 
-<div class="filter-card">
-  <form method="GET" class="filter-form">
-    <div class="filter-col" style="flex: 2;">
-      <label>Search</label>
-      <input type="text" name="search" class="form-control" placeholder="Search name, phone, email..." value="{{ search_query }}">
+<div class="filter-card tp-card" style="padding: 16px 20px; margin-bottom: 20px;">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;">
+    <div class="filter-col" style="flex: 2; min-width: 220px;">
+      <label class="tp-label">Search</label>
+      <input type="text" name="search" class="form-control tp-input" placeholder="Search name, phone, email..." value="{{ search_query }}">
     </div>
-    <div class="filter-col">
-      <label>Status</label>
-      <select name="status" class="form-select">
+    <div class="filter-col" style="flex: 1; min-width: 150px;">
+      <label class="tp-label">Status</label>
+      <select name="status" class="form-select tp-select">
         <option value="">All Statuses</option>
         {% for code, label in statuses %}
         <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
@@ -37,12 +37,12 @@
       </select>
     </div>
     <div style="display: flex; gap: 8px;">
-      <a href="{% url 'counselor_leads_list' %}" class="btn btn-secondary">Reset</a>
+      <a href="{% url 'counselor_leads_list' %}" class="btn btn-secondary tp-btn-secondary">Reset</a>
     </div>
   </form>
 </div>
 
-<div class="crm-card">
+<div class="crm-card tp-card">
   <div class="table-responsive">
     <table class="crm-table">
       <thead>

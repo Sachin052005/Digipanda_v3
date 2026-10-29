@@ -78,8 +78,28 @@ def push_to_crm(fb_lead):
     if fb_lead.lead_id:
         return fb_lead.lead
     try:
+        raw_phone = (fb_lead.phone or "").strip()
+        # Handle cases where lead omitted phone number or provided test tool dummy data
+        if not raw_phone or "<test lead:" in raw_phone.lower():
+            log.info("Facebook lead %s has no valid phone number (%r); skipping CRM contact intake.", fb_lead.leadgen_id, raw_phone)
+            fb_lead.crm_result = "skipped_no_phone"
+            fb_lead.crm_error = f"Lead omitted phone number or submitted test dummy data ({raw_phone or 'empty'}); skipped CRM lead creation."
+            fb_lead.save(update_fields=["crm_result", "crm_error"])
+            return None
+
+        # Build comprehensive payload with all form answers + ad/campaign/form context
+        payload = dict(fb_lead.all_answers or {})
+        if fb_lead.city and 'city' not in payload:
+            payload['city'] = fb_lead.city
+        if fb_lead.campaign_name:
+            payload['campaign_name'] = fb_lead.campaign_name
+        if fb_lead.ad_name:
+            payload['ad_name'] = fb_lead.ad_name
+        if fb_lead.form_name:
+            payload['form_name'] = fb_lead.form_name
+
         lead, created = intake.intake_lead(
-            phone=fb_lead.phone,
+            phone=raw_phone,
             source=SOURCE,
             channel_name=CHANNEL,
             name=fb_lead.full_name,
@@ -89,8 +109,11 @@ def push_to_crm(fb_lead):
             note="📘 Facebook Lead Ad — " + (_summary(fb_lead) or "new form submission"),
             provider_event_id=fb_lead.leadgen_id,
             incoming_timestamp=getattr(fb_lead, 'created_time', None),
-            data_payload=fb_lead.all_answers or {},
+            data_payload=payload,
         )
+
+        from leads.qualification import autofill_lead_qualification
+        autofill_lead_qualification(lead, payload, source='Facebook')
 
     except Exception as exc:  # bad / missing phone, DB problems: keep the Facebook record, show the error
         log.warning("Facebook lead %s not added to CRM: %s", fb_lead.leadgen_id, exc)

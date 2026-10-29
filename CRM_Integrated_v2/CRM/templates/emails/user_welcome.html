@@ -182,7 +182,7 @@
         <div class="greeting-badge">Welcome aboard!</div>
         <h1>Hello {{ user_name }},</h1>
         <p>
-          Your CRM account has been successfully created by your administrator. You can now set up your password and access the CRM using your assigned login ID.
+          Your CRM account has been successfully created by your administrator. You can now set up your password and access the CRM using your email address.
         </p>
 
         <!-- ACCOUNT DETAILS -->
@@ -194,8 +194,8 @@
               <td style="padding: 6px 0; color: #0f172a; font-weight: 600; font-size: 14px;">{{ user_name }}</td>
             </tr>
             <tr>
-              <td style="padding: 6px 0; width: 110px; color: #64748b; font-weight: 600; font-size: 14px;">Login ID:</td>
-              <td style="padding: 6px 0; color: #0284c7; font-weight: 700; font-size: 15px; font-family: monospace, Consolas, Monaco;">{{ username }}</td>
+              <td style="padding: 6px 0; width: 110px; color: #64748b; font-weight: 600; font-size: 14px;">Email Address:</td>
+              <td style="padding: 6px 0; color: #0284c7; font-weight: 700; font-size: 15px; font-family: monospace, Consolas, Monaco;">{{ target_user.email|default:user.email|default:username }}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; width: 110px; color: #64748b; font-weight: 600; font-size: 14px;">Role:</td>

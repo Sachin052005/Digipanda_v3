@@ -413,7 +413,7 @@
 .th-google-ad { background-color: #fefce8 !important; color: #ca8a04 !important; min-width: 140px; }
 .th-google-seo { background-color: #faf5ff !important; color: #9333ea !important; min-width: 140px; }
 .th-instagram { background-color: #fdf2f8 !important; color: #db2777 !important; min-width: 105px; }
-.th-google-call { background-color: #f0fdf4 !important; color: #16a34a !important; min-width: 110px; }
+.th-google-call { background-color: #ecfeff !important; color: #0891b2 !important; min-width: 110px; }
 .th-influencer { background-color: #f5f3ff !important; color: #7c3aed !important; min-width: 105px; }
 .th-status-normal { background-color: #f8fafc !important; color: #475569 !important; font-weight: 600 !important; min-width: 95px; }
 
@@ -424,7 +424,7 @@
 [data-theme="dark"] .th-google-ad { background-color: rgba(202, 138, 4, 0.2) !important; color: #facc15 !important; }
 [data-theme="dark"] .th-google-seo { background-color: rgba(147, 51, 234, 0.2) !important; color: #c084fc !important; }
 [data-theme="dark"] .th-instagram { background-color: rgba(219, 39, 119, 0.2) !important; color: #f472b6 !important; }
-[data-theme="dark"] .th-google-call { background-color: rgba(22, 163, 74, 0.2) !important; color: #4ade80 !important; }
+[data-theme="dark"] .th-google-call { background-color: rgba(6, 182, 212, 0.2) !important; color: #22d3ee !important; }
 [data-theme="dark"] .th-influencer { background-color: rgba(124, 58, 237, 0.2) !important; color: #a78bfa !important; }
 [data-theme="dark"] .th-status-normal { background-color: #1e293b !important; color: #94a3b8 !important; }
 
@@ -446,7 +446,7 @@
 .tp-branch-summary-table td.td-ad { font-weight: 600; color: #ca8a04; }
 .tp-branch-summary-table td.td-seo { font-weight: 600; color: #9333ea; }
 .tp-branch-summary-table td.td-ig { font-weight: 600; color: #db2777; }
-.tp-branch-summary-table td.td-call { font-weight: 600; color: #16a34a; }
+.tp-branch-summary-table td.td-call { font-weight: 600; color: #0891b2; }
 .tp-branch-summary-table td.td-influencer { font-weight: 600; color: #7c3aed; }
 .tp-branch-summary-table td.td-status-normal { font-weight: 500; color: var(--text-muted, #64748b); }
 
@@ -469,7 +469,7 @@
 .tp-branch-summary-table tfoot td.td-ad { background-color: #fefce8; color: #ca8a04; font-weight: 800; }
 .tp-branch-summary-table tfoot td.td-seo { background-color: #faf5ff; color: #9333ea; font-weight: 800; }
 .tp-branch-summary-table tfoot td.td-ig { background-color: #fdf2f8; color: #db2777; font-weight: 800; }
-.tp-branch-summary-table tfoot td.td-call { background-color: #f0fdf4; color: #16a34a; font-weight: 800; }
+.tp-branch-summary-table tfoot td.td-call { background-color: #ecfeff; color: #0891b2; font-weight: 800; }
 .tp-branch-summary-table tfoot td.td-influencer { background-color: #f5f3ff; color: #7c3aed; font-weight: 800; }
 .tp-branch-summary-table tfoot td.td-status-normal { background-color: var(--bg-card, #ffffff); color: var(--text-main, #475569); font-weight: 700; }
 
@@ -480,12 +480,80 @@
 [data-theme="dark"] .tp-branch-summary-table tfoot td.td-ad { background-color: rgba(202, 138, 4, 0.2); color: #facc15; }
 [data-theme="dark"] .tp-branch-summary-table tfoot td.td-seo { background-color: rgba(147, 51, 234, 0.2); color: #c084fc; }
 [data-theme="dark"] .tp-branch-summary-table tfoot td.td-ig { background-color: rgba(219, 39, 119, 0.2); color: #f472b6; }
-[data-theme="dark"] .tp-branch-summary-table tfoot td.td-call { background-color: rgba(22, 163, 74, 0.2); color: #4ade80; }
+[data-theme="dark"] .tp-branch-summary-table tfoot td.td-call { background-color: rgba(6, 182, 212, 0.2); color: #22d3ee; }
 [data-theme="dark"] .tp-branch-summary-table tfoot td.td-influencer { background-color: rgba(124, 58, 237, 0.2); color: #a78bfa; }
 [data-theme="dark"] .tp-branch-summary-table tfoot td.td-status-normal { background-color: #1e293b; color: #94a3b8; }
 
 /* ==========================================================================
-   4. Bottom 3 Charts Row
+   Segmented View Switcher Tabs
+   ========================================================================== */
+.tp-reports-view-switcher {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 24px 0 16px 0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tp-segmented-tabs {
+  display: inline-flex;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  gap: 4px;
+}
+
+.tp-tab-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-main, #334155);
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.tp-tab-btn:hover:not(.active) {
+  background: var(--bg-body, #f1f5f9);
+  color: var(--color-primary, #2563eb);
+}
+
+.tp-tab-btn.active {
+  background: var(--color-primary, #2563eb) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+[data-theme="dark"] .tp-segmented-tabs {
+  background: var(--bg-card, #1e293b);
+  border-color: var(--border-color, #334155);
+}
+
+[data-theme="dark"] .tp-tab-btn {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .tp-tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .tp-tab-btn.active {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   4. Visual Charts Row (Primary)
    ========================================================================== */
 .report-charts-row {
   display: grid;

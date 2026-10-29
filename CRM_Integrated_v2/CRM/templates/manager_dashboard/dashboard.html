@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Sales Head Dashboard - TECHPANDA CRM{% endblock %}
+{% block title %}Sales Head Dashboard - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
@@ -13,17 +13,51 @@
   </div>
 </div>
 
-<!-- My Branches -->
+<!-- My Branches (Interactive & Clickable Filter Pills) -->
 <div class="crm-card tp-card" style="margin-bottom: 24px;">
-  <div class="crm-card-header tp-card-header">
-    <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary);">Assigned Branches</h3>
-    <a href="{% url 'sales_head_branch_heads_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">Branch Heads</a>
+  <div class="crm-card-header tp-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div>
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0 0 2px 0;">Assigned Branches</h3>
+      <span style="font-size: 0.8rem; color: var(--tp-text-muted);">
+        {% if selected_branch %}
+          Filtering dashboard KPI metrics for <strong>{{ selected_branch.name }}</strong> &bull; <a href="?{% if period and period != 'all' %}period={{ period }}&{% endif %}{% if start_date and end_date %}period=custom&start_date={{ start_date }}&end_date={{ end_date }}&{% endif %}" style="color: var(--tp-primary-600); text-decoration: underline; font-weight: 600;">Reset to All Branches</a>
+        {% else %}
+          Click any branch to filter dashboard KPI card counts for that branch
+        {% endif %}
+      </span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <a href="{% url 'sales_head_branch_heads_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">Branch Heads</a>
+    </div>
   </div>
-  <div class="crm-card-body tp-card-body" style="display: flex; flex-wrap: wrap; gap: 10px;">
+  <div class="crm-card-body tp-card-body" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+    <!-- All Branches Pill -->
+    <a href="?{% if period and period != 'all' %}period={{ period }}&{% endif %}{% if start_date and end_date %}period=custom&start_date={{ start_date }}&end_date={{ end_date }}&{% endif %}" 
+       class="badge tp-badge tp-branch-pill {% if not selected_branch_id %}active{% endif %}" 
+       title="View metrics across all assigned branches">
+      <span class="tp-branch-dot"></span> All Branches
+    </a>
+
+    <!-- Individual Branch Pills -->
     {% for b in my_branches %}
-    <span class="badge tp-badge" style="background: var(--tp-primary-50); color: var(--tp-primary-700); border: 1px solid var(--tp-primary-200); font-size: 0.82rem; padding: 6px 14px;">{{ b.name }}</span>
+      {% if selected_branch_id == b.id %}
+        <!-- Active branch: clicking toggles back to All Branches -->
+        <a href="?{% if period and period != 'all' %}period={{ period }}&{% endif %}{% if start_date and end_date %}period=custom&start_date={{ start_date }}&end_date={{ end_date }}&{% endif %}" 
+           class="badge tp-badge tp-branch-pill active" 
+           title="Active: {{ b.name }} (Click to show all branches)">
+          <span class="tp-branch-dot"></span> {{ b.name }}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </a>
+      {% else %}
+        <!-- Inactive branch: clicking filters dashboard by this branch -->
+        <a href="?branch={{ b.id }}{% if period and period != 'all' %}&period={{ period }}{% endif %}{% if start_date and end_date %}&period=custom&start_date={{ start_date }}&end_date={{ end_date }}{% endif %}" 
+           class="badge tp-badge tp-branch-pill" 
+           title="Click to filter dashboard KPIs for {{ b.name }}">
+          <span class="tp-branch-dot"></span> {{ b.name }}
+        </a>
+      {% endif %}
     {% empty %}
-    <span style="color: var(--tp-text-muted); font-size: 0.875rem;">No branches assigned yet.</span>
+      <span style="color: var(--tp-text-muted); font-size: 0.875rem;">No branches assigned yet.</span>
     {% endfor %}
   </div>
 </div>
@@ -31,36 +65,31 @@
 <!-- PERIOD & DATE FILTER BAR -->
 <div class="filter-card tp-card" style="padding: 14px 18px; margin-bottom: 24px;">
   <form method="get" class="filter-form" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    {% if selected_branch_id %}
+    <input type="hidden" name="branch" value="{{ selected_branch_id }}">
+    {% endif %}
+
     <!-- Preset Period Buttons -->
     <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
       <span style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); text-transform: uppercase; margin-right: 4px;">Period:</span>
-      <a href="?period=all" class="btn {% if period == 'all' or not period %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">All Time</a>
-      <a href="?period=today" class="btn {% if period == 'today' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">Today</a>
-      <a href="?period=week" class="btn {% if period == 'week' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Week</a>
-      <a href="?period=month" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Month</a>
+      <a href="?period=all{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="btn {% if period == 'all' or not period %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">All Time</a>
+      <a href="?period=today{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="btn {% if period == 'today' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">Today</a>
+      <a href="?period=week{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="btn {% if period == 'week' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Week</a>
+      <a href="?period=month{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Month</a>
     </div>
 
-    <!-- Custom Date Range -->
-    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-      <input type="hidden" name="period" value="custom">
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">From</span>
-        <input type="date" name="start_date" class="form-control tp-input" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ start_date }}">
-      </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">To</span>
-        <input type="date" name="end_date" class="form-control tp-input" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ end_date }}">
-      </div>
-      {% if period != 'all' and period %}
-        <a href="?period=all" class="btn btn-secondary tp-btn-secondary" style="font-size: 0.8rem; padding: 5px 8px; color: #ef4444;" title="Reset filter">&times;</a>
-      {% endif %}
+    <!-- Custom Date Range (Smart Calendar Popover) -->
+    <div class="tp-smart-date-container">
+      <input type="hidden" name="period" value="{% if period == 'custom' %}custom{% else %}all{% endif %}">
+      <input type="date" name="start_date" value="{{ start_date }}" style="display: none;">
+      <input type="date" name="end_date" value="{{ end_date }}" style="display: none;">
     </div>
   </form>
 </div>
 
-<!-- Sales Head KPI Grid (Clickable Cards) -->
-<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
-  <a href="{% url 'manager_leads_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view team leads">
+<!-- Sales Head KPI Grid (Clickable Cards with Branch Scope) -->
+<div class="kpi-grid tp-kpi-grid-6 tp-stagger-container" style="gap: 12px; margin-bottom: 20px;">
+  <a href="{% url 'manager_leads_list' %}{% if selected_branch_id %}?branch={{ selected_branch_id }}{% endif %}" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view team leads{% if selected_branch %} for {{ selected_branch.name }}{% endif %}">
     <div class="kpi-info">
       <h4>My Team Leads</h4>
       <div class="kpi-value" style="color: var(--tp-primary-600);">{{ my_leads_count }}</div>
@@ -70,7 +99,7 @@
     </div>
   </a>
 
-  <a href="{% url 'manager_telecallers_list' %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view my telecallers">
+  <a href="{% url 'manager_telecallers_list' %}{% if selected_branch_id %}?branch={{ selected_branch_id }}{% endif %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view telecallers{% if selected_branch %} for {{ selected_branch.name }}{% endif %}">
     <div class="kpi-info">
       <h4>My Telecallers</h4>
       <div class="kpi-value" style="color: #10b981;">{{ my_telecallers_count }}</div>
@@ -80,7 +109,7 @@
     </div>
   </a>
 
-  <a href="{% url 'manager_calls_list' %}?date=today" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view today's calls">
+  <a href="{% url 'manager_calls_list' %}?date=today{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view today's calls{% if selected_branch %} for {{ selected_branch.name }}{% endif %}">
     <div class="kpi-info">
       <h4>Today's Calls</h4>
       <div class="kpi-value" style="color: #0284c7;">{{ todays_calls_count }}</div>
@@ -90,7 +119,7 @@
     </div>
   </a>
 
-  <a href="{% url 'manager_calls_list' %}?status=Completed" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view completed calls">
+  <a href="{% url 'manager_calls_list' %}?status=Completed{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view completed calls{% if selected_branch %} for {{ selected_branch.name }}{% endif %}">
     <div class="kpi-info">
       <h4>Completed Calls</h4>
       <div class="kpi-value" style="color: #10b981;">{{ completed_calls_count }}</div>
@@ -100,7 +129,7 @@
     </div>
   </a>
 
-  <a href="{% url 'manager_followups_list' %}?status=Pending" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view pending follow-ups">
+  <a href="{% url 'manager_followups_list' %}?status=Pending{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view pending follow-ups{% if selected_branch %} for {{ selected_branch.name }}{% endif %}">
     <div class="kpi-info">
       <h4>Pending Follow-ups</h4>
       <div class="kpi-value" style="color: #f59e0b;">{{ pending_followups_count }}</div>
@@ -110,7 +139,7 @@
     </div>
   </a>
 
-  <a href="{% url 'manager_followups_list' %}?status=Overdue" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view overdue follow-ups">
+  <a href="{% url 'manager_followups_list' %}?status=overdue{% if selected_branch_id %}&branch={{ selected_branch_id }}{% endif %}" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; display: flex; cursor: pointer;" title="Click to view overdue follow-ups{% if selected_branch %} for {{ selected_branch.name }}{% endif %}">
     <div class="kpi-info">
       <h4>Overdue Follow-ups</h4>
       <div class="kpi-value" style="color: #ef4444; font-weight: 800;">{{ overdue_followups_count }}</div>
@@ -122,10 +151,10 @@
 </div>
 
 <!-- Telecaller Performance Table -->
-<div class="crm-card">
-  <div class="crm-card-header">
+<div class="crm-card tp-card" style="margin-bottom: 24px;">
+  <div class="crm-card-header tp-card-header">
     <h3>Telecaller Performance Overview</h3>
-    <a href="{% url 'manager_telecallers_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    <a href="{% url 'manager_telecallers_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">View All</a>
   </div>
   <div class="table-responsive">
     <table class="crm-table">
@@ -145,9 +174,9 @@
         <tr>
           <td>
             <strong>{{ t.get_full_name|default:t.username }}</strong>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">@{{ t.username }}</div>
+            <div style="font-size: 0.75rem; color: var(--tp-text-muted);">@{{ t.username }}</div>
           </td>
-          <td><span class="badge badge-manager">{{ t.lead_count }}</span></td>
+          <td><span class="badge tp-badge" style="background: var(--tp-primary-50); color: var(--tp-primary-700); font-weight: 600;">{{ t.lead_count }}</span></td>
           <td>{{ t.call_count }}</td>
           <td><span class="badge badge-completed">{{ t.completed_calls }}</span></td>
           <td><span class="badge badge-pending">{{ t.followup_count }}</span></td>
@@ -155,7 +184,7 @@
             {% if t.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-inactive">Inactive</span>{% endif %}
           </td>
           <td style="text-align: right;">
-            <a href="{% url 'manager_telecaller_detail' t.pk %}" class="btn btn-secondary btn-sm">Monitor</a>
+            <a href="{% url 'manager_telecaller_detail' t.pk %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">Monitor</a>
           </td>
         </tr>
         {% empty %}
@@ -173,24 +202,22 @@
 </div>
 
 <!-- Lead Distribution Chart & Recent Calls -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+<div class="tp-grid-2col" style="gap: 24px; margin-bottom: 24px;">
   <!-- Chart.js Lead Pipeline -->
-  <div class="crm-card">
-    <div class="crm-card-header">
-      <h3>Team Lead Pipeline</h3>
+  <div class="tp-chart-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary); margin: 0;">Team Lead Pipeline</h3>
     </div>
-    <div class="crm-card-body">
-      <div style="max-height: 280px; position: relative;">
-        <canvas id="managerLeadStatusChart"></canvas>
-      </div>
+    <div style="height: 270px; position: relative;">
+      <canvas id="managerLeadStatusChart"></canvas>
     </div>
   </div>
 
   <!-- Recent Calls -->
-  <div class="crm-card">
-    <div class="crm-card-header">
+  <div class="crm-card tp-card">
+    <div class="crm-card-header tp-card-header">
       <h3>Recent Team Calls</h3>
-      <a href="{% url 'manager_calls_list' %}" class="btn btn-secondary btn-sm">View All</a>
+      <a href="{% url 'manager_calls_list' %}" class="btn btn-secondary btn-sm tp-btn-secondary tp-btn-sm">View All</a>
     </div>
     <div class="table-responsive">
       <table class="crm-table">
@@ -211,7 +238,7 @@
             <td><span class="badge badge-telecaller">{{ c.call_outcome }}</span></td>
           </tr>
           {% empty %}
-          <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No calls logged today.</td></tr>
+          <tr><td colspan="4" style="text-align: center; color: var(--tp-text-muted); padding: 20px;">No calls logged today.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -229,28 +256,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const labels = Object.keys(rawData);
     const data = Object.values(rawData);
 
-    if (labels.length === 0) {
-      labels.push('No Leads Yet');
-      data.push(0);
-    }
-
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: {
+    if (window.TPCharts) {
+      window.TPCharts.createDoughnut(ctx, {
         labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom' }
+        data: data,
+        centerLabel: 'TEAM LEADS',
+        cutout: '74%',
+        legendPosition: 'bottom'
+      });
+    } else {
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['No Leads Yet'],
+          datasets: [{
+            data: data.length ? data : [0],
+            backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: { legend: { position: 'bottom' } }
         }
-      }
-    });
+      });
+    }
   }
 });
 </script>

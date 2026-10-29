@@ -1,46 +1,69 @@
-Payment Receipt — {{ enrollment_number }} — {{ transaction_reference|default:receipt_number }}
+======================================================================
+TAX INVOICE — ORIGINAL FOR RECIPIENT
+DigiPanda
+======================================================================
 
-Dear {{ student_name }},
+DigiPanda
+{{ invoice_config.address_lines.0 }}
+{{ invoice_config.address_lines.1 }}
+Mobile: {{ invoice_config.mobile }}
+GSTIN: {{ invoice_config.gstin }} | PAN: {{ invoice_config.pan }}
+Email: {{ invoice_config.email }} | Website: {{ invoice_config.website }}
 
-We have received and verified your payment. Here is your official fee receipt:
+----------------------------------------------------------------------
+Invoice No.: {{ invoice_number }}
+Invoice Date: {{ invoice_date }}
+----------------------------------------------------------------------
 
-RECEIPT SUMMARY:
-- Receipt Number: {{ receipt_number }}
-- Payment Date: {{ payment_date|date:"d M Y, h:i A"|default:payment_date }}
-- Amount Received: ₹{{ amount_received|floatformat:2 }}
-- Payment Method: {{ payment_method }}
-- Transaction Reference: {{ transaction_reference|default:"N/A" }}
+BILL TO:
+{{ customer_name }}
+{% if customer_mobile %}Mobile: {{ customer_mobile }}{% endif %}
+{% if customer_address %}{{ customer_address }}{% endif %}
+Place of Supply: {{ place_of_supply }}
 
-STUDENT & ACADEMIC INFORMATION:
-- Student Name: {{ student_name }}
-- Student ID: {{ student_id }}
-- Enrollment Number: {{ enrollment_number }}
-- Course / Program: {{ course_name }}
-- Branch / Campus: {{ branch_name|default:"Main Campus" }}
+----------------------------------------------------------------------
+SERVICES & FEE BREAKDOWN:
+----------------------------------------------------------------------
+Service / Course: {{ course_name }}
+Taxable Rate: ₹ {{ taxable_rate|floatformat:2 }}
+Tax Amount: ₹ {{ tax_amount|floatformat:2 }} ({{ tax_rate|floatformat:0 }}%)
+Line Total: ₹ {{ total_line_amount|floatformat:2 }}
 
-FINANCIAL LEDGER & BALANCES:
-- Total Course Fee: ₹{{ total_course_fee|floatformat:2 }}
-- Previously Paid Amount: ₹{{ previously_paid|floatformat:2 }}
-- Current Paid Amount: ₹{{ amount_received|floatformat:2 }}
-- Total Paid to Date: ₹{{ total_paid_to_date|floatformat:2 }}
-- Outstanding Balance: ₹{{ outstanding_balance|floatformat:2 }}
-{% if next_installment_due_date %}- Next Installment Due Date: {{ next_installment_due_date|date:"d M Y"|default:next_installment_due_date }}{% endif %}
+SUBTOTAL: ₹ {{ total_line_amount|floatformat:2 }}
 
-GST ACCOUNTING BREAKDOWN:
-- Treatment: {{ gst_treatment|default:"Exclusive of GST" }}
-- Taxable Course Fee: ₹{{ taxable_amount|floatformat:2 }}
-- GST Component: ₹{{ tax_amount|floatformat:2 }} ({{ tax_rate }}% GST)
-- Total Payable: ₹{{ total_course_fee|floatformat:2 }}
+----------------------------------------------------------------------
+FINANCIAL SUMMARY:
+----------------------------------------------------------------------
+Taxable Amount: ₹ {{ taxable_amount|floatformat:2 }}
+{% if is_interstate %}
+IGST @{{ igst_rate|floatformat:0 }}%: ₹ {{ igst_amount|floatformat:2 }}
+{% else %}
+CGST @{{ cgst_rate|floatformat:0 }}%: ₹ {{ cgst_amount|floatformat:2 }}
+SGST @{{ sgst_rate|floatformat:0 }}%: ₹ {{ sgst_amount|floatformat:2 }}
+{% endif %}
+Total Amount: ₹ {{ total_invoice_amount|floatformat:2 }}
+Received Amount: ₹ {{ received_amount|floatformat:2 }}
+Remaining Balance: ₹ {{ balance_amount|floatformat:2 }}
 
-ONLINE VERIFICATION & AUDIT:
-An official PDF copy of this receipt is attached to this email.
-{% if verification_url %}You can also verify and view this receipt online at:
-{{ verification_url }}{% endif %}
+Total Amount (in words):
+{{ total_amount_in_words }}
 
-This is an official system-generated electronic receipt issued by {{ company_name|default:"TECHPANDA" }}. No signature is required.
+----------------------------------------------------------------------
+BANK DETAILS:
+----------------------------------------------------------------------
+Name: {{ bank_details.name }}
+IFSC: {{ bank_details.ifsc }}
+Account No: {{ bank_details.account_number }}
+Bank: {{ bank_details.bank_name }}
 
-Regards,
-{{ company_name|default:"TECHPANDA" }} Finance & Accounts Department
-Branch: {{ branch_name|default:"Main Campus" }}
-Support: support@techpanda.in | +91 98765 43210
-Website: https://www.techpanda.in
+----------------------------------------------------------------------
+TERMS AND CONDITIONS:
+----------------------------------------------------------------------
+1. Enrollment and Fees: Fees once paid for the training program are non-refundable and non-transferable under any circumstances.
+2. Course Access: Access to course materials, online platforms, and software licenses is granted for the duration of the course only and may not be shared with others.
+
+======================================================================
+AUTHORISED SIGNATORY FOR DigiPanda
+======================================================================
+An official PDF copy of this Tax Invoice is attached to this email.
+For questions, contact admin@digipanda.com or call 9884678282.

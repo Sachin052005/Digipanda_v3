@@ -1,9 +1,184 @@
+
+/* ==========================================================================
+   Modern SaaS Modal System
+   ========================================================================== */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-box {
+    background: var(--bg-surface, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    width: 100%;
+    color: var(--text-primary, #0f172a);
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border-color, rgba(0, 0, 0, 0.05));
+    overflow: hidden;
+    animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .modal-box,
+body.in-flow-builder .modal-box {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.modal-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #f8fafc;
+    letter-spacing: -0.01em;
+}
+
+.modal-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.modal-close-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.form-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-input, .form-control {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f8fafc;
+    padding: 9px 12px;
+    font-size: 13px;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.form-input:focus, .form-control:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+    background: #243044;
+}
+
+.form-select {
+    width: 100%;
+    background: #1e293b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f8fafc;
+    padding: 9px 36px 9px 12px;
+    font-size: 13px;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.form-select:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+    background-color: #243044;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalPop {
+    from { transform: scale(0.96) translateY(8px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
 /* ==========================================================================
    WhatsApp Flow Builder - No-Code Automation Stylesheet
    Designed for High Usability, Responsive Controls, and Enterprise Aesthetics
    ========================================================================== */
 
 :root {
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+    --border-color: #e2e8f0;
+    --border-focus: #0ea5e9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+
+    --wa-green: #25d366;
+    --wa-green-dark: #128c7e;
+    --wa-teal: #059669;
+    --wa-bubble-in: #f1f5f9;
+    --wa-bubble-out: #dcf8c6;
+
+    --accent-blue: #0ea5e9;
+    --accent-purple: #8b5cf6;
+    --accent-amber: #f59e0b;
+    --accent-rose: #f43f5e;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+body.in-flow-builder,
+[data-theme="dark"] {
     --bg-main: #0b1120;
     --bg-surface: #0f172a;
     --bg-card: #1e293b;
@@ -29,9 +204,6 @@
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
 }
 
 *, *::before, *::after {
@@ -40,10 +212,13 @@
     padding: 0;
 }
 
-body, html {
+body.in-flow-builder, html.in-flow-builder {
     width: 100%;
     height: 100%;
     overflow: hidden;
+}
+
+body.in-flow-builder {
     font-family: var(--font-sans);
     background-color: var(--bg-main);
     color: var(--text-primary);
@@ -968,7 +1143,7 @@ textarea.form-control {
 }
 
 /* ==========================================================================
-   4. Slide-out WhatsApp Test Simulator
+   4. Slide-out WhatsApp Test Simulator (Ultra-Realistic Smartphone Mockup)
    ========================================================================== */
 
 .simulator-backdrop {
@@ -977,12 +1152,13 @@ textarea.form-control {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 100;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s;
+    transition: opacity 0.25s ease;
 }
 
 .simulator-backdrop.open {
@@ -993,18 +1169,19 @@ textarea.form-control {
 .simulator-drawer {
     position: fixed;
     top: 20px;
-    right: 20px;
+    right: 24px;
     bottom: 20px;
-    width: 380px;
-    background: #111b21;
-    border: 1px solid #2a3942;
-    border-radius: 24px;
+    width: 390px;
+    max-height: calc(100vh - 40px);
+    background: #0b141a;
+    border: 4px solid #1f2c34;
+    border-radius: 42px;
     z-index: 101;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-    transform: translateX(420px);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 30px 90px -15px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transform: translateX(450px);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
 }
 
@@ -1012,13 +1189,61 @@ textarea.form-control {
     transform: translateX(0);
 }
 
-.sim-header {
-    background: #202c33;
-    padding: 12px 16px;
+/* Smartphone Top Bar & Dynamic Island */
+.sim-device-top {
+    height: 30px;
+    background: #1f2c34;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #2a3942;
+    padding: 0 20px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.sim-device-time {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: 0.02em;
+}
+
+.sim-dynamic-island {
+    width: 86px;
+    height: 16px;
+    background: #0b141a;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    gap: 6px;
+}
+
+.sim-island-cam {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #1e293b;
+    border: 1px solid #334155;
+}
+
+.sim-device-indicators {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* WhatsApp Application Header */
+.sim-header {
+    background: #202c33;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
 }
 
 .sim-brand {
@@ -1027,119 +1252,236 @@ textarea.form-control {
     gap: 10px;
 }
 
+.sim-avatar-wrap {
+    position: relative;
+}
+
 .sim-avatar {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    background: #00a884;
+    background: linear-gradient(135deg, #00a884, #008069);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     color: white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.sim-online-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #25d366;
+    border: 2px solid #202c33;
+    box-shadow: 0 0 6px rgba(37, 211, 102, 0.7);
 }
 
 .sim-titles h3 {
-    font-size: 13px;
-    font-weight: 600;
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 700;
     color: #e9edef;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .sim-status {
     font-size: 11px;
     color: #00a884;
+    font-weight: 500;
 }
 
 .sim-header-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .sim-btn-restart {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     background: rgba(255, 255, 255, 0.08);
-    border: none;
-    color: #8696a0;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    padding: 5px 9px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
     cursor: pointer;
+    transition: all 0.15s ease;
 }
 
 .sim-btn-restart:hover {
     color: #fff;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .sim-btn-close {
     background: transparent;
     border: none;
-    color: #8696a0;
-    font-size: 22px;
+    color: #94a3b8;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    line-height: 1;
+    transition: all 0.15s ease;
 }
 
 .sim-btn-close:hover {
     color: #fff;
+    background: rgba(255, 255, 255, 0.1);
 }
 
-/* Simulator Chat Screen */
+/* WhatsApp Screen & Wallpaper */
 .sim-screen {
     flex: 1;
     overflow-y: auto;
     position: relative;
     background-color: #0b141a;
     background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 16px 16px;
+    background-size: 18px 18px;
     display: flex;
     flex-direction: column;
+}
+
+.sim-security-notice {
+    margin: 12px 14px 4px 14px;
+    background: #182229;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 10.5px;
+    color: #ffd279;
+    text-align: center;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.sim-security-notice svg {
+    flex-shrink: 0;
+    color: #ffd279;
+}
+
+.sim-date-pill {
+    align-self: center;
+    margin: 8px 0;
+    background: #182229;
+    color: #8696a0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .sim-messages {
     flex: 1;
-    padding: 16px;
+    padding: 10px 14px 14px 14px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
-/* Simulator Message Bubbles */
+/* WhatsApp Message Bubbles */
 .sim-bubble {
-    max-width: 85%;
+    max-width: 82%;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 13px;
     line-height: 1.45;
     position: relative;
     word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    animation: bubblePop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .sim-bubble-bot {
     align-self: flex-start;
     background-color: #202c33;
     color: #e9edef;
-    border-top-left-radius: 2px;
+    border-top-left-radius: 3px;
+    margin-left: 4px;
+}
+
+.sim-bubble-bot::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -6px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid #202c33;
+    border-left: 8px solid transparent;
 }
 
 .sim-bubble-user {
     align-self: flex-end;
     background-color: #005c4b;
     color: #e9edef;
-    border-top-right-radius: 2px;
+    border-top-right-radius: 3px;
+    margin-right: 4px;
+}
+
+.sim-bubble-user::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -6px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid #005c4b;
+    border-right: 8px solid transparent;
+}
+
+.sim-bubble-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
 }
 
 .sim-bubble-time {
     font-size: 10px;
-    color: #8696a0;
-    text-align: right;
-    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.55);
 }
 
-/* Interactive WhatsApp Buttons in Simulator */
+.sim-double-tick {
+    display: inline-flex;
+    align-items: center;
+}
+
+.sim-crm-note {
+    align-self: center;
+    background: rgba(14, 165, 233, 0.12);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    color: #38bdf8;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    max-width: 90%;
+    text-align: center;
+    line-height: 1.35;
+}
+
+/* WhatsApp Interactive Button Cards */
 .sim-buttons-wrap {
     display: flex;
     flex-direction: column;
@@ -1150,57 +1492,68 @@ textarea.form-control {
 }
 
 .sim-btn-choice {
-    background: rgba(0, 168, 132, 0.15);
-    border: 1px solid rgba(0, 168, 132, 0.4);
+    background: rgba(0, 168, 132, 0.1);
+    border: 1px solid rgba(0, 168, 132, 0.35);
     color: #25d366;
     padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
     text-align: center;
-    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s ease;
 }
 
 .sim-btn-choice:hover {
     background: #00a884;
-    color: white;
+    color: #ffffff;
+    border-color: #00a884;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 168, 132, 0.35);
 }
 
-/* Interactive WhatsApp List Menu in Simulator */
 .sim-list-btn {
     margin-top: 8px;
     width: 100%;
     background: #00a884;
     color: white;
     border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-size: 12.5px;
     font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 7px;
     cursor: pointer;
+    transition: background 0.15s ease;
 }
 
-/* List Bottom Sheet */
+.sim-list-btn:hover {
+    background: #029474;
+}
+
+/* Bottom Sheet for WhatsApp List Menus */
 .sim-list-sheet {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     background: #202c33;
-    border-top: 1px solid #2a3942;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    max-height: 60%;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    max-height: 65%;
     overflow-y: auto;
-    z-index: 10;
+    z-index: 20;
     transform: translateY(100%);
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.6);
 }
 
 .sim-list-sheet.open {
@@ -1211,45 +1564,59 @@ textarea.form-control {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid #2a3942;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .sim-sheet-header h4 {
-    font-size: 13px;
-    font-weight: 600;
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 700;
     color: #e9edef;
 }
 
-.sim-sheet-header button {
+.sim-sheet-close {
     background: transparent;
     border: none;
-    color: #8696a0;
-    font-size: 20px;
+    color: #94a3b8;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.sim-sheet-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .sim-sheet-items {
-    padding: 8px 16px;
+    padding: 10px 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .sim-sheet-item {
-    padding: 8px 10px;
-    border-radius: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.04);
     cursor: pointer;
-    transition: background 0.15s;
+    transition: all 0.15s ease;
 }
 
 .sim-sheet-item:hover {
-    background: rgba(0, 168, 132, 0.2);
+    background: rgba(0, 168, 132, 0.22);
+    transform: translateX(2px);
 }
 
 .sim-sheet-item-title {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     color: #e9edef;
 }
@@ -1257,6 +1624,7 @@ textarea.form-control {
 .sim-sheet-item-desc {
     font-size: 11px;
     color: #8696a0;
+    margin-top: 2px;
 }
 
 /* Media and Location in Simulator */
@@ -1264,10 +1632,11 @@ textarea.form-control {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 8px 10px;
-    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 9px 12px;
+    border-radius: 8px;
     margin-bottom: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .sim-media-icon {
@@ -1279,7 +1648,7 @@ textarea.form-control {
 }
 
 .sim-media-filename {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: #e9edef;
     white-space: nowrap;
@@ -1291,425 +1660,165 @@ textarea.form-control {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 8px 10px;
-    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 9px 12px;
+    border-radius: 8px;
     margin-bottom: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .sim-loc-title {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 700;
     color: #34d399;
 }
 
 .sim-loc-addr {
     font-size: 11px;
-    color: #8696a0;
+    color: #94a3b8;
 }
 
-/* Simulator Footer */
+/* WhatsApp Input Footer */
 .sim-footer {
     background: #202c33;
-    padding: 10px 14px;
+    padding: 10px 12px;
     display: flex;
     align-items: center;
     gap: 8px;
-    border-top: 1px solid #2a3942;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.sim-input-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: #2a3942;
+    border-radius: 20px;
+    padding: 0 12px;
 }
 
 .sim-footer input {
-    flex: 1;
-    background: #2a3942;
+    width: 100%;
+    background: transparent;
     border: none;
-    border-radius: 8px;
-    padding: 9px 12px;
+    padding: 9px 0;
     color: #e9edef;
     font-size: 13px;
     outline: none;
 }
 
-.sim-footer button {
+.sim-footer input::placeholder {
+    color: #8696a0;
+}
+
+.sim-footer button[type="submit"] {
     background: #00a884;
     border: none;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.15s;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0, 168, 132, 0.4);
 }
 
-.sim-footer button:hover {
+.sim-footer button[type="submit"]:hover {
     background: #029474;
+    transform: scale(1.05);
 }
 
-/* ==========================================================================
-   5. Toast Notifications
-   ========================================================================== */
-
-.builder-toast {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    padding: 12px 18px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: var(--shadow-lg);
-    z-index: 200;
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+/* Telemetry & State Debug Accordion */
+.sim-debug-drawer {
+    border-top: 1px solid #1e293b;
+    background: #090d16;
+    flex-shrink: 0;
 }
 
-.builder-toast.show {
-    transform: translateY(0);
-    opacity: 1;
-}
-
-.toast-icon {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #10b981;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.toast-msg {
-    font-size: 13px;
-    font-weight: 500;
-    color: #fff;
-}
-
-/* ==========================================================================
-   6. Validation Modal
-   ========================================================================== */
-
-.validation-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 250;
-    padding: 20px;
-}
-
-.validation-modal {
-    background: #1e293b;
-    border: 1px solid #ef4444;
-    border-radius: 12px;
-    width: 100%;
-    max-width: 480px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
-    animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes modalPop {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-.validation-modal-header {
+.sim-debug-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid #334155;
-    background: rgba(239, 68, 68, 0.08);
+    padding: 8px 14px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    user-select: none;
+    color: #94a3b8;
+    transition: color 0.15s;
 }
 
-.validation-modal-body {
-    padding: 20px;
-    max-height: 360px;
-    overflow-y: auto;
+.sim-debug-header:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
 }
 
-.validation-error-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.validation-error-list li {
-    padding: 10px 12px;
-    background: rgba(239, 68, 68, 0.1);
-    border-left: 3px solid #ef4444;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #fca5a5;
-    line-height: 1.4;
-}
-
-.validation-modal-footer {
-    padding: 12px 20px;
-    border-top: 1px solid #334155;
-    background: #0f172a;
-}
-
-/* ==========================================================================
-   Modern SaaS Flow Builder Enhancements
-   ========================================================================== */
-
-/* Top bar Save Status */
-.save-status-wrap {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--text-muted);
-}
-
-.save-status-dot {
+.sim-debug-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: #10b981;
-    transition: background 0.2s ease;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
-.save-status-wrap.saving .save-status-dot {
-    background: #f59e0b;
-    box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+.sim-debug-content {
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.save-status-wrap.unsaved .save-status-dot {
-    background: #64748b;
+.sim-debug-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
 }
 
-/* Top bar Undo / Redo */
-.history-btn-group {
+.sim-debug-col {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 4px;
 }
 
-.header-icon-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.header-icon-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-    border-color: #64748b;
-}
-
-.header-icon-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-/* Left Sidebar Palette Enhancements */
-.palette-search-wrap {
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 12px;
-}
-
-.palette-search-box {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 6px 10px;
-}
-
-.palette-search-box input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-size: 12px;
-    color: #fff;
-    font-family: inherit;
-}
-
-.palette-search-box input::placeholder {
-    color: var(--text-muted);
-}
-
-.palette-scroll-container {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-right: 2px;
-}
-
-.palette-category-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.palette-category-header {
-    font-size: 10px;
+.sim-debug-label {
+    font-size: 9px;
     font-weight: 800;
+    color: #64748b;
     letter-spacing: 0.06em;
-    color: var(--text-muted);
     text-transform: uppercase;
-    padding: 2px 4px;
 }
 
-.palette-footer-actions {
-    margin-top: 14px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-color);
-}
-
-.btn-template-reset {
-    width: 100%;
-    background: transparent;
-    border: 1px dashed var(--border-color);
-    color: var(--text-muted);
-    border-radius: 8px;
-    padding: 8px 10px;
+.sim-debug-row {
     font-size: 11px;
+    color: #cbd5e1;
+}
+
+.sim-debug-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #38bdf8;
     font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    cursor: pointer;
-    transition: all 0.15s ease;
 }
 
-.btn-template-reset:hover {
-    color: #fff;
-    border-color: #64748b;
-    background: rgba(255, 255, 255, 0.04);
+.sim-debug-data {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10.5px;
+    color: #a7f3d0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 75px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.3);
+    padding: 4px 6px;
+    border-radius: 4px;
 }
 
-/* Bottom Controls */
-.canvas-bottom-left-controls {
-    position: absolute;
-    bottom: 24px;
-    left: 24px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 20;
+@keyframes bubblePop {
+    from { opacity: 0; transform: translateY(4px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.canvas-pill-btn {
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    color: var(--text-secondary);
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    box-shadow: var(--shadow-md);
-    transition: all 0.15s ease;
-}
-
-.canvas-pill-btn:hover {
-    background: #1e293b;
-    color: #fff;
-    border-color: #475569;
-}
-
-.canvas-bottom-right-controls {
-    position: absolute;
-    bottom: 24px;
-    right: 24px;
-    z-index: 20;
-}
-
-.zoom-controls-group {
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    padding: 4px;
-    box-shadow: var(--shadow-md);
-}
-
-.zoom-btn {
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.zoom-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.zoom-indicator {
-    font-size: 11px;
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-    min-width: 44px;
-    text-align: center;
-}
-
-.zoom-fit-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 8px;
-    margin-left: 4px;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.zoom-fit-btn:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-}
 
 /* Minimap */
 .canvas-minimap-container {
@@ -2476,4 +2585,513 @@ textarea.form-control {
     color: var(--text-secondary);
     font-size: 11.5px;
     text-align: center;
+}
+
+/* ==========================================================================
+   Modern Futuristic UI/UX & Interactive Flow Builder Enhancements
+   ========================================================================== */
+
+/* Neon selected node highlight */
+.flow-node.selected {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), 0 8px 24px -4px rgba(59, 130, 246, 0.3) !important;
+    transform: translateY(-2px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Simulator Active Node Pulse */
+.flow-node.sim-active {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5), 0 0 25px rgba(16, 185, 129, 0.4) !important;
+    animation: simNodePulse 1.5s infinite;
+}
+
+@keyframes simNodePulse {
+    0% {
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4), 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.7), 0 0 28px rgba(16, 185, 129, 0.6);
+    }
+    100% {
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4), 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+}
+
+/* Disconnected Node Warning Badge */
+.node-warning-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #f59e0b;
+    color: #1e1b4b;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    border: 2px solid var(--bg-card);
+    z-index: 15;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+    cursor: help;
+    animation: warningPulse 2s infinite;
+}
+
+@keyframes warningPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); box-shadow: 0 2px 12px rgba(245, 158, 11, 0.8); }
+    100% { transform: scale(1); }
+}
+
+/* Connection Edge Styles */
+.connection-path {
+    stroke: #475569;
+    stroke-width: 2.2px;
+    fill: none;
+    transition: stroke 0.2s, stroke-width 0.2s;
+}
+
+.connection-path:hover,
+.connection-path.selected {
+    stroke: #38bdf8 !important;
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+}
+
+.connection-hitbox {
+    stroke: transparent;
+    stroke-width: 16px;
+    fill: none;
+    cursor: pointer;
+    pointer-events: stroke;
+}
+
+.connection-hitbox:hover + .connection-path {
+    stroke: #38bdf8;
+    stroke-width: 3.2px;
+}
+
+/* Floating Delete Pill for Selected Edge */
+.edge-delete-pill {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: #ef4444;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 25;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+
+.edge-delete-pill:hover {
+    background: #dc2626;
+    transform: translate(-50%, -50%) scale(1.08);
+}
+
+/* Version History Cards */
+.version-item-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.version-item-card:hover {
+    border-color: #3b82f6;
+    background: var(--bg-card-hover);
+}
+
+.version-item-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.version-item-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.version-item-date {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.btn-restore-version {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-restore-version:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+/* Glassmorphism Accents */
+.builder-header,
+.canvas-floating-toolbar,
+.canvas-bottom-left-controls,
+.zoom-controls-group {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+
+/* ==========================================================================
+   Phase 3 UI/UX Redesign Overhaul: Multi-Branch Header, Node Cards & Preview
+   ========================================================================== */
+
+/* 1. Header Multi-Branch & Phone Cluster */
+.header-line-branch-cluster {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(15, 23, 42, 0.7);
+    padding: 4px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.account-selector-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.account-selector-wrap label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.account-select {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #f8fafc;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.account-select:hover, .account-select:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.branch-selector-pill-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.branch-selector-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.branch-icon {
+    font-size: 13px;
+}
+
+.branch-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0ea5e9;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.branch-select {
+    background: #0f172a;
+    border: 1px solid #0284c7;
+    border-radius: 6px;
+    color: #e0f2fe;
+    padding: 5px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.branch-select:hover, .branch-select:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+}
+
+.branch-saved-indicator {
+    font-size: 11px;
+    color: #10b981;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: all 0.25s ease;
+    pointer-events: none;
+}
+
+.branch-saved-indicator.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* 2. Elevated Node Cards by Type */
+.flow-node {
+    border-radius: 14px !important;
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease !important;
+}
+
+.flow-node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+.flow-node.selected {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.5), 0 16px 32px -8px rgba(14, 165, 233, 0.4) !important;
+}
+
+/* Type Accent Top Borders */
+.flow-node.node-type-trigger {
+    border-top: 3px solid #10b981 !important;
+}
+.flow-node.node-type-trigger .flow-node-header {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%) !important;
+}
+
+.flow-node.node-type-message {
+    border-top: 3px solid #6366f1 !important;
+}
+.flow-node.node-type-message .flow-node-header {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%) !important;
+}
+
+.flow-node.node-type-buttons {
+    border-top: 3px solid #f59e0b !important;
+}
+.flow-node.node-type-buttons .flow-node-header {
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%) !important;
+}
+
+.flow-node.node-type-list {
+    border-top: 3px solid #06b6d4 !important;
+}
+.flow-node.node-type-list .flow-node-header {
+    background: linear-gradient(180deg, rgba(6, 182, 212, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%) !important;
+}
+
+.flow-node.node-type-lead_status, .flow-node.node-type-assign_telecaller {
+    border-top: 3px solid #a855f7 !important;
+}
+.flow-node.node-type-lead_status .flow-node-header,
+.flow-node.node-type-assign_telecaller .flow-node-header {
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%) !important;
+}
+
+.flow-node.node-type-end {
+    border-top: 3px solid #64748b !important;
+}
+.flow-node.node-type-end .flow-node-header {
+    background: linear-gradient(180deg, rgba(100, 116, 139, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%) !important;
+}
+
+/* Node Header Quick Actions */
+.node-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.node-quick-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.flow-node:hover .node-quick-actions {
+    opacity: 1;
+}
+
+.node-quick-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.node-quick-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.node-quick-btn.btn-node-del:hover {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* 3. Live WhatsApp Message Bubble Preview in Inspector */
+.live-preview-box {
+    margin-top: 10px;
+    background: #0b141a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 14px 14px;
+}
+
+.live-preview-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #00a884;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+}
+
+.wa-bubble-card {
+    background: #005c4b;
+    color: #e9edef;
+    border-radius: 8px 8px 8px 0;
+    padding: 8px 12px;
+    max-width: 95%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+    font-size: 13px;
+    line-height: 1.45;
+    position: relative;
+    animation: fadeIn 0.2s ease;
+}
+
+.wa-bubble-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #25d366;
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+}
+
+.wa-bubble-body {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.wa-bubble-footer {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.wa-bubble-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.wa-bubble-ticks {
+    color: #53bdeb;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.wa-preview-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 6px;
+}
+
+.wa-preview-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #53bdeb;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    cursor: default;
+}
+
+.wa-preview-list-btn {
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 6px;
+}
+
+.wa-preview-btn-menu {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #53bdeb;
+    border-radius: 6px;
+    padding: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    cursor: default;
 }

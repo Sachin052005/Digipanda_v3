@@ -230,6 +230,20 @@ class AutomationFlow(models.Model):
         default=dict,
         help_text="JSON representation of nodes, connections, and metadata for Flow Builder"
     )
+    published_version = models.ForeignKey(
+        'AutomationFlowVersion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+'
+    )
+    working_draft_version = models.ForeignKey(
+        'AutomationFlowVersion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+'
+    )
     is_active = models.BooleanField(default=True)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -242,6 +256,53 @@ class AutomationFlow(models.Model):
 
     def __str__(self):
         return f"{self.name} (v{self.version} - {self.status.title()})"
+
+
+class AutomationFlowVersion(models.Model):
+    """
+    Immutable versioned snapshot of an AutomationFlow graph and configuration.
+    Supports audit trails, rollback, and version pinning for active sessions.
+    """
+    STATUS_DRAFT = 'draft'
+    STATUS_PUBLISHED = 'published'
+    STATUS_ARCHIVED = 'archived'
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_PUBLISHED, 'Published'),
+        (STATUS_ARCHIVED, 'Archived'),
+    ]
+
+    flow = models.ForeignKey(
+        AutomationFlow,
+        on_delete=models.CASCADE,
+        related_name='versions'
+    )
+    version_number = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
+    flow_data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Complete normalized graph JSON (nodes, edges, settings, viewport)"
+    )
+    change_summary = models.CharField(max_length=255, blank=True, default='')
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='flow_versions_created'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-version_number']
+        unique_together = [('flow', 'version_number')]
+        verbose_name = 'Automation Flow Version'
+        verbose_name_plural = 'Automation Flow Versions'
+
+    def __str__(self):
+        return f"{self.flow.name} v{self.version_number} [{self.status.title()}]"
 
 
 class UserFlowSession(models.Model):
@@ -273,7 +334,16 @@ class UserFlowSession(models.Model):
         related_name='sessions'
     )
     flow_version = models.PositiveIntegerField(default=1)
+    flow_version_ref = models.ForeignKey(
+        AutomationFlowVersion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sessions'
+    )
     current_node_id = models.CharField(max_length=64, default='trigger_1')
+    paused_node_id = models.CharField(max_length=64, blank=True, default='')
+    resume_node_id = models.CharField(max_length=64, blank=True, default='')
     waiting_for_input = models.BooleanField(
         default=False,
         help_text="True when currently paused waiting for customer input on a Question node"
@@ -288,9 +358,20 @@ class UserFlowSession(models.Model):
         default=dict,
         help_text="Stores collected student choices, selections, inputs"
     )
+    execution_stack = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Call stack frames for subflow invocations and returns"
+    )
     started_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     paused_at = models.DateTimeField(null=True, blank=True)
+    resume_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Target wake-up timestamp for durable delay execution"
+    )
     handed_over_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)

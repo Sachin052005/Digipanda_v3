@@ -2,11 +2,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.shortcuts import redirect
+from django.contrib.sitemaps.views import sitemap
+
+from accounts import views_public
+from config.sitemaps import sitemaps
 
 urlpatterns = [
-    # Default root redirect
-    path('', lambda request: redirect('login'), name='root'),
+    # Public SEO-Optimized Root Landing Page
+    path('', views_public.landing_page_view, name='root'),
+
+    # Search Engine Directives & Sitemap
+    path('robots.txt', views_public.robots_txt_view, name='robots_txt'),
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
 
     # Django Admin Site
     path('django-admin/', admin.site.urls),
@@ -29,8 +36,11 @@ urlpatterns = [
     path('call-recordings/', include('drive.urls')),
     # WhatsApp inbox (/whatsapp/), automations (/automations/), WhatsApp webhook (/webhook/whatsapp/)
     path('', include('chat.urls')),
+    path('chat/', include('chat.urls')),
     # Facebook Lead Ads: list + sync (/facebook-leads/), webhook (/facebook-leads/webhook/)
     path('facebook-leads/', include('fb_leads.urls')),
+    # Dedicated Finance Portal Suite
+    path('finance/', include('finance.urls')),
 ]
 
 if settings.DEBUG:

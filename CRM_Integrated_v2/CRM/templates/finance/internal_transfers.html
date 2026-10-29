@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Internal Transfers - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <div class="tp-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 22px;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--tp-text-primary); margin: 0;">Internal Transfers</h1>
+      <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+        Move money between branches with a Delivery Challan. The paying branch reviews & approves; the receiving branch acknowledges receipt.
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('transfer-modal').style.display='flex';" style="background: #dc2626; font-weight: 700; font-size: 0.86rem;">
+      Request a transfer
+    </button>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+    <a href="?tab=all" class="btn btn-sm {% if tab == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-weight: 700; border-radius: 8px;">
+      All
+    </a>
+    <a href="?tab=to_approve" class="btn btn-sm {% if tab == 'to_approve' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-weight: 700; border-radius: 8px;">
+      To approve
+    </a>
+    <a href="?tab=my_requests" class="btn btn-sm {% if tab == 'my_requests' %}btn-primary{% else %}btn-secondary{% endif %}" style="font-weight: 700; border-radius: 8px;">
+      My requests
+    </a>
+  </div>
+
+  <!-- Transfers Table -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px;">Transfer Code</th>
+            <th style="padding: 10px 12px;">From Branch</th>
+            <th style="padding: 10px 12px;">To Branch</th>
+            <th style="padding: 10px 12px; text-align: right;">Amount</th>
+            <th style="padding: 10px 12px;">Reason</th>
+            <th style="padding: 10px 12px;">Status</th>
+            <th style="padding: 10px 12px;">Challan</th>
+            <th style="padding: 10px 12px;">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transfers %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+            <td style="padding: 12px; font-weight: 700;">{{ t.transfer_code }}</td>
+            <td style="padding: 12px;">{{ t.from_branch.name }}</td>
+            <td style="padding: 12px;">{{ t.to_branch.name }}</td>
+            <td style="padding: 12px; text-align: right; font-weight: 800; color: #059669;">₹{{ t.amount|floatformat:2 }}</td>
+            <td style="padding: 12px;">{{ t.reason }}</td>
+            <td style="padding: 12px;">
+              <span class="badge" style="{% if t.status == 'COMPLETED' %}background: rgba(16, 185, 129, 0.15); color: #059669;{% else %}background: rgba(217, 119, 6, 0.15); color: #d97706;{% endif %} font-size: 0.72rem;">
+                {{ t.status }}
+              </span>
+            </td>
+            <td style="padding: 12px;">
+              {% if t.delivery_challan_doc %}
+              <a href="{{ t.delivery_challan_doc.url }}" target="_blank" class="btn btn-sm btn-secondary" style="font-size: 0.72rem;">
+                Challan &nearr;
+              </a>
+              {% else %}
+              <span style="font-size: 0.74rem; color: var(--tp-text-muted);">-</span>
+              {% endif %}
+            </td>
+            <td style="padding: 12px; font-size: 0.8rem;">{{ t.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding: 36px; text-align: center; color: var(--tp-text-muted);">
+              No transfers yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Request Transfer Modal -->
+<div id="transfer-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+  <div class="card" style="max-width: 480px; width: 100%; padding: 24px; border-radius: 12px; background: var(--bg-card);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Request Internal Transfer</h3>
+      <button type="button" onclick="document.getElementById('transfer-modal').style.display='none';" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="request_transfer" value="1">
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Destination Branch *</label>
+        {{ form.to_branch }}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Amount (₹) *</label>
+        {{ form.amount }}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Reason *</label>
+        {{ form.reason }}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Delivery Challan Document</label>
+        {{ form.delivery_challan_doc }}
+      </div>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Notes</label>
+        {{ form.notes }}
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('transfer-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="background: #dc2626;">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

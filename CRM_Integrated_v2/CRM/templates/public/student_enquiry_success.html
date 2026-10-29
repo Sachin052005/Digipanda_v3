@@ -1,0 +1,238 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Enquiry Submitted | DigipandaCRM</title>
+  <link rel="icon" type="image/png" href="{% static 'images/digipanda_symbol.png' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0F4C81;
+      --primary-hover: #0a365c;
+      --success: #22C55E;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --bg-canvas: #F8FAFC;
+      --border-color: #E2E8F0;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-canvas);
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(34, 197, 94, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(15, 76, 129, 0.07) 0%, transparent 40%);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    .success-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      max-width: 490px;
+      width: 100%;
+      padding: 36px 28px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .success-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #22C55E, #0F4C81, #10B981);
+    }
+
+    .brand-logo-top {
+      height: 44px;
+      max-width: 190px;
+      object-fit: contain;
+      margin-bottom: 20px;
+    }
+
+    .success-icon-wrap {
+      width: 64px;
+      height: 64px;
+      background: #ecfdf5;
+      color: var(--success);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.15);
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .brand-tag {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .student-greeting {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .success-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 24px;
+    }
+
+    /* Token Badge Box */
+    .token-box {
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 18px 16px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .token-label {
+      font-size: 0.725rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+
+    .token-number {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--primary);
+      font-family: 'Inter', monospace;
+    }
+
+    .token-meta {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    /* Instructions Box */
+    .instructions-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      text-align: left;
+      margin-bottom: 24px;
+      font-size: 0.84rem;
+      color: #1e40af;
+      line-height: 1.5;
+    }
+
+    .instructions-box strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.88rem;
+      color: #1d4ed8;
+    }
+
+    .action-btn {
+      display: block;
+      width: 100%;
+      height: 44px;
+      line-height: 44px;
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: background 0.15s ease;
+    }
+    .action-btn:hover {
+      background: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+  <div class="success-card">
+    <img src="{% static 'images/digipanda_logo.png' %}" alt="DigipandaCRM" class="brand-logo-top">
+    
+    <div>
+      <div class="success-icon-wrap">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+    </div>
+
+    <div class="brand-tag">DigipandaCRM &bull; Reception Walk-in Desk</div>
+    <h1 class="student-greeting">Welcome, {{ name|default:lead.name }}!</h1>
+    <p class="success-desc">
+      Your student enquiry form has been successfully registered into our training &amp; placement system.
+    </p>
+
+    <!-- Token Number Display -->
+    <div class="token-box">
+      <div class="token-label">Your Consultation Token Number</div>
+      <div class="token-number">{{ token_number }}</div>
+      <div class="token-meta">
+        {% if branch %}
+        <span>📍 {{ branch.name }} Branch</span>
+        {% endif %}
+        <span>🕒 {{ submitted_at|date:"h:i A" }}</span>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions-box">
+      <strong>🛋️ What happens next:</strong>
+      1. Please have a seat in our reception lounge.<br>
+      2. Our career counselor will call Token <strong>{{ token_number }}</strong> shortly for your counselling session.<br>
+      3. For any immediate assistance, please show this screen to the reception desk.
+    </div>
+
+    <a href="{% if branch %}{% url 'public_student_enquiry_branch' branch.id %}{% else %}{% url 'public_student_enquiry_form' %}{% endif %}" class="action-btn">
+      Submit Another Enquiry Form
+    </a>
+  </div>
+</body>
+</html>

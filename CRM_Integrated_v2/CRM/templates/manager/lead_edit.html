@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Edit Lead - TECHPANDA CRM{% endblock %}
+{% block title %}Edit Lead - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -17,6 +17,18 @@
     <div class="crm-card-body">
       <form method="POST">
         {% csrf_token %}
+        {% if form.errors %}
+        <div class="alert alert-danger" style="margin-bottom: 20px; border-radius: 8px;">
+          <strong style="display: block; margin-bottom: 6px;">Please fix the following validation errors:</strong>
+          <ul style="margin: 0 0 0 20px; padding: 0;">
+            {% for field, errors in form.errors.items %}
+              {% for error in errors %}
+                <li><strong>{% if field != '__all__' %}{{ field|title }}{% else %}General{% endif %}:</strong> {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
         <div class="tp-form-grid-2col">
           <div class="form-group">
             <label class="form-label">Assign to Telecaller</label>
@@ -29,6 +41,23 @@
           </div>
         </div>
 
+                <div class="tp-form-grid-2col" style="gap: 16px;">
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            {{ form.category }}
+            {% if form.category.errors %}<div class="form-error text-danger small mt-1">{{ form.category.errors.0 }}</div>{% endif %}
+          </div>
+          {% if form.branch %}
+          <div class="form-group">
+            <label class="form-label">Branch Center</label>
+            {{ form.branch }}
+            {% if form.branch.errors %}<div class="form-error text-danger small mt-1">{{ form.branch.errors.0 }}</div>{% endif %}
+          </div>
+          {% else %}
+          <div></div>
+          {% endif %}
+        </div>
+
         <div class="form-group">
           <label class="form-label">Status <span class="required">*</span></label>
           {{ form.status }}
@@ -37,6 +66,7 @@
         <div class="form-group">
           <label class="form-label">Alternate Phone</label>
           {{ form.alternate_phone }}
+          {% if form.alternate_phone.errors %}<div class="form-error text-danger small mt-1">{{ form.alternate_phone.errors.0 }}</div>{% endif %}
         </div>
 
         <div class="form-group">

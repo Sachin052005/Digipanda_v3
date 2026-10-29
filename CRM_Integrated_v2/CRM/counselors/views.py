@@ -7,9 +7,9 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 
 from accounts.models import User, UserRole
-from accounts.permissions import admin_required, counselor_required, role_required
+from accounts.permissions import admin_required, counselor_required, role_required, get_accessible_branch_ids
 from branches.models import Branch
-from leads.models import Lead, LeadStatus, LeadCategory
+from leads.models import Lead, LeadStatus, LeadCategory, PaymentTransaction, PaymentTransactionStatus
 from leads.handoff_service import reassign_lead, unassign_lead
 from followups.models import FollowUp, FollowUpStatus
 from calls.models import CallHistory, CallOutcome, CallStatus
@@ -29,34 +29,17 @@ from .forms import AdminCounselorCreateForm
 def counselor_dashboard(request):
     counselor = request.user
 
-    period = request.GET.get('period', 'all').strip()
-    start_date = request.GET.get('start_date', '').strip()
-    end_date = request.GET.get('end_date', '').strip()
-
+    from leads.utils_date_filter import extract_normalized_date_range
+    _date_info = extract_normalized_date_range(request, default_period='all')
+    start_date = _date_info['start_date']
+    end_date = _date_info['end_date']
+    period = _date_info['period']
     today = timezone.localdate()
-    start_dt, end_dt = None, None
+    start_dt = _date_info['start_dt']
+    end_dt = _date_info['end_dt']
 
-    if period == 'today':
-        start_dt = timezone.make_aware(datetime.combine(today, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'week':
-        start_of_week = today - timedelta(days=today.weekday())
-        start_dt = timezone.make_aware(datetime.combine(start_of_week, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'month':
-        start_of_month = today.replace(day=1)
-        start_dt = timezone.make_aware(datetime.combine(start_of_month, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'custom' and start_date and end_date:
-        try:
-            s_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            e_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            start_dt = timezone.make_aware(datetime.combine(s_date, time.min))
-            end_dt = timezone.make_aware(datetime.combine(e_date, time.max))
-        except ValueError:
-            start_dt, end_dt = None, None
-
-    my_leads = Lead.objects.filter(assigned_counselor=counselor)
+    from leads.services import get_user_assigned_leads
+    my_leads = get_user_assigned_leads(counselor)
     if start_dt and end_dt:
         my_leads = my_leads.filter(created_at__range=(start_dt, end_dt))
 
@@ -66,8 +49,9 @@ def counselor_dashboard(request):
     joined_count = my_leads.filter(status__in=[LeadStatus.JOINED, LeadStatus.ENROLLED]).count()
 
     followups_qs = FollowUp.objects.filter(
-        lead__assigned_counselor=counselor, status=FollowUpStatus.PENDING
-    )
+        Q(lead__in=my_leads) | Q(assigned_user=counselor),
+        status=FollowUpStatus.PENDING
+    ).distinct()
     if start_dt and end_dt:
         followups_qs = followups_qs.filter(follow_up_date__range=(start_dt.date(), end_dt.date()))
     pending_followups_count = followups_qs.count()
@@ -76,6 +60,15 @@ def counselor_dashboard(request):
     status_dict = {item['status']: item['total'] for item in status_counts}
 
     telecallers = User.objects.filter(role=UserRole.TELECALLER, counselor=counselor)
+
+    # Payments originally recorded by this counselor that were rejected and require revision
+    rejected_payments = PaymentTransaction.objects.filter(
+        recorded_by=counselor,
+        status=PaymentTransactionStatus.REJECTED
+    ).select_related(
+        'enrollment', 'enrollment__product', 'enrollment__branch', 'reviewed_by'
+    ).order_by('-reviewed_at', '-updated_at')
+    rejected_payments_count = rejected_payments.count()
 
     recent_activities = Activity.objects.filter(user=counselor).select_related('user')[:8]
     recent_leads = my_leads.select_related('channel', 'product', 'branch').order_by('-updated_at')[:8]
@@ -91,6 +84,8 @@ def counselor_dashboard(request):
         'pending_followups_count': pending_followups_count,
         'status_dict': status_dict,
         'telecallers_count': telecallers.count(),
+        'rejected_payments': rejected_payments,
+        'rejected_payments_count': rejected_payments_count,
         'recent_activities': recent_activities,
         'recent_leads': recent_leads,
     })
@@ -313,14 +308,20 @@ def admin_counselor_detail(request, pk):
 @admin_required
 def admin_counselor_change_password(request, pk):
     counselor = get_object_or_404(User, pk=pk, role=UserRole.COUNSELOR)
+    from accounts.permissions import can_manage_user
+    if not can_manage_user(request.user, counselor):
+        raise PermissionDenied("You do not have permission to manage this counselor's password.")
+
     if request.method == 'POST':
         form = SetPasswordForm(counselor, request.POST)
         if form.is_valid():
             form.save()
+            counselor.must_change_password = False
+            counselor.save(update_fields=['must_change_password'])
             log_activity(
                 user=request.user,
-                action="Password Reset by Admin",
-                description=f"Admin reset password for Counselor '{counselor.username}'.",
+                action="Administrator Set Password",
+                description=f"Administrator '{request.user.username}' reset password for Counselor '{counselor.username}'.",
                 object_type="User",
                 object_id=counselor.pk,
                 request=request
@@ -513,6 +514,10 @@ def admin_counselor_leads_drilldown(request, pk):
     user = request.user
     if user.role == UserRole.BRANCH_HEAD and counselor.branch_id != user.branch_id:
         raise PermissionDenied("Counselor does not belong to your branch.")
+    if user.role == UserRole.SALES_HEAD:
+        accessible_branches = get_accessible_branch_ids(user)
+        if counselor.branch_id and counselor.branch_id not in accessible_branches:
+            raise PermissionDenied("Counselor does not belong to your accessible branches.")
 
     leads_qs = Lead.objects.filter(
         Q(assigned_counselor=counselor) | Q(assigned_telecaller__counselor=counselor)
@@ -553,7 +558,9 @@ def admin_counselor_leads_drilldown(request, pk):
             Q(email__icontains=search_query)
         )
 
-    annotated_qs = annotated_qs.select_related('branch', 'assigned_telecaller', 'assigned_counselor').order_by('-updated_at')
+    annotated_qs = annotated_qs.select_related(
+        'branch', 'assigned_telecaller', 'assigned_counselor', 'product', 'channel'
+    ).prefetch_related('calls__caller', 'calls__telecaller').order_by('-updated_at')
 
     paginator = Paginator(annotated_qs, 15)
     page_obj = paginator.get_page(request.GET.get('page'))

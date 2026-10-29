@@ -112,16 +112,98 @@ def fetch_sheet(
     spreadsheet_id: str,
     gid: str = None,
     sheet_name: str = None,
-    timeout: int = 8
+    timeout: int = 10
 ) -> tuple[list[str], list[dict[str, str]]]:
     """
-    Fetches latest data from a publicly accessible Google Sheet without any authentication.
-    Tries multiple fallback endpoints in order:
-    1. Google Visualization CSV API with sheet tab name
-    2. Google Visualization CSV API with gid
-    3. Standard Google Sheets export URL (export?format=csv)
+    Fetches latest data from a publicly accessible Google Sheet without requiring OAuth.
+    Tries strategies in order:
+    1. Primary: Direct XLSX export (retrieves complete workbook, preserves all rows without gviz truncation)
+    2. Fallback: Google Sheets CSV export endpoints (with sheet name, gid, or generic)
+    3. Fallback: Google Visualization CSV API (gviz/tq)
     Returns: (headers_list, rows_list_of_dicts)
     """
+    req_headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CRM-GoogleSheetsIntegration/2.0'}
+
+    # 1. Primary Strategy: Direct XLSX export (guarantees accurate full row sets across all tabs)
+    try:
+        xlsx_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=xlsx"
+        req = urllib.request.Request(xlsx_url, headers=req_headers)
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            status_code = getattr(response, 'status', 200)
+            if status_code == 200:
+                raw_bytes = response.read(MAX_SPREADSHEET_BYTES)
+                # Ensure response is actual binary data and not an HTML login/error screen
+                if b'<!DOCTYPE html>' not in raw_bytes[:500] and b'<html' not in raw_bytes[:500].lower():
+                    try:
+                        import openpyxl
+                        wb = openpyxl.load_workbook(io.BytesIO(raw_bytes), data_only=True)
+                        ws = None
+                        if sheet_name and sheet_name.strip():
+                            target = sheet_name.strip().lower()
+                            import re
+                            norm_target = re.sub(r'[^a-zA-Z0-9]', '', target)
+                            for s in wb.sheetnames:
+                                s_clean = s.strip().lower()
+                                norm_s = re.sub(r'[^a-zA-Z0-9]', '', s_clean)
+                                if s_clean == target or norm_s == norm_target:
+                                    ws = wb[s]
+                                    break
+                        if ws is None:
+                            # Match by numeric gid if provided and within range, else first sheet
+                            if gid and str(gid).isdigit() and int(gid) < len(wb.worksheets):
+                                ws = wb.worksheets[int(gid)]
+                            else:
+                                ws = wb.active or wb.worksheets[0]
+
+                        all_rows = list(ws.iter_rows(values_only=True))
+                        if all_rows:
+                            header_idx = 0
+                            while header_idx < len(all_rows) and not any(all_rows[header_idx]):
+                                header_idx += 1
+
+                            if header_idx < len(all_rows):
+                                raw_headers = [str(c).strip() if c is not None else '' for c in all_rows[header_idx]]
+                                while raw_headers and not raw_headers[-1]:
+                                    raw_headers.pop()
+
+                                if raw_headers and any(raw_headers):
+                                    clean_headers = clean_and_deduplicate_headers(raw_headers)
+                                    parsed_rows = []
+                                    for r_idx, row_vals in enumerate(all_rows[header_idx + 1:], start=header_idx + 2):
+                                        if not any(v is not None and str(v).strip() for v in row_vals):
+                                            continue
+                                        row_dict = {'_row_index': r_idx}
+                                        for c_idx, h_name in enumerate(clean_headers):
+                                            val = row_vals[c_idx] if c_idx < len(row_vals) else ''
+                                            row_dict[h_name] = sanitize_cell_value(val)
+                                        parsed_rows.append(row_dict)
+
+                                    if parsed_rows:
+                                        logger.info(
+                                            f"Successfully fetched {len(parsed_rows)} rows via direct XLSX export for sheet '{spreadsheet_id}', tab '{ws.title}'."
+                                        )
+                                        return clean_headers, parsed_rows
+                    except Exception as xlsx_err:
+                        logger.warning(f"XLSX parsing failed, falling back to CSV endpoints: {xlsx_err}")
+                else:
+                    if b'accounts.google.com' in raw_bytes or b'ServiceLogin' in raw_bytes:
+                        raise PermissionError(
+                            "This Google Sheet is private or requires Google login. "
+                            "Please set link sharing to 'Anyone with the link can view' and try again."
+                        )
+    except PermissionError:
+        raise
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise PermissionError(
+                "This Google Sheet is not publicly accessible (HTTP 403/401). "
+                "Please set sharing to 'Anyone with the link' and try again."
+            )
+        logger.info(f"XLSX export HTTP error {e.code}: {e.reason}")
+    except Exception as e:
+        logger.info(f"XLSX export fetch failed or skipped: {e}")
+
+    # 2. Fallback Strategy: CSV endpoints and gviz/tq
     urls_to_try: list[str] = []
 
     if sheet_name and sheet_name.strip():
@@ -132,15 +214,15 @@ def fetch_sheet(
 
     if gid and gid.strip():
         urls_to_try.append(
-            f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&gid={gid.strip()}"
+            f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid={gid.strip()}"
         )
         urls_to_try.append(
-            f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid={gid.strip()}"
+            f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv&gid={gid.strip()}"
         )
 
     # General fallback endpoints
-    urls_to_try.append(f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv")
     urls_to_try.append(f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv")
+    urls_to_try.append(f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/gviz/tq?tqx=out:csv")
 
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) CRM-GoogleSheetsIntegration/2.0'}
 

@@ -11,7 +11,7 @@ from django.core.exceptions import PermissionDenied
 
 from .forms import LoginForm, ManagerRegistrationForm, TelecallerRegistrationForm, AdminCreateUserForm
 from .models import User, UserRole
-from .permissions import admin_required, can_manage_user
+from .permissions import admin_required, can_manage_user, _ROLE_DASHBOARD_URL_NAMES
 from .services import send_user_welcome_email, generate_unique_username, _clean_name_string
 from branches.models import Branch
 from activities.utils import log_activity
@@ -20,36 +20,61 @@ def login_redirect(request):
     """Smart redirect to appropriate dashboard based on user role."""
     if not request.user.is_authenticated:
         return redirect('login')
-    if request.user.is_admin_user:
+
+    user = request.user
+    role = getattr(user, 'role', None)
+
+    # 1. Superadmin / Admin / Superuser
+    if user.is_superuser or role in (UserRole.ADMIN, UserRole.SUPERADMIN) or getattr(user, 'is_admin_user', False):
         return redirect('admin_dashboard')
-    elif request.user.is_sales_head_user:
+
+    # 2. Canonical mapping by role
+    dashboard_name = _ROLE_DASHBOARD_URL_NAMES.get(role)
+    if dashboard_name:
+        return redirect(dashboard_name)
+
+    # 3. Property-based fallbacks
+    if getattr(user, 'is_sales_head_user', False):
         return redirect('manager_dashboard')
-    elif request.user.is_branch_head_user:
+    elif getattr(user, 'is_branch_head_user', False):
         return redirect('branch_head_dashboard')
-    elif request.user.is_counselor_user:
+    elif getattr(user, 'is_branch_admin_user', False):
+        return redirect('admin_enrolled_students')
+    elif getattr(user, 'is_counselor_user', False):
         return redirect('counselor_dashboard')
-    elif request.user.is_telecaller_user:
+    elif getattr(user, 'is_telecaller_user', False):
         return redirect('telecaller_dashboard')
-    elif request.user.is_receptionist_user:
+    elif getattr(user, 'is_receptionist_user', False):
         return redirect('receptionist_dashboard')
-    return redirect('login')
+    elif getattr(user, 'is_accountant_user', False):
+        return redirect('accountant_dashboard')
+    elif getattr(user, 'is_finance_head_user', False):
+        return redirect('finance_dashboard')
+    elif user.is_staff:
+        return redirect('admin_dashboard')
+
+    # Defensive fallback for any other authenticated user: NEVER redirect to 'login' while authenticated!
+    return redirect('root')
 
 def _process_login(request, expected_role=None, template_name='registration/login.html', portal_title='CRM Login'):
     if request.user.is_authenticated:
-        return login_redirect(request)
+        dest = login_redirect(request)
+        dest_url = getattr(dest, 'url', '')
+        if dest_url in ('/login/', '/login', request.path):
+            return redirect('root')
+        return dest
 
     form = LoginForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        username_input = form.cleaned_data.get('username', '').strip()
+        email_input = (form.cleaned_data.get('email') or form.cleaned_data.get('username') or '').strip()
         password = form.cleaned_data.get('password')
         remember_me = form.cleaned_data.get('remember_me')
 
-        matched_user = User.objects.filter(email__iexact=username_input).first()
-        if not matched_user:
-            matched_user = User.objects.filter(username__iexact=username_input).first()
+        # Authenticate via EmailAuthBackend (with case-insensitive email matching)
+        user = authenticate(request, username=email_input, password=password)
+        if user is None:
+            user = authenticate(request, email=email_input, password=password)
 
-        auth_username = matched_user.username if matched_user else username_input
-        user = authenticate(request, username=auth_username, password=password)
         if user is not None:
             if not user.is_active:
                 messages.error(request, "This account is inactive. Please contact your administrator.")
@@ -57,16 +82,16 @@ def _process_login(request, expected_role=None, template_name='registration/logi
 
             if expected_role:
                 if expected_role == UserRole.ADMIN and not user.is_admin_user:
-                    messages.error(request, f"Access denied. '{user.username}' is not registered with Admin privileges.")
+                    messages.error(request, f"Access denied. '{user.email}' is not registered with Admin privileges.")
                     return render(request, template_name, {'form': form, 'portal_title': portal_title, 'portal_role': expected_role})
                 elif expected_role == UserRole.SALES_HEAD and not user.is_sales_head_user:
-                    messages.error(request, f"Access denied. '{user.username}' is not a Sales Head.")
+                    messages.error(request, f"Access denied. '{user.email}' is not a Sales Head.")
                     return render(request, template_name, {'form': form, 'portal_title': portal_title, 'portal_role': expected_role})
                 elif expected_role == UserRole.TELECALLER and not user.is_telecaller_user:
-                    messages.error(request, f"Access denied. '{user.username}' is not a Telecaller.")
+                    messages.error(request, f"Access denied. '{user.email}' is not a Telecaller.")
                     return render(request, template_name, {'form': form, 'portal_title': portal_title, 'portal_role': expected_role})
                 elif expected_role == UserRole.RECEPTIONIST and not user.is_receptionist_user:
-                    messages.error(request, f"Access denied. '{user.username}' is not a Receptionist.")
+                    messages.error(request, f"Access denied. '{user.email}' is not a Receptionist.")
                     return render(request, template_name, {'form': form, 'portal_title': portal_title, 'portal_role': expected_role})
 
             login(request, user)
@@ -78,15 +103,15 @@ def _process_login(request, expected_role=None, template_name='registration/logi
             log_activity(
                 user=user,
                 action="User Logged In",
-                description=f"{user.display_role} '{user.username}' logged in successfully.",
+                description=f"{user.display_role} '{user.email}' logged in successfully.",
                 object_type="User",
                 object_id=str(user.pk),
                 request=request
             )
-            messages.success(request, f"Welcome back, {user.first_name or user.username}!")
+            messages.success(request, f"Welcome back, {user.first_name or user.email}!")
             return login_redirect(request)
         else:
-            messages.error(request, "Invalid username or password. Please try again.")
+            messages.error(request, "Invalid email address or password. Please try again.")
 
     return render(request, template_name, {
         'form': form,
@@ -99,7 +124,7 @@ def general_login(request):
         request,
         expected_role=None,
         template_name='registration/login.html',
-        portal_title='TECHPANDA CRM Login'
+        portal_title='DigiPanda CRM Login'
     )
 
 def admin_login(request):
@@ -199,7 +224,7 @@ def logout_view(request):
     )
     logout(request)
     messages.info(request, "You have been logged out successfully.")
-    return redirect('login')
+    return redirect('/login/?logged_out=1')
 
 
 def account_setup_view(request, uidb64, token):
@@ -277,6 +302,8 @@ def resend_user_invitation(request, pk):
         return redirect('admin_telecallers_list')
     elif target_user.role == UserRole.RECEPTIONIST:
         return redirect('admin_receptionists_list')
+    elif target_user.role == UserRole.ACCOUNTANT:
+        return redirect('admin_accountants_list')
     return redirect('admin_dashboard')
 
 
@@ -319,12 +346,16 @@ def create_user_view(request):
                 return redirect('admin_managers_list')
             elif user.role == UserRole.BRANCH_HEAD:
                 return redirect('admin_branch_heads_list')
+            elif user.role == UserRole.BRANCH_ADMIN:
+                return redirect('admin_branch_admins_list')
             elif user.role == UserRole.COUNSELOR:
                 return redirect('admin_counselors_list')
             elif user.role == UserRole.TELECALLER:
                 return redirect('admin_telecallers_list')
             elif user.role == UserRole.RECEPTIONIST:
                 return redirect('admin_receptionists_list')
+            elif user.role == UserRole.ACCOUNTANT:
+                return redirect('admin_accountants_list')
             return redirect('admin_dashboard')
     else:
         form = AdminCreateUserForm(allowed_branches=allowed_branches)
@@ -392,5 +423,208 @@ def api_username_preview(request):
         'is_collision': is_collision,
         'available': True,
     })
+
+
+@login_required
+def user_profile(request):
+    """Profile page for any authenticated user with self-service profile editing."""
+    from django.contrib import messages
+    from accounts.forms import UserProfileUpdateForm
+
+    if request.method == 'POST':
+        form = UserProfileUpdateForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your profile has been successfully updated.")
+            return redirect('user_profile')
+        else:
+            messages.error(request, "Please correct the highlighted errors to update your profile.")
+    else:
+        form = UserProfileUpdateForm(instance=request.user)
+
+    return render(request, 'accounts/profile.html', {
+        'user': request.user,
+        'form': form,
+    })
+
+
+@login_required
+def universal_user_profile_redirect(request, pk):
+    """
+    Universal profile resolver: routes to the specific role profile view.
+    Sales Head -> admin_manager_detail
+    Branch Head -> admin_branch_head_detail
+    Counselor -> admin_counselor_detail
+    Telecaller -> admin_telecaller_detail
+    Receptionist -> admin_receptionist_detail
+    Accountant -> admin_accountant_detail
+    Admin / Self -> user_profile
+    """
+    target_user = get_object_or_404(User, pk=pk)
+
+    if target_user.role == UserRole.SALES_HEAD:
+        return redirect('admin_manager_detail', pk=pk)
+    elif target_user.role == UserRole.BRANCH_HEAD:
+        return redirect('admin_branch_head_detail', pk=pk)
+    elif target_user.role == UserRole.COUNSELOR:
+        return redirect('admin_counselor_detail', pk=pk)
+    elif target_user.role == UserRole.TELECALLER:
+        return redirect('admin_telecaller_detail', pk=pk)
+    elif target_user.role == UserRole.RECEPTIONIST:
+        return redirect('admin_receptionist_detail', pk=pk)
+    elif target_user.role == UserRole.ACCOUNTANT:
+        return redirect('admin_accountant_detail', pk=pk)
+    else:
+        if request.user.pk == target_user.pk:
+            return redirect('user_profile')
+        return render(request, 'accounts/profile.html', {
+            'user': target_user,
+            'is_target_profile': True,
+        })
+
+
+@login_required
+def user_change_password(request):
+    """
+    Allows any authenticated user to change their own password.
+    Requires:
+    - Current password (validated against existing password)
+    - New password & confirmation (enforces all project password validators)
+    - Updates session auth hash so the current session remains active
+    - Records audit log via log_activity
+    """
+    from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.forms import PasswordChangeForm
+
+    if request.method == 'POST':
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            log_activity(
+                user=request.user,
+                action="Password Changed",
+                description=f"User '{request.user.username}' changed their password via Profile settings.",
+                object_type="User",
+                object_id=str(request.user.pk),
+                request=request
+            )
+            messages.success(request, "Your password has been changed successfully.")
+            return redirect('user_profile')
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = PasswordChangeForm(user=request.user)
+
+    return render(request, 'accounts/change_password.html', {
+        'form': form,
+    })
+
+
+@login_required
+def admin_send_password_reset_link(request, pk):
+    """
+    Authorized action to send a secure password reset link to a selected staff member's email.
+    Enforces can_manage_user and superadmin protection.
+    Records audit logging without exposing secrets.
+    """
+    target_user = get_object_or_404(User, pk=pk)
+
+    if not can_manage_user(request.user, target_user):
+        raise PermissionDenied("You do not have permission to send a password reset link for this user.")
+
+    from .services import send_password_reset_email_for_user
+    email_sent, email_msg = send_password_reset_email_for_user(target_user, request=request, admin_user=request.user)
+    if email_sent:
+        messages.success(request, f"Password reset link successfully sent to {target_user.email}.")
+    else:
+        messages.error(request, f"Failed to send password reset link to {target_user.email}: {email_msg}")
+
+    next_url = request.META.get('HTTP_REFERER') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+
+    if target_user.role == UserRole.SALES_HEAD:
+        return redirect('admin_managers_list')
+    elif target_user.role == UserRole.BRANCH_HEAD:
+        return redirect('admin_branch_heads_list')
+    elif target_user.role == UserRole.COUNSELOR:
+        return redirect('admin_counselors_list')
+    elif target_user.role == UserRole.TELECALLER:
+        return redirect('admin_telecallers_list')
+    elif target_user.role == UserRole.RECEPTIONIST:
+        return redirect('admin_receptionists_list')
+    elif target_user.role == UserRole.ACCOUNTANT:
+        return redirect('admin_accountants_list')
+    return redirect('admin_dashboard')
+
+
+@login_required
+def admin_set_user_password(request, pk):
+    """
+    Authorized administrator action to directly set a new password for a selected staff account.
+    Enforces can_manage_user, superadmin protection, password validators, and audit logging.
+    """
+    target_user = get_object_or_404(User, pk=pk)
+
+    if not can_manage_user(request.user, target_user):
+        raise PermissionDenied("You do not have permission to set the password for this user.")
+
+    if request.method == 'POST':
+        form = SetPasswordForm(target_user, request.POST)
+        if form.is_valid():
+            form.save()
+            target_user.must_change_password = False
+            target_user.save(update_fields=['must_change_password'])
+
+            log_activity(
+                user=request.user,
+                action="Administrator Set Password",
+                description=f"Administrator '{request.user.username}' directly set a new password for '{target_user.username}' ({target_user.role}).",
+                object_type="User",
+                object_id=str(target_user.pk),
+                request=request
+            )
+
+            try:
+                from activities.services import create_notification
+                create_notification(
+                    recipient=target_user,
+                    title="Password Changed",
+                    message="Your account password was updated by an Administrator.",
+                    notification_type="password_changed"
+                )
+            except Exception:
+                pass
+
+            messages.success(request, f"Password for {target_user.get_full_name() or target_user.username} has been successfully updated.")
+
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+
+            if target_user.role == UserRole.SALES_HEAD:
+                return redirect('admin_manager_detail', pk=target_user.pk)
+            elif target_user.role == UserRole.BRANCH_HEAD:
+                return redirect('admin_branch_head_detail', pk=target_user.pk)
+            elif target_user.role == UserRole.COUNSELOR:
+                return redirect('admin_counselor_detail', pk=target_user.pk)
+            elif target_user.role == UserRole.TELECALLER:
+                return redirect('admin_telecaller_detail', pk=target_user.pk)
+            elif target_user.role == UserRole.RECEPTIONIST:
+                return redirect('admin_receptionists_list')
+            elif target_user.role == UserRole.ACCOUNTANT:
+                return redirect('admin_accountants_list')
+            return redirect('admin_dashboard')
+        else:
+            messages.error(request, "Please correct the password errors below.")
+    else:
+        form = SetPasswordForm(target_user)
+
+    return render(request, 'accounts/admin_set_password.html', {
+        'form': form,
+        'target_user': target_user,
+    })
+
 
 

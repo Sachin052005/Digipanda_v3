@@ -1,3 +1,4 @@
+from .intake import CentralizedLeadIntakeService, IntakeResult
 import re
 from datetime import timedelta
 from collections import defaultdict
@@ -11,8 +12,12 @@ from activities.utils import log_activity
 
 def normalize_phone(phone):
     """
-    Normalizes a phone number by stripping country codes (+91), spaces, hyphens,
-    parentheses, leading zeros, and extracting the clean 10-digit number.
+    Normalizes a phone number.
+    - Surrogate markers (e.g. 'NoPhone-...') are preserved untouched.
+    - Domestic Indian numbers: strips '+91', '91' (12-digit), leading '0' (11-digit),
+      and formats to canonical 10 digits (e.g. '9876543210').
+    - International numbers (with leading '+' or '00', or non-Indian >10 digits):
+      formats to clean E.164 format with leading '+' (e.g. '+447911123456', '+14155552671').
     """
     if not phone:
         return ''
@@ -20,16 +25,37 @@ def normalize_phone(phone):
     if raw.startswith('NoPhone-'):
         return raw
 
-    # Remove all non-digits
+    # Strip URI prefixes common in Facebook Lead Ads and sheets (e.g., 'p:+91...', 'tel:+91...', 'ph:...')
+    raw = re.sub(r'^(?:p|tel|phone|ph)\s*:\s*', '', raw, flags=re.IGNORECASE).strip()
+
+    # Convert international dialing prefix '00' to '+'
+    if raw.startswith('00'):
+        raw = '+' + raw[2:].lstrip()
+
+    is_international_prefix = raw.startswith('+')
     digits = re.sub(r'\D', '', raw)
 
-    # If starts with 91 and has 12 digits, strip country code
-    if len(digits) == 12 and digits.startswith('91'):
-        digits = digits[2:]
-    # If 11 digits and starts with 0, strip leading 0
-    elif len(digits) == 11 and digits.startswith('0'):
-        digits = digits[1:]
+    if not digits:
+        return ''
 
+    # Check for Indian numbers:
+    # 1. Starts with 91 and has 12 digits (e.g. +91 9876543210 or 919876543210)
+    if len(digits) == 12 and digits.startswith('91'):
+        return digits[2:]
+
+    # 2. Starts with 0 and has 11 digits (e.g. 09876543210)
+    if len(digits) == 11 and digits.startswith('0') and not is_international_prefix:
+        return digits[1:]
+
+    # 3. Exactly 10 digits (domestic Indian standard mobile/landline)
+    if len(digits) == 10 and not is_international_prefix:
+        return digits
+
+    # If explicitly prefixed with '+' or entered as international number (>10 digits)
+    if is_international_prefix or len(digits) > 10:
+        return f"+{digits}"
+
+    # Fallback for short local/extension digits
     return digits
 
 
@@ -57,12 +83,22 @@ def find_duplicate_lead(phone=None, email=None, name=None, exclude_id=None):
 
     # 1. Match by phone
     if clean_phone and not clean_phone.startswith('NoPhone-'):
-        # Check exact or endswith 10 digits
-        if len(clean_phone) >= 10:
-            target_10 = clean_phone[-10:]
+        if clean_phone.startswith('+'):
             lead_by_phone = qs.filter(
-                Q(phone=clean_phone) | Q(phone__endswith=target_10) | Q(alternate_phone__endswith=target_10)
+                Q(normalized_phone=clean_phone) | Q(phone=clean_phone) | Q(alternate_phone=clean_phone)
             ).first()
+            if lead_by_phone:
+                return lead_by_phone
+        elif len(clean_phone) >= 10:
+            target_10 = clean_phone[-10:]
+            # Priority 1: Exact match on normalized_phone
+            lead_by_phone = qs.filter(normalized_phone=target_10).first()
+            if not lead_by_phone:
+                lead_by_phone = qs.filter(
+                    (Q(phone=clean_phone) | Q(phone__endswith=target_10) | Q(alternate_phone__endswith=target_10))
+                    & ~Q(normalized_phone__startswith='+')
+                    & ~Q(phone__startswith='+')
+                ).first()
             if lead_by_phone:
                 return lead_by_phone
         else:
@@ -94,10 +130,19 @@ def find_all_matching_leads(phone=None, email=None, name=None, exclude_id=None):
     matches_dict = {}
 
     if clean_phone and not clean_phone.startswith('NoPhone-'):
-        if len(clean_phone) >= 10:
+        if clean_phone.startswith('+'):
+            phone_matches = qs.filter(
+                Q(normalized_phone=clean_phone) | Q(phone=clean_phone) | Q(alternate_phone=clean_phone)
+            )
+        elif len(clean_phone) >= 10:
             target_10 = clean_phone[-10:]
             phone_matches = qs.filter(
-                Q(phone=clean_phone) | Q(phone__endswith=target_10) | Q(alternate_phone__endswith=target_10)
+                Q(normalized_phone=target_10) |
+                (
+                    (Q(phone=clean_phone) | Q(phone__endswith=target_10) | Q(alternate_phone__endswith=target_10))
+                    & ~Q(normalized_phone__startswith='+')
+                    & ~Q(phone__startswith='+')
+                )
             )
         else:
             phone_matches = qs.filter(phone=clean_phone)
@@ -127,6 +172,22 @@ def handle_incoming_lead_duplicate(existing_lead, incoming_data, branch=None, us
     notes = incoming_data.get('notes') or incoming_data.get('remarks') or ''
     channel_name = incoming_data.get('channel') or ''
 
+    prod_obj = incoming_data.get('product')
+    if isinstance(prod_obj, str) and prod_obj:
+        from products.models import Product
+        prod_obj = Product.objects.filter(name__iexact=prod_obj).first()
+
+    # Create a JSON-safe payload for DuplicateLeadRecord audit
+    safe_payload = {}
+    if isinstance(incoming_data, dict):
+        for k, v in incoming_data.items():
+            if hasattr(v, 'name'):
+                safe_payload[k] = v.name
+            elif hasattr(v, 'pk'):
+                safe_payload[k] = v.pk
+            else:
+                safe_payload[k] = str(v) if v is not None else ''
+
     result = intake_lead(
         phone=phone,
         source=source_label,
@@ -134,12 +195,12 @@ def handle_incoming_lead_duplicate(existing_lead, incoming_data, branch=None, us
         name=name,
         email=email,
         branch=branch or existing_lead.branch,
-        product=incoming_data.get('product'),
+        product=prod_obj,
         note=notes,
         activity_user=user,
         provider_event_id=provider_event_id,
         incoming_timestamp=incoming_timestamp,
-        data_payload=incoming_data if isinstance(incoming_data, dict) else {},
+        data_payload=safe_payload,
     )
     return result.lead
 
@@ -342,7 +403,50 @@ def keep_single_lead_for_group(lead_ids, user=None):
             dup.sheet_mappings.update(lead=primary_lead)
             Activity.objects.filter(object_type='Lead', object_id=dup.id).update(object_id=primary_lead.id)
 
-            # Delete the redundant duplicate record
+            # Snapshot the merged duplicate lead into DuplicateLeadRecord before deleting from Lead table
+            from .models import DuplicateLeadRecord
+            dup_payload = {
+                'archived_lead_id': dup.id,
+                'name': dup.name,
+                'phone': dup.phone,
+                'alternate_phone': getattr(dup, 'alternate_phone', ''),
+                'email': dup.email or '',
+                'branch_id': dup.branch_id,
+                'branch_name': dup.branch.name if dup.branch else '',
+                'secondary_branches': [b.name for b in dup.secondary_branches.all()],
+                'channel': dup.channel.name if dup.channel else '',
+                'source': dup.source or '',
+                'status': dup.status,
+                'rating': getattr(dup, 'rating', 0),
+                'notes': dup.notes or '',
+                'created_at': dup.created_at.isoformat() if getattr(dup, 'created_at', None) else None,
+                'assigned_telecaller': dup.assigned_telecaller.username if dup.assigned_telecaller else None,
+                'assigned_counselor': dup.assigned_counselor.username if dup.assigned_counselor else None,
+                'custom_fields': getattr(dup, 'custom_fields', {}),
+            }
+
+            DuplicateLeadRecord.objects.create(
+                original_lead=primary_lead,
+                record_type='MERGED_ARCHIVE',
+                name=dup.name,
+                phone=dup.phone,
+                normalized_phone=normalize_phone(dup.phone),
+                email=dup.email or '',
+                branch=dup.branch,
+                branch_name=dup.branch.name if dup.branch else '',
+                existing_branch=primary_lead.branch,
+                existing_branch_name=primary_lead.branch.name if primary_lead.branch else '',
+                existing_source=primary_lead.source or '',
+                existing_lead_created_at=primary_lead.created_at,
+                status=dup.status,
+                duplicate_reason=f"Manually consolidated into Primary Lead #{primary_lead.id}",
+                action_taken="MERGED_INTO_PRIMARY",
+                notes=dup.notes or f"Merged into Lead #{primary_lead.id}",
+                source=dup.source or 'Manual Merge',
+                data_payload=dup_payload
+            )
+
+            # Delete the redundant duplicate record from active Lead table
             dup.delete()
 
         primary_lead.save()
@@ -596,59 +700,51 @@ def process_spreadsheet_row_duplicate_rules(row_data, headers=None, connection=N
 
         else:
             # ─────────────────────────────────────────────────────────
-            # DIFFERENT BRANCH AFTER 10 DAYS -> VALID NEW LEAD! (Rule B)
+            # DIFFERENT BRANCH AFTER 10 DAYS -> ENRICH EXISTING PRIMARY (NO DUPLICATE LEAD CREATION)
             # ─────────────────────────────────────────────────────────
             with transaction.atomic():
                 orig_branch_name = existing_lead.branch.name if existing_lead.branch else 'Original Branch'
                 new_branch_name = incoming_branch.name if incoming_branch else 'New Branch'
 
-                existing_lead.status = LeadStatus.HISTORICAL
-                hist_note = f"[System]: Marked Historical/Inactive after new submission in '{new_branch_name}' after {round(days_diff, 1)} days."
-                existing_lead.notes = f"{existing_lead.notes}\n{hist_note}".strip() if existing_lead.notes else hist_note
-                existing_lead.save(update_fields=['status', 'notes', 'updated_at'])
+                re_enquiry_note = f"[Re-Enquiry - {source_label} ({round(days_diff, 1)} days later)]: Enquired for {new_branch_name}."
+                if existing_lead.notes:
+                    existing_lead.notes = f"{existing_lead.notes}\n{re_enquiry_note}".strip()
+                else:
+                    existing_lead.notes = re_enquiry_note
 
-                # Channel/Source attribution: use the connection's selected Channel/Source
-                channel = (connection.channel if connection else None) or (
-                    Channel.objects.filter(name__icontains='Google Sheets').first() or
-                    Channel.objects.first()
-                )
+                if incoming_branch and incoming_branch != existing_lead.branch:
+                    existing_lead.secondary_branches.add(incoming_branch)
 
-                history_note = f"New submission from {new_branch_name}. Previous history: Originally submitted in {orig_branch_name} on {existing_lead.created_at.strftime('%d %b %Y')} (Lead #{existing_lead.id})."
-                new_lead = Lead.objects.create(
-                    name=name or existing_lead.name,
-                    phone=phone or existing_lead.phone,
-                    email=email or existing_lead.email,
-                    branch=incoming_branch,
-                    channel=channel,
-                    source=source_label,
-                    is_offline=True,
-                    status=LeadStatus.NEW,
-                    notes=history_note
-                )
+                if email and not existing_lead.email:
+                    existing_lead.email = email
+                if name and (not existing_lead.name or normalize_phone(existing_lead.name)):
+                    existing_lead.name = name
+
+                existing_lead.status = LeadStatus.FOLLOW_UP
+                existing_lead.save()
 
                 dup_rec = DuplicateLeadRecord.objects.create(
                     original_lead=existing_lead,
+                    record_type='REENQUIRY_DUPLICATE',
                     name=name or existing_lead.name,
                     phone=phone or existing_lead.phone,
                     email=email or existing_lead.email,
                     branch=incoming_branch,
                     branch_name=new_branch_name,
-                    status='New Submission (>10 Days)',
-                    notes=f"New submission after {round(days_diff, 1)} days in {new_branch_name}. Previous lead #{existing_lead.id} ({orig_branch_name}) marked historical.",
+                    status='Enriched Re-Enquiry (>10 Days)',
+                    notes=f"Re-enquiry after {round(days_diff, 1)} days in {new_branch_name}. Existing primary lead #{existing_lead.id} enriched and preserved.",
                     source=source_label,
                     data_payload=clean_payload
                 )
-
-                assign_lead_to_branch_telecaller(new_lead, branch=incoming_branch, source=source_label, triggered_by=user)
 
                 if connection and row_id:
                     GoogleSheetRowMapping.objects.get_or_create(
                         connection=connection,
                         row_identifier=row_id,
-                        defaults={'lead': new_lead, 'row_index': row_idx, 'source_status': 'Active'}
+                        defaults={'lead': existing_lead, 'row_index': row_idx, 'source_status': 'Active'}
                     )
 
-                return (new_lead, False, dup_rec)
+                return (existing_lead, False, dup_rec)
 
     else:
         # ─────────────────────────────────────────────────────────

@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Django: Run Server (Port 8001)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/CRM_Integrated_v2/CRM/manage.py",
+      "args": ["runserver", "8001"],
+      "django": true,
+      "autoStartBrowser": false,
+      "cwd": "${workspaceFolder}/CRM_Integrated_v2/CRM",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/CRM_Integrated_v2/CRM"
+      }
+    },
+    {
+      "name": "Django: Run Server (Port 8000)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/CRM_Integrated_v2/CRM/manage.py",
+      "args": ["runserver", "8000"],
+      "django": true,
+      "autoStartBrowser": false,
+      "cwd": "${workspaceFolder}/CRM_Integrated_v2/CRM",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/CRM_Integrated_v2/CRM"
+      }
+    },
+    {
+      "name": "Facebook Leads: Auto-Sync Worker Daemon",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/CRM_Integrated_v2/CRM/manage.py",
+      "args": ["sync_fb_leads", "--loop", "--interval", "180"],
+      "cwd": "${workspaceFolder}/CRM_Integrated_v2/CRM"
+    }
+  ]
+}

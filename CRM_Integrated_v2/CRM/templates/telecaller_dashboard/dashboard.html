@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Telecaller Workspace - TECHPANDA CRM{% endblock %}
+{% block title %}Telecaller Workspace - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 24px;">
@@ -31,20 +31,11 @@
       <a href="?period=month" class="btn {% if period == 'month' %}btn-primary tp-btn-primary{% else %}btn-secondary tp-btn-secondary{% endif %}" style="font-size: 0.8rem; padding: 5px 12px;">This Month</a>
     </div>
 
-    <!-- Custom Date Range -->
-    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-      <input type="hidden" name="period" value="custom">
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">From</span>
-        <input type="date" name="start_date" class="form-control tp-input" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ start_date }}">
-      </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.8rem; color: var(--tp-text-muted);">To</span>
-        <input type="date" name="end_date" class="form-control tp-input" style="font-size: 0.8rem; padding: 4px 8px; width: 140px;" value="{{ end_date }}">
-      </div>
-      {% if period != 'all' and period %}
-        <a href="?period=all" class="btn btn-secondary tp-btn-secondary" style="font-size: 0.8rem; padding: 5px 8px; color: #ef4444;" title="Reset filter">&times;</a>
-      {% endif %}
+    <!-- Custom Date Range (Smart Calendar Popover) -->
+    <div class="tp-smart-date-container">
+      <input type="hidden" name="period" value="{% if period == 'custom' %}custom{% else %}all{% endif %}">
+      <input type="date" name="start_date" value="{{ start_date }}" style="display: none;">
+      <input type="date" name="end_date" value="{{ end_date }}" style="display: none;">
     </div>
   </form>
 </div>
@@ -57,9 +48,9 @@
   <span style="font-size: 0.8rem; font-weight: 600; color: var(--tp-text-subtle);">Click any card to view detailed records</span>
 </div>
 
-<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+<div class="kpi-grid tp-stagger-container" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
   <!-- Card 1: Fresh Leads Today -->
-  <a href="{% url 'telecaller_leads_list' %}?filter=fresh_today" class="kpi-card tp-kpi-card" style="text-decoration: none; color: inherit; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; border-radius: var(--tp-radius-lg);" title="Click to view fresh leads">
+  <a href="{% url 'telecaller_leads_list' %}?filter=fresh_today" class="kpi-card tp-kpi-card tp-hover-lift" style="text-decoration: none; color: inherit; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; border-radius: var(--tp-radius-lg);" title="Click to view fresh leads">
     <div style="width: 100%; display: flex; justify-content: space-between; align-items: flex-start;">
       <div>
         <h4 style="margin: 0; font-size: 0.82rem; color: var(--tp-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Fresh Leads Today</h4>
@@ -327,14 +318,13 @@
 <!-- Split Grid: Lead Pipeline Chart & Recent Calls -->
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
   <!-- Pipeline Chart -->
-  <div class="crm-card">
-    <div class="crm-card-header">
-      <h3>My Lead Status Funnel</h3>
+  <!-- Lead Status Distribution Chart -->
+  <div class="tp-chart-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--tp-text-primary);">My Lead Status Funnel</h3>
     </div>
-    <div class="crm-card-body">
-      <div style="max-height: 260px; position: relative;">
-        <canvas id="telecallerLeadStatusChart"></canvas>
-      </div>
+    <div style="height: 270px; position: relative;">
+      <canvas id="telecallerLeadStatusChart"></canvas>
     </div>
   </div>
 
@@ -381,28 +371,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const labels = Object.keys(rawData);
     const data = Object.values(rawData);
 
-    if (labels.length === 0) {
-      labels.push('No Leads Yet');
-      data.push(0);
-    }
-
-    new Chart(ctx, {
-      type: 'pie',
-      data: {
+    if (window.TPCharts) {
+      window.TPCharts.createDoughnut(ctx, {
         labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom' }
+        data: data,
+        centerLabel: 'MY PIPELINE',
+        cutout: '74%',
+        legendPosition: 'bottom'
+      });
+    } else {
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['No Leads Yet'],
+          datasets: [{
+            data: data.length ? data : [0],
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: { legend: { position: 'bottom' } }
         }
-      }
-    });
+      });
+    }
   }
 });
 </script>

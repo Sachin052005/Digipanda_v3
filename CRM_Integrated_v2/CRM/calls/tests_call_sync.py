@@ -85,10 +85,11 @@ class AppLoginTests(CallSyncTestBase):
         r = self.api.post(reverse("app_login"), {"username": "tc_sync", "password": "nope"})
         self.assertEqual(r.status_code, 400)
 
-    def test_admin_and_sales_head_cannot_use_app(self):
-        for username in ("admin_sync", "sh_sync"):
+    def test_all_roles_can_use_app(self):
+        for username in ("admin_sync", "sh_sync", "tc_sync"):
             r = self.api.post(reverse("app_login"), {"username": username, "password": "pwd"})
-            self.assertEqual(r.status_code, 403, username)
+            self.assertEqual(r.status_code, 200, username)
+            self.assertIn("token", r.json())
 
     def test_missing_or_bad_token_is_401(self):
         r = self.api.post(reverse("app_calls_ingest"), {"calls": []}, content_type="application/json")

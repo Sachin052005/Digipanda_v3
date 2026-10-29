@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block title %}My Profile - DigipandaCRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">
+      ACCOUNT &rsaquo; PROFILE
+    </div>
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0;">
+      👤 My Profile
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 4px 0 0;">
+      View and manage your account details, contact information, and security settings
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; align-items: center;">
+    <button type="button" class="btn btn-outline-primary tp-btn-secondary" id="btnOpenEditProfile" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 8px 16px; border-radius: var(--radius-md);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+      Edit Profile
+    </button>
+    <a href="{% url 'change_password' %}" class="btn btn-primary tp-btn-primary" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 8px 16px; border-radius: var(--radius-md);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      Change Password
+    </a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+  <!-- Account Information Card -->
+  <div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light, rgba(79, 70, 229, 0.12)); color: var(--primary, #4f46e5); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700;">
+          {{ user.username|slice:":1"|upper }}
+        </div>
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">
+            {{ user.get_full_name|default:user.username }}
+          </h3>
+          <span class="badge" style="background: var(--primary-light, rgba(79, 70, 229, 0.12)); color: var(--primary, #4f46e5); font-size: 0.75rem; margin-top: 4px; display: inline-block;">
+            {{ user.display_role }}
+          </span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-primary tp-btn-secondary" id="btnEditCardDirect" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; padding: 4px 10px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        Edit
+      </button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.875rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">Username:</span>
+        <strong style="color: var(--text-main); font-family: monospace;">{{ user.username }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">First Name:</span>
+        <strong style="color: var(--text-main);">{{ user.first_name|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">Last Name:</span>
+        <strong style="color: var(--text-main);">{{ user.last_name|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">Email Address:</span>
+        <strong style="color: var(--text-main);">{{ user.email|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">Phone Number:</span>
+        <strong style="color: var(--text-main);">{{ user.phone|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">Assigned Branch:</span>
+        <strong style="color: var(--text-main);">{{ user.branch.name|default:"All Branches / Central" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">Member Since:</span>
+        <strong style="color: var(--text-main);">{{ user.date_joined|date:"M d, Y" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: var(--text-muted); font-weight: 500;">Account Status:</span>
+        {% if user.is_active %}
+        <span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.75rem;">Active</span>
+        {% else %}
+        <span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem;">Inactive</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Security & Password Card -->
+  <div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      Security & Password
+    </h3>
+    <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
+      Manage your login password. We recommend updating your password periodically and ensuring it satisfies strong complexity rules.
+    </p>
+
+    <div style="background: var(--bg-body, rgba(0,0,0,0.02)); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+      <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Password Requirements:</div>
+      <ul style="margin: 0; padding-left: 18px; font-size: 0.775rem; color: var(--text-muted); line-height: 1.6;">
+        <li>Minimum 8 characters in length</li>
+        <li>At least one uppercase and one lowercase letter</li>
+        <li>At least one numeric digit (0-9)</li>
+        <li>At least one special character (!@#$%^&*...)</li>
+      </ul>
+    </div>
+
+    <a href="{% url 'change_password' %}" class="btn btn-primary tp-btn-primary" style="width: 100%; text-align: center; font-weight: 600; padding: 10px; border-radius: var(--radius-md); display: block;">
+      Change My Password
+    </a>
+  </div>
+</div>
+
+<!-- Modal: Edit Profile -->
+<div class="modal-backdrop" id="editProfileModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+  <div class="crm-card modal-box" style="width: 100%; max-width: 520px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+    
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        Edit Profile Information
+      </h3>
+      <button type="button" id="btnCloseEditProfile" style="background: transparent; border: none; font-size: 1.4rem; line-height: 1; color: var(--text-muted); cursor: pointer; padding: 0 4px;">&times;</button>
+    </div>
+
+    <form method="POST" action="{% url 'user_profile' %}" id="profileEditForm" style="padding: 24px;">
+      {% csrf_token %}
+      
+      {% if form.errors %}
+      <div style="padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-md); margin-bottom: 20px; font-size: 0.85rem; color: #ef4444;">
+        <strong>Please correct the following errors:</strong>
+        <ul style="margin: 6px 0 0 0; padding-left: 18px;">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li>{{ field|title }}: {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <div class="form-group">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">First Name *</label>
+          <input type="text" name="first_name" class="form-control tp-input" value="{{ form.first_name.value|default:user.first_name }}" placeholder="First Name" required style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main);">
+        </div>
+        <div class="form-group">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Last Name *</label>
+          <input type="text" name="last_name" class="form-control tp-input" value="{{ form.last_name.value|default:user.last_name }}" placeholder="Last Name" required style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main);">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Email Address *</label>
+        <input type="email" name="email" class="form-control tp-input" value="{{ form.email.value|default:user.email }}" placeholder="yourname@domain.com" required style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main);">
+        <small style="color: var(--text-muted); font-size: 0.78rem;">Used for system notifications and password resets.</small>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Phone Number</label>
+        <input type="text" name="phone" class="form-control tp-input" value="{{ form.phone.value|default:user.phone }}" placeholder="+91 98765 43210" style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-main);">
+        <small style="color: var(--text-muted); font-size: 0.78rem;">Official contact number for telephony and communications.</small>
+      </div>
+
+      <div style="background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 20px; font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px;">
+        <div><strong>Username:</strong> <span style="font-family: monospace;">{{ user.username }}</span> (Managed by System)</div>
+        <div><strong>Role:</strong> {{ user.display_role }} &nbsp;|&nbsp; <strong>Branch:</strong> {{ user.branch.name|default:"Central" }}</div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn btn-secondary tp-btn-secondary" id="btnCancelEditProfile" style="padding: 8px 16px; font-weight: 600; border-radius: var(--radius-md);">Cancel</button>
+        <button type="submit" class="btn btn-primary tp-btn-primary" style="padding: 8px 20px; font-weight: 700; border-radius: var(--radius-md); display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var modal = document.getElementById('editProfileModal');
+  var btnOpen = document.getElementById('btnOpenEditProfile');
+  var btnCard = document.getElementById('btnEditCardDirect');
+  var btnClose = document.getElementById('btnCloseEditProfile');
+  var btnCancel = document.getElementById('btnCancelEditProfile');
+
+  function openModal() {
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    if (modal) modal.style.display = 'none';
+  }
+
+  if (btnOpen) btnOpen.addEventListener('click', openModal);
+  if (btnCard) btnCard.addEventListener('click', openModal);
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+  // Close when clicking backdrop outside modal box
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) closeModal();
+    });
+  }
+
+  // If validation errors occurred on form submission, auto-open modal
+  {% if form.errors %}
+  openModal();
+  {% endif %}
+});
+</script>
+{% endblock %}

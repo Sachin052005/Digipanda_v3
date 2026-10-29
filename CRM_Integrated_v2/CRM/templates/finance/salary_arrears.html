@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Salary Arrears - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <div class="tp-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 22px;">
+    <div>
+      <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--tp-text-primary); margin: 0;">Salary Arrears</h1>
+      <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 4px 0 0 0; max-width: 900px;">
+        Deferred payments folded into a later payslip — either a join-month stub (a joiner with fewer remaining days in their join month than the branch's arrear threshold gets no payslip that month) or a manually-requested correction (wrong attendance was entered for an already-approved/paid period). Either way, the amount shown here is folded into the employee's next generated payroll run (included in net pay).
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('arrear-modal').style.display='flex';" style="background: #dc2626; font-weight: 700; font-size: 0.86rem;">
+      Request correction
+    </button>
+  </div>
+
+  <!-- Arrears Table -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px;">#</th>
+            <th style="padding: 10px 12px;">Employee</th>
+            <th style="padding: 10px 12px;">Period</th>
+            <th style="padding: 10px 12px;">Source</th>
+            <th style="padding: 10px 12px; text-align: right;">Days</th>
+            <th style="padding: 10px 12px; text-align: right;">Amount</th>
+            <th style="padding: 10px 12px;">Status</th>
+            <th style="padding: 10px 12px;">Applied In</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for arr in arrears %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+            <td style="padding: 12px;">{{ forloop.counter }}</td>
+            <td style="padding: 12px;">
+              <div style="font-weight: 700;">{{ arr.employee.full_name }}</div>
+              <div style="font-size: 0.74rem; color: var(--tp-text-muted);">{{ arr.employee.employee_code }}</div>
+            </td>
+            <td style="padding: 12px;">{{ arr.period_label }}</td>
+            <td style="padding: 12px;">{{ arr.source }}</td>
+            <td style="padding: 12px; text-align: right;">{{ arr.days_count }}</td>
+            <td style="padding: 12px; text-align: right; font-weight: 800; color: #059669;">₹{{ arr.amount|floatformat:2 }}</td>
+            <td style="padding: 12px;">
+              <span class="badge" style="{% if arr.status == 'Folded in Payroll' %}background: rgba(16, 185, 129, 0.15); color: #059669;{% else %}background: rgba(217, 119, 6, 0.15); color: #d97706;{% endif %} font-size: 0.72rem;">
+                {{ arr.status }}
+              </span>
+            </td>
+            <td style="padding: 12px; font-size: 0.8rem; font-family: monospace;">
+              {{ arr.folded_in_payroll.run_number|default:"-" }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding: 36px; text-align: center; color: var(--tp-text-muted);">
+              No salary arrears
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Request Correction Modal -->
+<div id="arrear-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+  <div class="card" style="max-width: 480px; width: 100%; padding: 24px; border-radius: 12px; background: var(--bg-card);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Request Attendance / Arrear Correction</h3>
+      <button type="button" onclick="document.getElementById('arrear-modal').style.display='none';" style="background: none; border: none; font-size: 1.2rem; cursor: pointer;">&times;</button>
+    </div>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="request_arrear" value="1">
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Employee *</label>
+        {{ form.employee }}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Period Label (e.g. September 2026) *</label>
+        {{ form.period_label }}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Source *</label>
+        {{ form.source }}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Adjustment Days</label>
+        {{ form.days_count }}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Arrear Amount (₹) *</label>
+        {{ form.amount }}
+      </div>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px;">Reason</label>
+        {{ form.reason }}
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('arrear-modal').style.display='none';">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="background: #dc2626;">Save Arrear</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

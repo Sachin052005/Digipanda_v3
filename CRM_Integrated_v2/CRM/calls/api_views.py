@@ -50,8 +50,8 @@ class AppLoginView(APIView):
             return Response({"error": "Wrong username or password"}, status=status.HTTP_400_BAD_REQUEST)
         if not services.can_use_app(user):
             return Response(
-                {"error": "This login can't use the call sync app. Use your CRM Telecaller login "
-                          "(or ask your admin to check your role)."},
+                {"error": "This login can't use the call sync app. Your account must be active "
+                          "or permitted to use the call sync app."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         token, _ = Token.objects.get_or_create(user=user)

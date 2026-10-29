@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Edit Branch Admin - {{ target_user.get_full_name|default:target_user.username }} - DigipandaCRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title-group">
+    <h1>Edit Branch Admin</h1>
+    <p>Update account details for {{ target_user.get_full_name|default:target_user.username }} (@{{ target_user.username }})</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'admin_branch_admins_list' %}" class="btn btn-secondary">Back to List</a>
+  </div>
+</div>
+
+<div style="max-width: 650px;">
+  <div class="crm-card" style="background: var(--bg-card, #fff); border: 1px solid var(--border-color, #e5e7eb); border-radius: 8px; padding: 24px;">
+    <form method="POST">
+      {% csrf_token %}
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">First Name <span class="required" style="color: #ef4444;">*</span></label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.first_name.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Last Name <span class="required" style="color: #ef4444;">*</span></label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.last_name.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Email Address <span class="required" style="color: #ef4444;">*</span></label>
+        {{ form.email }}
+        {% if form.email.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Phone Number</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.phone.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Assigned Branch <span class="required" style="color: #ef4444;">*</span></label>
+          {{ form.branch }}
+          {% if form.branch.errors %}<div class="form-error" style="color: #ef4444; font-size: 0.78rem; margin-top: 4px;">{{ form.branch.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-check" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        {{ form.is_active }}
+        <label class="form-check-label" style="font-size: 0.85rem; font-weight: 500;">Active Account</label>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <a href="{% url 'admin_branch_admins_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="font-weight: 600;">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

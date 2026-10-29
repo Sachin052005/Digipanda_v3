@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Finance Verification & Oversight - DigiPanda CRM{% endblock %}
+
+{% block content %}
+<div class="tp-page-container">
+  <div class="tp-page-header" style="margin-bottom: 22px;">
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--tp-text-primary); margin: 0;">Finance Verification</h1>
+    <p style="color: var(--tp-text-muted); font-size: 0.85rem; margin: 4px 0 0 0;">
+      Everything approved in your branch — payments, other income and expenses. Review each and, if something's wrong, revert it to the recorder, edit it (a revised invoice is emailed for payments), or delete it.
+    </p>
+    <div style="font-size: 0.76rem; color: var(--tp-text-muted); margin-top: 4px;">Branch money · all time</div>
+  </div>
+
+  <!-- 4 KPI Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px;">
+    <div class="card tp-kpi-card" style="padding: 16px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div style="font-size: 0.76rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">Collections</div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #059669; margin-top: 4px;">₹{{ tot_collections|floatformat:2 }}</div>
+      <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 2px;">{{ pmts_count }} payments</div>
+    </div>
+    <div class="card tp-kpi-card" style="padding: 16px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div style="font-size: 0.76rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">Other income</div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: var(--tp-text-primary); margin-top: 4px;">₹{{ other_income|floatformat:2 }}</div>
+      <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 2px;">0 entries</div>
+    </div>
+    <div class="card tp-kpi-card" style="padding: 16px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div style="font-size: 0.76rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">Expenses</div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: #dc2626; margin-top: 4px;">₹{{ tot_expenses|floatformat:2 }}</div>
+      <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 2px;">{{ exps_count }} expenses</div>
+    </div>
+    <div class="card tp-kpi-card" style="padding: 16px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div style="font-size: 0.76rem; font-weight: 600; color: var(--tp-text-muted); text-transform: uppercase;">Net (Income - expenses)</div>
+      <div style="font-size: 1.5rem; font-weight: 800; color: var(--tp-primary-600); margin-top: 4px;">₹{{ net_income|floatformat:2 }}</div>
+      <div style="font-size: 0.74rem; color: var(--tp-text-muted); margin-top: 2px;">₹{{ tot_collections|floatformat:0 }} in - ₹{{ tot_expenses|floatformat:0 }} out</div>
+    </div>
+  </div>
+
+  <!-- Filters & Verification Table -->
+  <div class="card tp-card-glass" style="padding: 22px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+      <form method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <select name="type" class="form-select tp-custom-select" onchange="this.form.submit()" style="height: 36px; font-size: 0.82rem;">
+          <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All types</option>
+          <option value="collections" {% if type_filter == 'collections' %}selected{% endif %}>Collections</option>
+          <option value="expenses" {% if type_filter == 'expenses' %}selected{% endif %}>Expenses</option>
+        </select>
+        <select name="period" class="form-select tp-custom-select" onchange="this.form.submit()" style="height: 36px; font-size: 0.82rem;">
+          <option value="all_time" {% if period_filter == 'all_time' %}selected{% endif %}>All time</option>
+          <option value="this_month" {% if period_filter == 'this_month' %}selected{% endif %}>This month</option>
+        </select>
+      </form>
+
+      <div style="font-size: 0.82rem; color: var(--tp-text-muted); font-weight: 600;">
+        {{ combined_items|length }} items · ₹{{ tot_collections|floatformat:2 }}
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.75rem; color: var(--tp-text-muted); text-transform: uppercase;">
+            <th style="padding: 10px 12px;">Type</th>
+            <th style="padding: 10px 12px;">Date</th>
+            <th style="padding: 10px 12px;">Reference / Details</th>
+            <th style="padding: 10px 12px; text-align: right;">Amount</th>
+            <th style="padding: 10px 12px;">Recorded By</th>
+            <th style="padding: 10px 12px;">Proof</th>
+            <th style="padding: 10px 12px; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in combined_items %}
+          <tr style="border-bottom: 1px solid var(--border-color); font-size: 0.84rem;">
+            <td style="padding: 12px;">
+              <span class="badge" style="{% if item.is_payment %}background: rgba(16, 185, 129, 0.15); color: #059669;{% else %}background: rgba(220, 38, 38, 0.15); color: #dc2626;{% endif %} font-size: 0.72rem; padding: 2px 7px; border-radius: 4px;">
+                {{ item.type }}
+              </span>
+            </td>
+            <td style="padding: 12px; font-size: 0.8rem;">{{ item.date|default:"-" }}</td>
+            <td style="padding: 12px;">
+              <div style="font-weight: 700;">{{ item.title }}</div>
+              <div style="font-size: 0.75rem; color: var(--tp-text-muted);">Receipt: {{ item.receipt }}</div>
+            </td>
+            <td style="padding: 12px; text-align: right; font-weight: 800; font-size: 0.95rem; {% if item.is_payment %}color: #059669;{% else %}color: #dc2626;{% endif %}">
+              ₹{{ item.amount|floatformat:2 }}
+            </td>
+            <td style="padding: 12px; font-size: 0.8rem;">{{ item.recorder }}</td>
+            <td style="padding: 12px;">
+              {% if item.proof_url %}
+              <a href="{{ item.proof_url }}" target="_blank" class="btn btn-sm btn-secondary" style="font-size: 0.72rem; padding: 2px 6px;">
+                View &nearr;
+              </a>
+              {% else %}
+              <span style="font-size: 0.74rem; color: var(--tp-text-muted);">-</span>
+              {% endif %}
+            </td>
+            <td style="padding: 12px; text-align: center;">
+              <span style="font-size: 0.74rem; color: var(--tp-text-muted); font-weight: 600;">Verified</span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" style="padding: 36px; text-align: center; color: var(--tp-text-muted);">
+              Nothing approved yet
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

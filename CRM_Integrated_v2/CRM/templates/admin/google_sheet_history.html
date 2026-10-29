@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Sync History - {{ connection.name }} - TECHPANDA CRM{% endblock %}
+{% block title %}Sync History - {{ connection.name }} - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom: 24px;">
@@ -28,6 +28,29 @@
     <a href="{% url 'admin_offline_leads' %}" class="btn btn-secondary">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> Back to Offline Leads
     </a>
+  </div>
+</div>
+
+<div class="crm-card" style="margin-bottom: 24px;">
+  <div class="crm-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h3>Active Column Mapping Profile</h3>
+    <span class="badge badge-success" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">Intelligent Matching Active</span>
+  </div>
+  <div style="padding: 16px 20px;">
+    {% if connection.field_mapping %}
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px;">
+        {% for field_key, col_name in connection.field_mapping.items %}
+          {% if field_key != 'headers' and field_key != 'rows' and field_key != 'meta' and col_name %}
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">CRM: {{ field_key }}</div>
+            <div style="font-weight: 600; color: var(--text-main); margin-top: 2px;">Sheet: {{ col_name }}</div>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); margin: 0;">Dynamic automatic column matching is applied on every sync.</p>
+    {% endif %}
   </div>
 </div>
 

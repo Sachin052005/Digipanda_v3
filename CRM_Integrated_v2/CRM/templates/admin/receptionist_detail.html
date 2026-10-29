@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}{{ receptionist.get_full_name|default:receptionist.username }} - Receptionist Profile{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">
+      STAFF &rsaquo; RECEPTIONIST PROFILE
+    </div>
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 10px;">
+      <span>{{ receptionist.get_full_name|default:receptionist.username }}</span>
+      {% if receptionist.is_active %}
+      <span class="badge badge-active" style="font-size: 0.75rem;">Active</span>
+      {% else %}
+      <span class="badge badge-inactive" style="font-size: 0.75rem;">Inactive</span>
+      {% endif %}
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 4px 0 0;">
+      Receptionist &bull; @{{ receptionist.username }} &bull; Branch: <strong>{{ branch.name|default:"Unassigned" }}</strong>
+    </p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+    {% if branch %}
+    <a href="{% url 'admin_walkin_desk' %}?branch={{ branch.id }}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      Walk-in Desk &rarr;
+    </a>
+    {% endif %}
+    <a href="{% url 'admin_receptionist_change_password' receptionist.pk %}" class="btn btn-warning" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      Change Password
+    </a>
+    <form method="POST" action="{% url 'admin_receptionist_toggle_status' receptionist.pk %}" style="display: inline-block;">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if receptionist.is_active %}btn-secondary{% else %}btn-success{% endif %}">
+        {% if receptionist.is_active %}Deactivate{% else %}Activate{% endif %}
+      </button>
+    </form>
+    <a href="{% url 'admin_receptionists_list' %}" class="btn btn-secondary">Back to List</a>
+  </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Total Branch Walk-ins</h4>
+      <div class="kpi-value">{{ total_walkins }}</div>
+    </div>
+    <div class="kpi-icon-wrap blue">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Walk-ins Today</h4>
+      <div class="kpi-value">{{ today_walkins }}</div>
+    </div>
+    <div class="kpi-icon-wrap green">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>This Month</h4>
+      <div class="kpi-value">{{ month_walkins }}</div>
+    </div>
+    <div class="kpi-icon-wrap amber">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-info">
+      <h4>Awaiting Assignment</h4>
+      <div class="kpi-value">{{ awaiting_assignment }}</div>
+    </div>
+    <div class="kpi-icon-wrap rose">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 24px;">
+  <!-- Receptionist Details Card -->
+  <div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+      <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 700;">
+        {{ receptionist.username|slice:":1"|upper }}
+      </div>
+      <div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin: 0;">
+          {{ receptionist.get_full_name|default:receptionist.username }}
+        </h3>
+        <span class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; font-size: 0.75rem; margin-top: 4px;">
+          Front Desk &bull; Receptionist
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.875rem;">
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Username:</span>
+        <strong style="color: var(--text-main); font-family: monospace;">{{ receptionist.username }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Email:</span>
+        <strong style="color: var(--text-main);">{{ receptionist.email|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Phone:</span>
+        <strong style="color: var(--text-main);">{{ receptionist.phone|default:"Not specified" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Assigned Branch:</span>
+        <strong style="color: var(--text-main);">{{ branch.name|default:"Unassigned" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Active Branch Counselors:</span>
+        <strong style="color: var(--text-main);">{{ counselors_count }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Member Since:</span>
+        <strong style="color: var(--text-main);">{{ receptionist.date_joined|date:"M d, Y" }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted); font-weight: 500;">Last Login:</span>
+        <strong style="color: var(--text-main);">{{ receptionist.last_login|date:"M d, Y H:i"|default:"Never" }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Walk-in Visitors for Branch -->
+  <div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0;">Recent Walk-in Check-ins</h3>
+      {% if branch %}
+      <a href="{% url 'admin_walkin_desk' %}?branch={{ branch.id }}" style="font-size: 0.8rem; color: var(--primary); font-weight: 600; text-decoration: none;">View All Desk Leads &rarr;</a>
+      {% endif %}
+    </div>
+
+    <div class="table-responsive">
+      <table class="crm-table" style="font-size: 0.85rem;">
+        <thead>
+          <tr>
+            <th>Visitor / Student</th>
+            <th>Phone</th>
+            <th>Program / Course</th>
+            <th>Assigned Counselor</th>
+            <th>Status</th>
+            <th>Registered</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in recent_walkins %}
+          <tr>
+            <td>
+              <strong>{{ w.name }}</strong>
+            </td>
+            <td>{{ w.phone|default:"-" }}</td>
+            <td>{{ w.product.name|default:"General Inquiry" }}</td>
+            <td>
+              {% if w.assigned_counselor %}
+              <a href="{% url 'admin_counselor_detail' w.assigned_counselor.pk %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+                {{ w.assigned_counselor.get_full_name|default:w.assigned_counselor.username }}
+              </a>
+              {% else %}
+              <span class="badge badge-warning" style="font-size: 0.72rem;">Unassigned</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge" style="background: rgba(37, 99, 235, 0.1); color: var(--primary);">{{ w.status }}</span>
+            </td>
+            <td style="color: var(--text-muted); font-size: 0.78rem;">{{ w.created_at|date:"M d, H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+              No walk-in leads registered for this branch yet.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity Log -->
+<div class="crm-card" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+  <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-bottom: 16px;">Audit &amp; Activity Log</h3>
+  <div class="table-responsive">
+    <table class="crm-table" style="font-size: 0.85rem;">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Description</th>
+          <th>Date &amp; Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for act in recent_activities %}
+        <tr>
+          <td><strong style="color: var(--primary);">{{ act.action }}</strong></td>
+          <td>{{ act.description }}</td>
+          <td style="color: var(--text-muted);">{{ act.timestamp|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">
+            No recent activity recorded for this receptionist.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

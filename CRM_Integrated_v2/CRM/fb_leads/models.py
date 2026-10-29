@@ -52,7 +52,32 @@ class FacebookPage(models.Model):
         help_text="Default CRM branch for incoming leads from this Facebook Page"
     )
     page_access_token = models.TextField(help_text="Page-level access token")
+    SYNC_INTERVAL_CHOICES = [
+        (1, '1 Minute'),
+        (3, '3 Minutes (Recommended)'),
+        (5, '5 Minutes'),
+        (10, '10 Minutes'),
+        (15, '15 Minutes'),
+        (30, '30 Minutes'),
+        (60, '1 Hour'),
+    ]
+
     webhook_subscribed = models.BooleanField(default=False)
+    auto_sync_enabled = models.BooleanField(
+        default=True,
+        help_text="Automatically synchronize leads periodically from Facebook"
+    )
+    sync_interval_minutes = models.PositiveIntegerField(
+        default=3,
+        choices=SYNC_INTERVAL_CHOICES,
+        help_text="Auto-sync interval in minutes"
+    )
+    next_sync_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Next scheduled auto-sync timestamp"
+    )
     status = models.CharField(max_length=50, default='CONNECTED', db_index=True)
     last_sync_at = models.DateTimeField(null=True, blank=True)
     last_sync_status = models.CharField(max_length=50, default='Idle')

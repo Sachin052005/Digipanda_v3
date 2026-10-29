@@ -25,18 +25,25 @@
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
     localStorage.setItem(THEME_KEY, theme);
     if (themeToggleBtn) {
-      const sunIcon = themeToggleBtn.querySelector('.icon-sun');
-      const moonIcon = themeToggleBtn.querySelector('.icon-moon');
-      if (theme === 'dark') {
-        if (sunIcon) sunIcon.style.display = 'inline-block';
-        if (moonIcon) moonIcon.style.display = 'none';
+      const is3dCoin = themeToggleBtn.querySelector('.tp-3d-coin');
+      if (is3dCoin) {
+        themeToggleBtn.setAttribute('title', theme === 'dark' ? 'Switch to Light theme' : 'Switch to Dark theme');
       } else {
-        if (sunIcon) sunIcon.style.display = 'none';
-        if (moonIcon) moonIcon.style.display = 'inline-block';
+        const sunIcon = themeToggleBtn.querySelector('.icon-sun');
+        const moonIcon = themeToggleBtn.querySelector('.icon-moon');
+        if (theme === 'dark') {
+          if (sunIcon) sunIcon.style.display = 'inline-block';
+          if (moonIcon) moonIcon.style.display = 'none';
+        } else {
+          if (sunIcon) sunIcon.style.display = 'none';
+          if (moonIcon) moonIcon.style.display = 'inline-block';
+        }
       }
     }
+    window.dispatchEvent(new CustomEvent('tp:themechange', { detail: { theme: theme } }));
   }
 
   const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
@@ -44,10 +51,75 @@
 
   if (themeToggleBtn) {
     themeToggleBtn.addEventListener('click', function () {
+      document.documentElement.classList.add('theme-transitioning');
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
       applyTheme(newTheme);
+      setTimeout(function () {
+        document.documentElement.classList.remove('theme-transitioning');
+      }, 350);
     });
+  }
+
+  // 1.1 Presentation: Password Visibility Toggle
+  document.addEventListener('click', function(e) {
+    const toggleBtn = e.target.closest('.tp-password-toggle-btn');
+    if (!toggleBtn) return;
+    const wrapper = toggleBtn.closest('.tp-password-field-wrapper') || toggleBtn.parentElement;
+    if (!wrapper) return;
+    const input = wrapper.querySelector('input');
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      toggleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+      toggleBtn.setAttribute('aria-label', 'Hide password');
+    } else {
+      input.type = 'password';
+      toggleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+      toggleBtn.setAttribute('aria-label', 'Show password');
+    }
+  });
+
+  // 1.2 Presentation: KPI Cards Stagger & Number Counter Animation
+  function initDashboardStaggerAndCounters() {
+    const kpiCards = document.querySelectorAll('.tp-kpi-card, .kpi-card');
+    kpiCards.forEach(function(card, idx) {
+      card.style.setProperty('--stagger-index', idx);
+    });
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    const valueEls = document.querySelectorAll('.kpi-value');
+    valueEls.forEach(function(el) {
+      const text = el.textContent.trim();
+      if (/^\d+$/.test(text)) {
+        const target = parseInt(text, 10);
+        if (target > 0) {
+          const duration = Math.min(750, 250 + target * 15);
+          const startTimestamp = performance.now();
+          function step(now) {
+            const progress = Math.min((now - startTimestamp) / duration, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = Math.floor(target * easeOut);
+            el.textContent = current;
+            if (progress < 1) {
+              requestAnimationFrame(step);
+            } else {
+              el.textContent = target;
+            }
+          }
+          requestAnimationFrame(step);
+        }
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDashboardStaggerAndCounters);
+  } else {
+    initDashboardStaggerAndCounters();
   }
 
   // 2. Sidebar Persistence and Collapse
@@ -300,13 +372,38 @@
     callPollInterval = null;
 
     const dialerCard = document.querySelector('.dialer-card');
-    if (dialerCard) dialerCard.classList.remove('dialer-card-lead-details');
+    if (dialerCard) dialerCard.classList.add('dialer-card-lead-details');
 
     document.getElementById('dialer-lead-name').textContent = leadName;
     document.getElementById('dialer-lead-phone').textContent = leadPhone;
     document.getElementById('dialer-timer-display').textContent = '00:00';
-    document.getElementById('dialer-calling-state').style.display = 'block';
-    document.getElementById('dialer-completion-form').style.display = 'none';
+    
+    // Switch to unified in-call workspace immediately
+    document.getElementById('dialer-calling-state').style.display = 'none';
+    const compForm = document.getElementById('dialer-completion-form');
+    if (compForm) {
+      compForm.style.display = 'block';
+      compForm.classList.remove('hide-empty-active');
+    }
+
+    const incallTopBar = document.getElementById('modal-incall-top-bar');
+    if (incallTopBar) incallTopBar.style.display = 'flex';
+    const defaultTopRibbon = document.getElementById('modal-default-top-ribbon');
+    if (defaultTopRibbon) defaultTopRibbon.style.display = 'none';
+
+    const incallTimerEl = document.getElementById('incall-timer-display');
+    if (incallTimerEl) incallTimerEl.textContent = '00:00';
+    const incallBadge = document.getElementById('incall-status-badge');
+    if (incallBadge) {
+      incallBadge.textContent = 'Connecting Call…';
+      incallBadge.style.color = '#60a5fa';
+      incallBadge.style.background = 'rgba(59, 130, 246, 0.2)';
+      incallBadge.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+    }
+    const incallSyncText = document.getElementById('incall-sync-status-text');
+    if (incallSyncText) incallSyncText.textContent = 'Sending call request to paired mobile…';
+    const btnIncallEnd = document.getElementById('btn-incall-end');
+    if (btnIncallEnd) btnIncallEnd.style.display = 'inline-flex';
 
     const stateBadge = document.getElementById('dialer-state-badge');
     if (stateBadge) {
@@ -328,6 +425,9 @@
 
     overlay.classList.add('active');
 
+    // Immediately load full lead details so telecaller can fill info during the call!
+    loadModalLeadDetails(leadId);
+
     // Real-time tracking of phone dispatch & call states
     const statusText = document.getElementById('dialer-sync-status-text');
     const statusBox = document.getElementById('dialer-sync-status');
@@ -345,11 +445,12 @@
       fetch('/calls/device-status/?call_id=' + encodeURIComponent(callId))
         .then(r => r.json())
         .then(st => {
-          if (!statusText || currentActiveCallId !== callId) return;
+          if (currentActiveCallId !== callId) return;
 
           // Device connectivity alert
           if (!st.has_device || !st.is_online) {
-            statusText.textContent = '⚠️ Connection lost — reconnect CRM CallSync app on mobile';
+            if (statusText) statusText.textContent = '⚠️ Connection lost — reconnect CRM CallSync app on mobile';
+            if (incallSyncText) incallSyncText.textContent = '⚠️ Reconnect phone: CRM CallSync offline';
             if (statusBox) {
               statusBox.style.background = '#fef2f2';
               statusBox.style.borderColor = '#fca5a5';
@@ -359,47 +460,65 @@
 
           const callStatus = st.call_status;
 
+          // Helper to update both timers
+          function updateTimerDisplays(sec) {
+            const formatted = formatDuration(sec);
+            const timerEl = document.getElementById('dialer-timer-display');
+            if (timerEl) timerEl.textContent = formatted;
+            const incallTimer = document.getElementById('incall-timer-display');
+            if (incallTimer) incallTimer.textContent = formatted;
+          }
+
           // 1. QUEUED / DISPATCHED
           if (callStatus === 'Queued' || (!callStatus && st.is_dispatched)) {
             if (stateBadge) stateBadge.textContent = 'Queued for phone…';
-            if (statusText && st.is_online) {
-              statusText.textContent = st.is_dispatched ? '✓ Call received by phone — dialing now!' : 'Waiting for phone to pick up request…';
-              if (statusBox && st.is_dispatched) {
-                statusBox.style.background = '#eff6ff';
-                statusBox.style.borderColor = '#93c5fd';
-                statusBox.style.color = '#1d4ed8';
-              }
+            if (incallBadge) {
+              incallBadge.textContent = st.is_dispatched ? 'Dialing on Phone…' : 'Queued…';
+              incallBadge.style.color = '#93c5fd';
             }
-            const timerEl = document.getElementById('dialer-timer-display');
-            if (timerEl) timerEl.textContent = '00:00';
+            const msg = st.is_dispatched ? '✓ Call received by phone — dialing now!' : 'Waiting for phone to pick up request…';
+            if (statusText && st.is_online) statusText.textContent = msg;
+            if (incallSyncText && st.is_online) incallSyncText.textContent = msg;
+            if (statusBox && st.is_dispatched) {
+              statusBox.style.background = '#eff6ff';
+              statusBox.style.borderColor = '#93c5fd';
+              statusBox.style.color = '#1d4ed8';
+            }
+            updateTimerDisplays(0);
           }
           // 2. DIALING
           else if (callStatus === 'Dialing') {
             if (stateBadge) stateBadge.textContent = 'Dialing…';
-            if (statusText) {
-              statusText.textContent = 'Dialing number on mobile device…';
-              if (statusBox) {
-                statusBox.style.background = '#eff6ff';
-                statusBox.style.borderColor = '#bfdbfe';
-                statusBox.style.color = '#1d4ed8';
-              }
+            if (incallBadge) {
+              incallBadge.textContent = 'Dialing…';
+              incallBadge.style.color = '#fef08a';
             }
-            const timerEl = document.getElementById('dialer-timer-display');
-            if (timerEl) timerEl.textContent = '00:00';
+            const msg = 'Dialing number on mobile device…';
+            if (statusText) statusText.textContent = msg;
+            if (incallSyncText) incallSyncText.textContent = msg;
+            if (statusBox) {
+              statusBox.style.background = '#eff6ff';
+              statusBox.style.borderColor = '#bfdbfe';
+              statusBox.style.color = '#1d4ed8';
+            }
+            updateTimerDisplays(0);
           }
           // 3. RINGING
           else if (callStatus === 'Ringing') {
             if (stateBadge) stateBadge.textContent = 'Ringing…';
-            if (statusText) {
-              statusText.textContent = 'Recipient phone is ringing…';
-              if (statusBox) {
-                statusBox.style.background = '#fef3c7';
-                statusBox.style.borderColor = '#fcd34d';
-                statusBox.style.color = '#b45309';
-              }
+            if (incallBadge) {
+              incallBadge.textContent = 'Ringing…';
+              incallBadge.style.color = '#fde047';
             }
-            const timerEl = document.getElementById('dialer-timer-display');
-            if (timerEl) timerEl.textContent = '00:00';
+            const msg = 'Recipient phone is ringing…';
+            if (statusText) statusText.textContent = msg;
+            if (incallSyncText) incallSyncText.textContent = msg;
+            if (statusBox) {
+              statusBox.style.background = '#fef3c7';
+              statusBox.style.borderColor = '#fcd34d';
+              statusBox.style.color = '#b45309';
+            }
+            updateTimerDisplays(0);
           }
           // 4. IN PROGRESS (Answered!)
           else if (callStatus === 'In Progress') {
@@ -407,20 +526,25 @@
               stateBadge.textContent = 'Call Connected';
               stateBadge.style.color = '#16a34a';
             }
-            if (statusText) {
-              statusText.textContent = 'Call connected — conversation in progress';
-              if (statusBox) {
-                statusBox.style.background = '#dcfce7';
-                statusBox.style.borderColor = '#86efac';
-                statusBox.style.color = '#15803d';
-              }
+            if (incallBadge) {
+              incallBadge.textContent = 'Call Connected';
+              incallBadge.style.color = '#4ade80';
+              incallBadge.style.background = 'rgba(34, 197, 94, 0.2)';
+              incallBadge.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+            }
+            const msg = 'Conversation in progress — fill lead qualification details below';
+            if (statusText) statusText.textContent = msg;
+            if (incallSyncText) incallSyncText.textContent = msg;
+            if (statusBox) {
+              statusBox.style.background = '#dcfce7';
+              statusBox.style.borderColor = '#86efac';
+              statusBox.style.color = '#15803d';
             }
 
             // Sync authoritative server duration & start local ticking if not already running
             if (typeof st.elapsed_seconds === 'number' && st.elapsed_seconds >= 0) {
               callSeconds = st.elapsed_seconds;
-              const timerEl = document.getElementById('dialer-timer-display');
-              if (timerEl) timerEl.textContent = formatDuration(callSeconds);
+              updateTimerDisplays(callSeconds);
             }
 
             if (!isTimerActive) {
@@ -428,8 +552,7 @@
               if (callTimerInterval) clearInterval(callTimerInterval);
               callTimerInterval = setInterval(function () {
                 callSeconds++;
-                const timerEl = document.getElementById('dialer-timer-display');
-                if (timerEl) timerEl.textContent = formatDuration(callSeconds);
+                updateTimerDisplays(callSeconds);
               }, 1000);
             }
           }
@@ -444,10 +567,9 @@
               callSeconds = st.duration;
             }
 
-            const timerEl = document.getElementById('dialer-timer-display');
-            if (timerEl) timerEl.textContent = formatDuration(callSeconds);
+            updateTimerDisplays(callSeconds);
 
-            // Transition to modern lead completion interface
+            // Transition to lead completion state
             showLeadCompletionInterface(callSeconds, callStatus);
           }
         })
@@ -526,12 +648,14 @@
       return;
     }
 
-    maximizeCallDock();
+    const endingCallId = currentActiveCallId;
+    const endingLeadId = currentActiveLeadId;
+    const endingDuration = callSeconds;
 
     // Call backend end endpoint
     const formData = new FormData();
-    formData.append('duration', callSeconds);
-    fetch(`/calls/${currentActiveCallId}/end/`, {
+    formData.append('duration', endingDuration);
+    fetch(`/calls/${endingCallId}/end/`, {
       method: 'POST',
       headers: {
         'X-CSRFToken': getCookie('csrftoken') || '',
@@ -540,8 +664,34 @@
       body: formData
     }).catch(err => console.warn('Call end notify failed:', err));
 
+    // Check if user is ALREADY on this lead's detail page
+    const currentPath = window.location.pathname;
+    const isOnCurrentLeadPage = endingLeadId && (
+      currentPath.endsWith(`/leads/${endingLeadId}/`) ||
+      currentPath.includes(`/leads/${endingLeadId}/`)
+    );
+
+    if (isOnCurrentLeadPage && document.getElementById('callNotesSection')) {
+      closeCallDialer();
+      if (typeof window.focusCallNotesSection === 'function') {
+        window.focusCallNotesSection(endingCallId, endingDuration);
+      } else {
+        const section = document.getElementById('callNotesSection');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const notesInput = document.getElementById('page-call-notes');
+        if (notesInput) setTimeout(() => notesInput.focus(), 300);
+        const cIdInput = document.getElementById('page-call-id');
+        if (cIdInput) cIdInput.value = endingCallId;
+        const dInput = document.getElementById('page-call-duration');
+        if (dInput) dInput.value = endingDuration;
+      }
+      return;
+    }
+
+    maximizeCallDock();
+
     // Transition to modern lead completion interface
-    showLeadCompletionInterface(callSeconds, 'Completed');
+    showLeadCompletionInterface(endingDuration, 'Completed');
   };
 
   window.closeCallDialer = function () {
@@ -559,6 +709,16 @@
       overlay.classList.remove('tp-call-dock-minimized');
     }
   };
+
+  function escapeModalHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
   // Modern Lead Completion Interface Handlers
   window.showLeadCompletionInterface = function (callSeconds, callStatus) {
@@ -589,14 +749,308 @@
 
     const notesInput = document.getElementById('call-form-notes');
     if (notesInput) {
-      notesInput.value = '';
+      if (!notesInput.value) {
+        notesInput.value = '';
+      }
       setTimeout(() => notesInput.focus(), 120);
     }
+
+    const btnIncallEnd = document.getElementById('btn-incall-end');
+    if (btnIncallEnd) btnIncallEnd.style.display = 'none';
+
+    const incallBadge = document.getElementById('incall-state-badge');
+    if (incallBadge) {
+      incallBadge.textContent = callStatus === 'Completed' ? 'Call Ended' : (callStatus || 'Call Ended');
+      incallBadge.style.color = '#ef4444';
+      incallBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+      incallBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+    }
+
+    const incallSyncText = document.getElementById('incall-sync-status-text');
+    if (incallSyncText) incallSyncText.textContent = 'Call finished — review qualification details and submit conversation notes';
 
     if (currentActiveLeadId) {
       loadModalLeadDetails(currentActiveLeadId);
     }
   };
+
+  // Modal Inline Field Editing Engine
+  let modalCurrentEditingKey = null;
+  const modalFieldControllers = {};
+  const modalFieldCounters = {};
+
+  window.activateModalFieldEdit = function (key) {
+    const item = document.querySelector(`.lead-field-item[data-modal-key="${key}"]`);
+    if (!item || item.getAttribute('data-editable') !== '1') return;
+
+    if (modalCurrentEditingKey && modalCurrentEditingKey !== key) {
+      const prevKey = modalCurrentEditingKey;
+      const prevItem = document.querySelector(`.lead-field-item[data-modal-key="${prevKey}"]`);
+      const prevInput = document.getElementById(`modal-input-${prevKey}`);
+      if (prevItem && prevInput) {
+        const prevRaw = (prevItem.getAttribute('data-raw') || '').trim();
+        if (prevInput.value.trim() !== prevRaw) {
+          window.saveModalFieldAuto(currentActiveLeadId, prevKey, true);
+        } else {
+          closeModalFieldEditorIfClean(prevKey);
+        }
+      }
+    }
+
+    const displayEl = document.getElementById(`modal-display-${key}`);
+    const editorEl = document.getElementById(`modal-editor-${key}`);
+    const inputEl = document.getElementById(`modal-input-${key}`);
+    const errEl = document.getElementById(`modal-error-${key}`);
+
+    if (errEl) errEl.style.display = 'none';
+    if (displayEl) displayEl.style.display = 'none';
+    if (editorEl) editorEl.style.display = 'flex';
+    item.classList.add('is-editing');
+    modalCurrentEditingKey = key;
+
+    if (inputEl) {
+      inputEl.focus();
+      if (inputEl.select && inputEl.type !== 'select-one' && inputEl.type !== 'datetime-local' && inputEl.type !== 'date') {
+        inputEl.select();
+      }
+    }
+  };
+
+  function closeModalFieldEditorIfClean(key) {
+    const item = document.querySelector(`.lead-field-item[data-modal-key="${key}"]`);
+    const displayEl = document.getElementById(`modal-display-${key}`);
+    const editorEl = document.getElementById(`modal-editor-${key}`);
+    const errEl = document.getElementById(`modal-error-${key}`);
+
+    if (errEl && errEl.style.display !== 'none') return;
+    if (editorEl) editorEl.style.display = 'none';
+    if (displayEl) displayEl.style.display = 'flex';
+    if (item) item.classList.remove('is-editing');
+    if (modalCurrentEditingKey === key) modalCurrentEditingKey = null;
+  }
+
+  window.setModalFieldStatus = function (key, state, errorMsg) {
+    const statusEl = document.getElementById(`modal-status-${key}`);
+    const badgeEl = document.getElementById(`modal-status-badge-${key}`);
+    const errEl = document.getElementById(`modal-error-${key}`);
+
+    [statusEl, badgeEl].forEach(el => {
+      if (!el) return;
+      el.className = 'lead-field-status';
+      if (state === 'saving') {
+        el.classList.add('status-saving');
+        el.innerHTML = `<svg class="spin-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> <span>Saving...</span>`;
+        el.style.display = 'inline-flex';
+      } else if (state === 'saved') {
+        el.classList.add('status-saved');
+        el.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Saved</span>`;
+        el.style.display = 'inline-flex';
+        setTimeout(() => {
+          if (el.classList.contains('status-saved')) {
+            el.style.display = 'none';
+            el.classList.remove('status-saved');
+          }
+        }, 2500);
+      } else if (state === 'error') {
+        el.classList.add('status-error');
+        el.innerHTML = `<span>Failed</span>`;
+        el.style.display = 'inline-flex';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+
+    if (errEl) {
+      if (state === 'error' && errorMsg) {
+        errEl.textContent = errorMsg;
+        errEl.style.display = 'block';
+      } else if (state !== 'error') {
+        errEl.style.display = 'none';
+      }
+    }
+  };
+
+  window.saveModalFieldAuto = function (leadId, key, closeOnSuccess) {
+    if (!leadId) leadId = currentActiveLeadId;
+    const item = document.querySelector(`.lead-field-item[data-modal-key="${key}"]`);
+    const inputEl = document.getElementById(`modal-input-${key}`);
+    const displayEl = document.getElementById(`modal-display-${key}`);
+    const textEl = document.getElementById(`modal-text-${key}`);
+
+    if (!item || !inputEl || !leadId) return;
+    const newVal = inputEl.value.trim();
+    const currentRaw = (item.getAttribute('data-raw') || '').trim();
+
+    if (newVal === currentRaw) {
+      if (closeOnSuccess) closeModalFieldEditorIfClean(key);
+      return;
+    }
+
+    if (modalFieldControllers[key]) {
+      modalFieldControllers[key].abort();
+    }
+    const controller = new AbortController();
+    modalFieldControllers[key] = controller;
+
+    modalFieldCounters[key] = (modalFieldCounters[key] || 0) + 1;
+    const reqId = modalFieldCounters[key];
+
+    setModalFieldStatus(key, 'saving');
+    const csrf = getCookie('csrftoken') || '';
+
+    fetch(`/leads/api/${leadId}/update-field/`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrf,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        field: key,
+        value: newVal
+      })
+    })
+    .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, data: data })))
+    .then(res => {
+      if (reqId !== modalFieldCounters[key]) return;
+
+      if (!res.ok || !res.data.success) {
+        const msg = (res.data && res.data.error) ? res.data.error : 'Failed to update field.';
+        setModalFieldStatus(key, 'error', msg);
+        return;
+      }
+
+      const d = res.data;
+      item.setAttribute('data-raw', d.raw_value || '');
+      setModalFieldStatus(key, 'saved');
+
+      if (textEl) {
+        if (key === 'phone') {
+          textEl.innerHTML = `<span class="lead-phone-flag">🇮🇳</span><span>${escapeModalHtml(d.value)}</span>`;
+        } else {
+          textEl.innerHTML = `<span>${escapeModalHtml(d.value)}</span>`;
+        }
+      }
+
+      if (d.is_empty) {
+        item.classList.add('is-empty-field');
+        if (displayEl) displayEl.classList.add('text-empty');
+      } else {
+        item.classList.remove('is-empty-field');
+        if (displayEl) displayEl.classList.remove('text-empty');
+      }
+
+      // Sync header or form elements if status or assignee changed
+      if (key === 'status') {
+        const pillLabel = document.getElementById('modalStatusLabel');
+        if (pillLabel) pillLabel.textContent = d.value;
+        const selectHidden = document.getElementById('modalStatusSelect');
+        if (selectHidden) selectHidden.value = d.value;
+        const callFormStatus = document.getElementById('call-form-lead-status');
+        if (callFormStatus) callFormStatus.value = d.value;
+      } else if (key === 'assignee_name' || key === 'assignee') {
+        const aName = document.getElementById('modal-assignee-name');
+        if (aName) aName.textContent = d.value;
+      }
+
+      if (closeOnSuccess) {
+        closeModalFieldEditorIfClean(key);
+      }
+    })
+    .catch(err => {
+      if (err.name === 'AbortError') return;
+      setModalFieldStatus(key, 'error', 'Network error.');
+    });
+  };
+
+  function renderModalFieldHtml(f, leadId) {
+    const isEditable = Boolean(f.is_editable);
+    const isEmpty = Boolean(f.is_empty);
+    const rawVal = f.raw_value !== undefined ? f.raw_value : '';
+    const displayVal = f.value || 'Empty';
+
+    let iconHtml = '';
+    if (f.type === 'text') {
+      iconHtml = '<span class="field-icon">T</span>';
+    } else if (f.type === 'select') {
+      iconHtml = '<span class="field-icon icon-select">▾</span>';
+    } else if (f.type === 'phone') {
+      iconHtml = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>';
+    } else if (f.type === 'date') {
+      iconHtml = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
+    } else {
+      iconHtml = '<span class="field-icon">#</span>';
+    }
+
+    const badgeHtml = f.badge ? `<span class="lead-phone-sim-badge">${escapeModalHtml(f.badge)}</span>` : '';
+    const lockHtml = !isEditable ? `<span class="field-readonly-lock" title="${escapeModalHtml(f.read_only_reason || 'Read-only field')}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>` : '';
+
+    let editorHtml = '';
+    if (isEditable) {
+      let inputControlHtml = '';
+      if (f.control_type === 'select') {
+        let optHtml = `<option value="">-- Select ${escapeModalHtml(f.label)} --</option>`;
+        if (Array.isArray(f.options)) {
+          f.options.forEach(opt => {
+            const isSelected = (opt.value === rawVal || opt.label === rawVal || opt.value === displayVal || opt.label === displayVal);
+            optHtml += `<option value="${escapeModalHtml(opt.value)}" ${isSelected ? 'selected' : ''}>${escapeModalHtml(opt.label)}</option>`;
+          });
+        }
+        inputControlHtml = `<select class="lead-inline-input form-select" id="modal-input-${escapeModalHtml(f.key)}" onchange="saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)">${optHtml}</select>`;
+      } else if (f.control_type === 'number') {
+        inputControlHtml = `<input type="number" class="lead-inline-input form-control" id="modal-input-${escapeModalHtml(f.key)}" value="${escapeModalHtml(rawVal)}" min="1950" max="2050" placeholder="${escapeModalHtml(f.label)}..." onblur="saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)" onkeydown="if(event.key==='Enter') saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)">`;
+      } else if (f.control_type === 'date') {
+        inputControlHtml = `<input type="date" class="lead-inline-input form-control" id="modal-input-${escapeModalHtml(f.key)}" value="${escapeModalHtml(rawVal)}" onchange="saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)" onblur="saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)">`;
+      } else if (f.control_type === 'phone') {
+        inputControlHtml = `<input type="tel" class="lead-inline-input form-control" id="modal-input-${escapeModalHtml(f.key)}" value="${escapeModalHtml(rawVal)}" placeholder="10-digit mobile number" onblur="saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)" onkeydown="if(event.key==='Enter') saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)">`;
+      } else if (f.control_type === 'email') {
+        inputControlHtml = `<input type="email" class="lead-inline-input form-control" id="modal-input-${escapeModalHtml(f.key)}" value="${escapeModalHtml(rawVal)}" placeholder="email@example.com" onblur="saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)" onkeydown="if(event.key==='Enter') saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)">`;
+      } else {
+        inputControlHtml = `<input type="text" class="lead-inline-input form-control" id="modal-input-${escapeModalHtml(f.key)}" value="${escapeModalHtml(rawVal)}" placeholder="Enter ${escapeModalHtml(f.label)}..." onblur="saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)" onkeydown="if(event.key==='Enter') saveModalFieldAuto('${leadId}', '${escapeModalHtml(f.key)}', true)">`;
+      }
+
+      editorHtml = `
+        <div class="lead-inline-editor" id="modal-editor-${escapeModalHtml(f.key)}" style="display: none;">
+          <div class="lead-inline-input-wrap">
+            ${inputControlHtml}
+          </div>
+          <div class="lead-inline-status-wrap">
+            <span class="lead-field-status" id="modal-status-${escapeModalHtml(f.key)}"></span>
+          </div>
+          <div class="lead-inline-error" id="modal-error-${escapeModalHtml(f.key)}" style="display: none;"></div>
+        </div>
+      `;
+    }
+
+    const editPencilHtml = isEditable ? `<span class="lead-field-edit-btn" title="Edit ${escapeModalHtml(f.label)}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>` : '';
+    const clickAttr = isEditable ? `onclick="activateModalFieldEdit('${escapeModalHtml(f.key)}');"` : '';
+    const titleAttr = isEditable ? `title="Click to edit ${escapeModalHtml(f.label)}"` : `title="${escapeModalHtml(f.read_only_reason || '')}"`;
+
+    return `
+      <div class="lead-field-item ${isEmpty ? 'is-empty-field' : ''} ${isEditable ? 'is-editable' : 'is-readonly'}"
+           data-modal-key="${escapeModalHtml(f.key)}"
+           data-control="${escapeModalHtml(f.control_type || 'text')}"
+           data-editable="${isEditable ? '1' : '0'}"
+           data-raw="${escapeModalHtml(rawVal)}">
+        <div class="lead-field-label">
+          ${iconHtml}
+          <span>${escapeModalHtml(f.label)}</span>
+          ${badgeHtml}
+          ${lockHtml}
+        </div>
+        <div class="lead-field-value ${isEmpty ? 'text-empty' : ''}" id="modal-display-${escapeModalHtml(f.key)}" ${clickAttr} ${titleAttr}>
+          <span class="lead-field-text" id="modal-text-${escapeModalHtml(f.key)}">
+            ${f.type === 'phone' && !isEmpty ? '<span class="lead-phone-flag">🇮🇳</span>' : ''}
+            <span>${escapeModalHtml(displayVal)}</span>
+          </span>
+          ${editPencilHtml}
+          <span class="lead-field-status inline-status-badge" id="modal-status-badge-${escapeModalHtml(f.key)}"></span>
+        </div>
+        ${editorHtml}
+      </div>
+    `;
+  }
 
   window.loadModalLeadDetails = function (leadId) {
     if (!leadId) return;
@@ -613,7 +1067,7 @@
       if (nameEl) nameEl.textContent = data.name || 'Lead Details';
 
       const phoneEl = document.getElementById('completion-lead-phone');
-      if (phoneEl) phoneEl.textContent = data.phone || '-';
+      if (phoneEl) phoneEl.textContent = data.display_phone || data.phone || '-';
 
       const statusLabel = document.getElementById('modalStatusLabel');
       if (statusLabel) statusLabel.textContent = data.status || 'Contacted';
@@ -623,6 +1077,17 @@
 
       const leadStatusForm = document.getElementById('call-form-lead-status');
       if (leadStatusForm && data.status) leadStatusForm.value = data.status;
+
+      const counterEl = document.getElementById('modal-lead-counter');
+      if (counterEl) counterEl.textContent = `Lead #${leadId} Call Session`;
+
+      // Wire full lead page links
+      ['modal-title-view-link', 'modal-open-full-page-btn', 'modal-btn-open-lead-page'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn && data.lead_detail_url) {
+          btn.href = data.lead_detail_url;
+        }
+      });
 
       const waBtn = document.getElementById('modal-whatsapp-btn');
       if (waBtn) {
@@ -656,42 +1121,72 @@
       const assigneeAvatar = document.getElementById('modal-assignee-avatar');
       if (assigneeAvatar) assigneeAvatar.textContent = data.assignee_initials || 'TS';
 
-      // Populate field mapping
-      const fieldMap = {
-        'modal-field-degree': data.degree,
-        'modal-field-passed-out': data.passed_out,
-        'modal-field-branch': data.branch,
-        'modal-field-working-status': data.working_status,
-        'modal-field-assignee': data.assignee,
-        'modal-field-join': data.joining_preference,
-        'modal-field-source': data.source,
-        'modal-field-retargeted': data.retargeted,
-        'modal-field-captured-on': data.captured_on,
-        'modal-field-pref-exam': data.pref_exam_location,
-        'modal-field-purpose': data.purpose,
-        'modal-field-pref-branch': data.pref_branch,
-        'modal-field-experience': data.total_experience,
-        'modal-field-college': data.college,
-        'modal-field-frequency': data.capture_frequency,
-        'modal-field-created-on': data.created_on,
-        'modal-field-act-type': data.last_activity_type,
-        'modal-field-courses': data.course_name,
-        'modal-field-center-visit': data.center_visit_date
-      };
+      // Render Dynamic Two-Column Layout (Matching Lead Detail Page)
+      const col1El = document.getElementById('modal-col1');
+      const col2El = document.getElementById('modal-col2');
+      if (col1El && Array.isArray(data.col1_fields)) {
+        col1El.innerHTML = data.col1_fields.map(f => renderModalFieldHtml(f, leadId)).join('');
+      }
+      if (col2El && Array.isArray(data.col2_fields)) {
+        col2El.innerHTML = data.col2_fields.map(f => renderModalFieldHtml(f, leadId)).join('');
+      }
 
-      for (const [id, val] of Object.entries(fieldMap)) {
-        const el = document.getElementById(id);
-        if (!el) continue;
-        const item = el.closest('.lead-field-item');
-        const displayVal = (val && String(val).trim() !== '' && String(val).trim() !== '-') ? String(val).trim() : 'Empty';
-        el.textContent = displayVal;
+      // Render Recent Call Recordings & History Table
+      const recentCallsWrap = document.getElementById('modal-recent-calls-wrap');
+      if (recentCallsWrap) {
+        if (Array.isArray(data.recent_calls) && data.recent_calls.length > 0) {
+          let rowsHtml = '';
+          data.recent_calls.forEach(rc => {
+            let audioHtml = rc.recording_url
+              ? `<audio controls preload="none" src="${escapeModalHtml(rc.recording_url)}" style="height: 30px; width: 220px; vertical-align: middle;">Audio not supported</audio>`
+              : '<span style="color: var(--text-muted); font-size: 0.775rem;">No recording file</span>';
 
-        if (displayVal === 'Empty') {
-          el.classList.add('text-empty');
-          if (item) item.classList.add('is-empty-field');
+            rowsHtml += `
+              <tr>
+                <td style="white-space: nowrap; padding: 8px 12px; border-bottom: 1px solid var(--border-color);">${escapeModalHtml(rc.time)}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);"><strong>${escapeModalHtml(rc.caller)}</strong></td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);"><code>${escapeModalHtml(rc.duration)}</code></td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);"><span class="badge" style="background: #eff6ff; color: #1d4ed8; font-size: 0.75rem;">${escapeModalHtml(rc.outcome)}</span></td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeModalHtml(rc.notes)}">${escapeModalHtml(rc.notes)}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--border-color);">${audioHtml}</td>
+              </tr>
+            `;
+          });
+
+          recentCallsWrap.innerHTML = `
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-top: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4 style="font-size: 0.925rem; font-weight: 700; margin: 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                  <span>Recent Calls &amp; Audio Recordings (${data.recent_calls.length})</span>
+                </h4>
+                <span style="font-size: 0.775rem; color: var(--text-muted);">Synced from mobile app / drive</span>
+              </div>
+              <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden;">
+                <table class="crm-table" style="font-size: 0.8125rem; width: 100%; margin: 0; background: var(--bg-card);">
+                  <thead style="background: var(--bg-body);">
+                    <tr>
+                      <th style="padding: 8px 12px; font-weight: 600;">Date &amp; Time</th>
+                      <th style="padding: 8px 12px; font-weight: 600;">Telecaller</th>
+                      <th style="padding: 8px 12px; font-weight: 600;">Duration</th>
+                      <th style="padding: 8px 12px; font-weight: 600;">Outcome</th>
+                      <th style="padding: 8px 12px; font-weight: 600;">Notes</th>
+                      <th style="padding: 8px 12px; font-weight: 600;">Recording Playback</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
         } else {
-          el.classList.remove('text-empty');
-          if (item) item.classList.remove('is-empty-field');
+          recentCallsWrap.innerHTML = `
+            <div style="background: var(--bg-body); border: 1px dashed var(--border-color); padding: 14px 20px; text-align: center; border-radius: 8px; color: var(--text-muted); font-size: 0.825rem; margin-top: 16px;">
+              No previous call recordings found for this lead yet. Newly synced calls will appear here automatically.
+            </div>
+          `;
         }
       }
     })
@@ -732,6 +1227,24 @@
       }).catch(err => console.warn('Status quick-sync error:', err));
     }
   };
+
+  // Bind 5-Star Priority Rating in Modal
+  document.addEventListener('DOMContentLoaded', function () {
+    const modalStars = document.querySelectorAll('#modalStarRating .star');
+    modalStars.forEach(star => {
+      star.addEventListener('click', function () {
+        const rating = parseInt(this.getAttribute('data-rating') || '0', 10);
+        modalStars.forEach(s => {
+          const r = parseInt(s.getAttribute('data-rating') || '0', 10);
+          if (r <= rating) {
+            s.classList.add('filled');
+          } else {
+            s.classList.remove('filled');
+          }
+        });
+      });
+    });
+  });
 
   // Bind Call Notes Completion Form
   const completionForm = document.getElementById('call-notes-completion-form');
@@ -789,7 +1302,7 @@
           }
           if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Save Call Notes';
+            submitBtn.textContent = 'Save Call Notes & Outcome';
           }
           return;
         }
@@ -802,14 +1315,18 @@
         const overlay = document.getElementById('call-dialer-overlay');
         if (overlay) overlay.classList.remove('active');
         alert('✓ ' + (res.data.message || 'Call notes saved successfully. You can now call another lead.'));
-        window.location.reload();
+        if (res.data && res.data.redirect_url) {
+          window.location.href = res.data.redirect_url;
+        } else {
+          window.location.reload();
+        }
       })
       .catch(err => {
         console.error('Call completion error:', err);
         alert('An unexpected error occurred while saving call notes.');
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Save Call Notes';
+          submitBtn.textContent = 'Save Call Notes & Outcome';
         }
       });
     });
@@ -965,6 +1482,9 @@
   if (notifBellBtn && notifPanel) {
     notifBellBtn.addEventListener('click', function (e) {
       e.stopPropagation();
+      if (window.dismissAllCustomDropdowns) {
+        window.dismissAllCustomDropdowns();
+      }
       const isVisible = notifPanel.style.display === 'flex';
       if (isVisible) {
         notifPanel.style.display = 'none';
@@ -1042,14 +1562,89 @@
     }
   });
 
-  // Reset loading state on browser back/forward cache navigation
-  window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-      document.querySelectorAll('.btn.is-loading, .tp-btn.is-loading').forEach(function (btn) {
-        btn.classList.remove('is-loading');
-        btn.disabled = false;
-      });
-    }
+  // Dedicated Logout Exit Animation Interceptor
+  document.addEventListener('click', function (e) {
+    const logoutLink = e.target.closest('.tp-logout-trigger, a[href*="/logout/"]');
+    if (!logoutLink) return;
+
+    // If user clicked with modifier keys (Ctrl/Cmd for new tab), let default behavior happen
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+
+    const overlay = document.getElementById('tp-logout-overlay');
+    if (!overlay) return;
+
+    e.preventDefault();
+    const targetUrl = logoutLink.getAttribute('href');
+
+    overlay.style.display = 'flex';
+    const progressFill = document.getElementById('tp-logout-progress-fill');
+    
+    // Trigger smooth progress bar animation
+    setTimeout(function () {
+      if (progressFill) progressFill.style.width = '100%';
+    }, 40);
+
+    // Gracefully navigate to logout endpoint after animation
+    setTimeout(function () {
+      window.location.href = targetUrl;
+    }, 800);
   });
+
+
+  // 1.3 Interactive 3D Perspective Card Tilt Engine (60fps requestAnimationFrame)
+  function init3DCardTiltEngine() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    const cards = document.querySelectorAll('.tp-kpi-card, .kpi-card, .tp-3d-card');
+    cards.forEach(function (card) {
+      if (card.dataset.has3dTilt) return;
+      card.dataset.has3dTilt = 'true';
+
+      // Insert dynamic specular light glare if not present
+      if (!card.querySelector('.tp-3d-glare')) {
+        const glare = document.createElement('div');
+        glare.className = 'tp-3d-glare';
+        card.appendChild(glare);
+      }
+
+      let rafId = null;
+
+      function onMouseMove(e) {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = (((y - centerY) / centerY) * -8).toFixed(2);
+        const rotateY = (((x - centerX) / centerX) * 8).toFixed(2);
+
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(function () {
+          card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px)`;
+          card.style.setProperty('--glare-x', `${((x / rect.width) * 100).toFixed(1)}%`);
+          card.style.setProperty('--glare-y', `${((y / rect.height) * 100).toFixed(1)}%`);
+        });
+      }
+
+      function onMouseLeave() {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(function () {
+          card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0)';
+        });
+      }
+
+      card.addEventListener('mousemove', onMouseMove, { passive: true });
+      card.addEventListener('mouseleave', onMouseLeave, { passive: true });
+    });
+  }
+
+  // Auto-init 3D Card Tilt on DOM load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init3DCardTiltEngine);
+  } else {
+    init3DCardTiltEngine();
+  }
 
 })();

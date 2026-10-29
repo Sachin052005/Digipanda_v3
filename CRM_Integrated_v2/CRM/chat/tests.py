@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 from django.test import override_settings
 from django.test import TestCase, Client
 from django.urls import reverse
@@ -251,11 +252,13 @@ class WhatsAppCRMTests(TestCase):
             ]
         }
 
-        response = self.client.post(
-            reverse('whatsapp-webhook'),
-            data=json.dumps(webhook_payload),
-            content_type="application/json"
-        )
+        with patch('chat.whatsapp.client.WhatsAppClient.send_payload', return_value={'messages': [{'id': 'wamid.mock'}]}), \
+             patch('chat.whatsapp.messages.send_text_message', return_value={'messages': [{'id': 'wamid.mock'}]}):
+            response = self.client.post(
+                reverse('whatsapp-webhook'),
+                data=json.dumps(webhook_payload),
+                content_type="application/json"
+            )
         self.assertEqual(response.status_code, 200)
 
         # Check that Meena Raj conversation and message were created and linked to business_acc2

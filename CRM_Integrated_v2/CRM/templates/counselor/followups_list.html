@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Counselor Follow-ups - TECHPANDA CRM{% endblock %}
+{% block title %}Counselor Follow-ups - DigipandaCRM{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -75,13 +75,12 @@
         {% endfor %}
       </select>
     </div>
-    <div class="filter-col">
-      <label>From Date</label>
-      <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
-    </div>
-    <div class="filter-col">
-      <label>To Date</label>
-      <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+    <div class="filter-col" style="flex: 0 0 auto; width: 220px;">
+      <label>Date Range</label>
+      <div class="tp-smart-date-container w-100">
+        <input type="date" name="date_from" value="{{ date_from }}" style="display: none;">
+        <input type="date" name="date_to" value="{{ date_to }}" style="display: none;">
+      </div>
     </div>
     <div style="display: flex; gap: 8px; align-items: flex-end;">
       <a href="{% url 'counselor_followups_list' %}" class="btn btn-secondary">Reset</a>

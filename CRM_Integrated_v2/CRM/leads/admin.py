@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import Lead, LeadImportHistory, LeadAssignmentHistory, LeadStatusHistory
+from .models import Lead, LeadImportHistory, LeadAssignmentHistory, LeadStatusHistory, PipelineStatus
+
+@admin.register(PipelineStatus)
+class PipelineStatusAdmin(admin.ModelAdmin):
+    list_display = ('name', 'stage_category', 'sort_order', 'is_active', 'is_system_default', 'created_at')
+    list_filter = ('stage_category', 'is_active', 'is_system_default')
+    search_fields = ('name', 'stage_category')
+    ordering = ('sort_order', 'name')
 
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):

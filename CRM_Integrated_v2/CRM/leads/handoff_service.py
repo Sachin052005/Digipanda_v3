@@ -65,9 +65,13 @@ def reassign_lead(lead, *, to_user, to_role, reason='', assigned_by, _skip_permi
     from_role = lead.current_owner_type if from_user else ''
 
     with transaction.atomic():
+        update_fields = [field_name, 'current_owner_type', 'updated_at']
         setattr(lead, field_name, to_user)
         lead.current_owner_type = owner_type_map[to_role]
-        lead.save(update_fields=[field_name, 'current_owner_type', 'updated_at'])
+        if to_role == 'TELECALLER' and lead.assigned_counselor_id:
+            lead.assigned_counselor = None
+            update_fields.append('assigned_counselor')
+        lead.save(update_fields=update_fields)
 
         LeadAssignmentHistory.objects.create(
             lead=lead,

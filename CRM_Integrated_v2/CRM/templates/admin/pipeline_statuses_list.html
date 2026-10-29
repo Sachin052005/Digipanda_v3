@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Pipeline Statuses - DigipandaCRM{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px;">
+  <div class="page-title-group">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 1.5rem;">🏷️</span>
+      <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0;">Pipeline Statuses & Stages</h1>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin: 4px 0 0 0;">
+      Customize lead sub-statuses and stages displayed in lead profiles, dropdowns, and live-call panels.
+    </p>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <!-- Pipeline Statuses List -->
+  <div class="crm-card">
+    <div class="crm-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">All Pipeline Statuses ({{ statuses|length }})</h3>
+      <form method="GET" style="display: flex; gap: 8px;">
+        <input type="text" name="search" class="form-control" style="width: 180px; padding: 6px 12px; font-size: 0.825rem;" placeholder="Search statuses..." value="{{ search_query }}">
+        <select name="status" class="form-select" style="width: 110px; padding: 6px 10px; font-size: 0.825rem;" onchange="this.form.submit()">
+          <option value="">All</option>
+          <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      </form>
+    </div>
+
+    <div class="table-responsive">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">Order</th>
+            <th>Status Name</th>
+            <th>Stage Category</th>
+            <th>Color</th>
+            <th>Type</th>
+            <th>State</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for st in statuses %}
+          <tr>
+            <td><strong style="color: var(--text-muted);">{{ st.sort_order }}</strong></td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: {{ st.color|default:'#3b82f6' }};"></span>
+                <strong style="color: var(--text-primary); font-size: 0.875rem;">{{ st.name }}</strong>
+              </div>
+            </td>
+            <td>
+              <span class="badge" style="background: rgba(59, 130, 246, 0.1); color: #2563eb; font-weight: 500; font-size: 0.75rem;">
+                {{ st.stage_category }}
+              </span>
+            </td>
+            <td>
+              <code style="font-size: 0.75rem; background: var(--bg-hover, #f3f4f6); padding: 2px 6px; border-radius: 4px;">{{ st.color }}</code>
+            </td>
+            <td>
+              {% if st.is_system_default %}
+              <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.7rem;">System</span>
+              {% else %}
+              <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.7rem;">Custom</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if st.is_active %}
+              <span class="badge badge-active" style="background: #dcfce7; color: #15803d; font-size: 0.75rem;">Active</span>
+              {% else %}
+              <span class="badge badge-inactive" style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem;">Inactive</span>
+              {% endif %}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <a href="{% url 'admin_pipeline_status_edit' st.pk %}" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.75rem;">Edit</a>
+              
+              <form method="POST" action="{% url 'admin_pipeline_status_toggle' st.pk %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.75rem;">
+                  {% if st.is_active %}Disable{% else %}Enable{% endif %}
+                </button>
+              </form>
+
+              {% if not st.is_system_default %}
+              <form method="POST" action="{% url 'admin_pipeline_status_delete' st.pk %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete custom status \'{{ st.name }}\'?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm" style="padding: 4px 8px; font-size: 0.75rem; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); background: transparent;">Delete</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+              No pipeline statuses found matching the criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Create New Status Form -->
+  <div class="crm-card" style="height: fit-content;">
+    <div class="crm-card-header">
+      <h3 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Add New Status</h3>
+    </div>
+    <form method="POST" action="{% url 'admin_pipeline_statuses' %}" style="padding: 16px;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; font-size: 0.825rem; margin-bottom: 6px; color: var(--text-primary);">
+          Status Name <span style="color: #ef4444;">*</span>
+        </label>
+        <input type="text" name="name" class="form-control" placeholder="e.g., Technical Assessment" required style="width: 100%;">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; font-size: 0.825rem; margin-bottom: 6px; color: var(--text-primary);">
+          Stage Category
+        </label>
+        <select name="stage_category" class="form-select" style="width: 100%;">
+          <option value="Top of Funnel">Top of Funnel (Inquiry / Reach)</option>
+          <option value="Engagement">Engagement (Discussion / Follow-up)</option>
+          <option value="Visit">Visit (Counseling / Institute Visit)</option>
+          <option value="Conversion">Conversion (Joined / Enrolled)</option>
+          <option value="Closed">Closed (Lost / Not Interested)</option>
+          <option value="General" selected>General</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="display: block; font-weight: 600; font-size: 0.825rem; margin-bottom: 6px; color: var(--text-primary);">
+          Badge Accent Color
+        </label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="color" name="color" value="#3b82f6" style="height: 38px; width: 44px; padding: 2px; border: 1px solid var(--border-color, #e5e7eb); border-radius: 6px; cursor: pointer;">
+          <span style="font-size: 0.775rem; color: var(--text-muted);">Pick highlight color for badge</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label style="display: block; font-weight: 600; font-size: 0.825rem; margin-bottom: 6px; color: var(--text-primary);">
+          Sort Order
+        </label>
+        <input type="number" name="sort_order" class="form-control" value="100" style="width: 100%;">
+        <small style="color: var(--text-muted); font-size: 0.75rem;">Lower numbers appear higher in dropdown lists.</small>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 10px;">
+        + Create Status
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

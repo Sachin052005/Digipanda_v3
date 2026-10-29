@@ -33,10 +33,10 @@
               <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td align="left" style="font-size: 11px; color: #94A3B8; font-weight: 500;">
-                    TECHPANDA – Learning Today, Building Tomorrow
+                    DIGIPANDA – Learning Today, Building Tomorrow
                   </td>
                   <td align="right" style="font-size: 11px; color: #94A3B8;">
-                    <a href="https://crm.techpanda.in" target="_blank" style="color: #94A3B8; text-decoration: none;">View in browser</a>
+                    <a href="https://crm.digipanda.in" target="_blank" style="color: #94A3B8; text-decoration: none;">View in browser</a>
                   </td>
                 </tr>
               </table>
@@ -52,19 +52,8 @@
                     <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                       <tr>
                         <td valign="middle" style="padding-right: 14px;">
-                          <!-- TechPanda Logo Badge & Wordmark -->
-                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td valign="middle">
-                                <div style="width: 38px; height: 38px; border-radius: 50%; background-color: #0EA5E9; text-align: center; line-height: 38px; color: #FFFFFF; font-weight: 800; font-size: 20px; display: inline-block;">
-                                  t
-                                </div>
-                              </td>
-                              <td valign="middle" style="padding-left: 8px;">
-                                <span style="font-size: 24px; font-weight: 800; color: #0284C7; letter-spacing: -0.5px;">tech</span><span style="font-size: 24px; font-weight: 800; color: #192B45; letter-spacing: -0.5px;">panda</span>
-                              </td>
-                            </tr>
-                          </table>
+                          <!-- DigiPanda Logo -->
+                          <img src="{% if logo_data_uri %}{{ logo_data_uri }}{% else %}https://digipanda.org/static/images/digipanda_logo.png{% endif %}" height="36" style="height: 36px; width: auto; max-width: 140px; display: block; border: none;" alt="DigiPanda" />
                         </td>
                         <td valign="middle" style="border-left: 1.5px solid #E2E8F0; padding-left: 14px;">
                           <div style="font-size: 11px; font-weight: 700; color: #192B45; line-height: 1.2;">Your Learning Journey,</div>
@@ -276,7 +265,7 @@
                       <!-- Pay Now Button -->
                       <tr>
                         <td colspan="2" align="center" style="padding-top: 6px;">
-                          <a href="{{ payment_url|default:'https://pay.techpanda.in' }}" target="_blank" style="background-color: #07865C; color: #FFFFFF; font-size: 14px; font-weight: 700; text-decoration: none; padding: 12px 36px; border-radius: 24px; display: inline-block; letter-spacing: 0.3px;">
+                          <a href="{{ payment_url|default:'https://pay.digipanda.in' }}" target="_blank" style="background-color: #07865C; color: #FFFFFF; font-size: 14px; font-weight: 700; text-decoration: none; padding: 12px 36px; border-radius: 24px; display: inline-block; letter-spacing: 0.3px;">
                             Pay Now &rarr;
                           </a>
                         </td>
@@ -300,9 +289,9 @@
                           <span style="margin: 0 4px;">&bull;</span>
                           <a href="tel:{{ accounts_phone|default:'+919876543210' }}" style="color: #1E40AF; text-decoration: none; font-weight: 600;">{{ accounts_phone|default:'+91 98765 43210' }}</a>
                           <span style="margin: 0 4px;">&bull;</span>
-                          <a href="mailto:{{ accounts_email|default:'support@techpanda.in' }}" style="color: #1E40AF; text-decoration: none; font-weight: 600;">{{ accounts_email|default:'support@techpanda.in' }}</a>
+                          <a href="mailto:{{ accounts_email|default:'support@digipanda.in' }}" style="color: #1E40AF; text-decoration: none; font-weight: 600;">{{ accounts_email|default:'support@digipanda.in' }}</a>
                           <span style="margin: 0 4px;">&bull;</span>
-                          <a href="https://www.techpanda.in" target="_blank" style="color: #1E40AF; text-decoration: none; font-weight: 600;">www.techpanda.in</a>
+                          <a href="https://www.digipanda.in" target="_blank" style="color: #1E40AF; text-decoration: none; font-weight: 600;">www.digipanda.in</a>
                         </td>
                       </tr>
                     </table>
@@ -312,7 +301,7 @@
 
               <!-- 8. Appreciation Note -->
               <div style="text-align: center; margin: 16px 0 6px 0;">
-                <div style="font-size: 12px; font-weight: 700; color: #192B45;">Thank you for being a part of TECHPANDA!</div>
+                <div style="font-size: 12px; font-weight: 700; color: #192B45;">Thank you for being a part of DIGIPANDA!</div>
                 <div style="font-size: 11px; color: #60718A; margin-top: 3px;">We're here to support you at every step.</div>
               </div>
 
@@ -334,15 +323,15 @@
                   </td>
                   <!-- Social Links -->
                   <td align="right" valign="middle" style="font-size: 13px;">
-                    <a href="https://facebook.com/techpanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;"><strong>f</strong></a>
-                    <a href="https://instagram.com/techpanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;">&#9825;</a>
-                    <a href="https://linkedin.com/company/techpanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;"><strong>in</strong></a>
-                    <a href="https://youtube.com/techpanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;">&#9654;</a>
+                    <a href="https://facebook.com/digipanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;"><strong>f</strong></a>
+                    <a href="https://instagram.com/digipanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;">&#9825;</a>
+                    <a href="https://linkedin.com/company/digipanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;"><strong>in</strong></a>
+                    <a href="https://youtube.com/digipanda" target="_blank" style="color: #CBD5E1; text-decoration: none; margin: 0 4px;">&#9654;</a>
                   </td>
                 </tr>
                 <tr>
                   <td colspan="3" align="center" style="padding-top: 14px; font-size: 10.5px; color: #64748B;">
-                    &copy; 2026 TECHPANDA. All rights reserved.
+                    &copy; 2026 DIGIPANDA. All rights reserved.
                   </td>
                 </tr>
               </table>

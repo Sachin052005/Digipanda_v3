@@ -1,0 +1,1326 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Leads - DigipandaCRM
+<!-- LEFT FILTER DRAWER (TeleCRM Reference Image 2) -->
+<div class="filter-drawer-overlay" id="filterDrawerOverlay" onclick="closeFilterDrawer()"></div>
+<aside class="filter-drawer" id="filterDrawer">
+  <div class="filter-drawer-header">
+    <div class="filter-drawer-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      <span>Edit Filters</span>
+    </div>
+    <button type="button" class="filter-drawer-close" onclick="closeFilterDrawer()">&times;</button>
+  </div>
+
+  <form method="GET" action="{% url 'admin_leads_list' %}" id="filterDrawerForm" class="filter-drawer-body">
+    <input type="hidden" name="view" value="{{ active_view }}">
+    {% if status_group or kpi_label %}
+<!-- Active KPI Filter Chip Banner -->
+<div class="active-kpi-banner" style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; border-radius: 10px; padding: 12px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--tp-shadow-sm);">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span style="font-size: 1.25rem;">🔍</span>
+    <div>
+      <div style="font-size: 0.88rem; font-weight: 700; color: #1e1b4b;">
+        Filtered by KPI Metric: 
+        {% if kpi_label %}<span style="color: #2563eb;">{{ kpi_label }}</span>
+        {% elif status_group == 'connected' %}<span style="color: #059669;">Connected / Contacted Leads</span>
+        {% elif status_group == 'prospected' %}<span style="color: #d97706;">Prospected / Follow-up / Converted Leads</span>
+        {% elif status_group == 'not_connected' %}<span style="color: #dc2626;">Call Not Connected / Missed Leads</span>
+        {% else %}<span>{{ status_group|title }}</span>{% endif %}
+      </div>
+      <div style="font-size: 0.78rem; color: #4338ca;">
+        Showing {{ page_obj.paginator.count }} matching lead{{ page_obj.paginator.count|pluralize }} from Dashboard KPI drilldown
+      </div>
+    </div>
+  </div>
+  <a href="{% url 'admin_leads_list' %}?view={{ active_view|default:'all' }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="btn btn-sm btn-secondary tp-btn-secondary" style="font-weight: 700; text-decoration: none; padding: 6px 14px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #c7d2fe; color: #4338ca;">
+    ✕ Clear KPI Filter
+  </a>
+</div>
+{% endif %}
+    
+    <!-- Search Bar -->
+    <div class="drawer-section">
+      <label class="drawer-label">Search Contact</label>
+      <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by name, number or notes..." value="{{ search_query }}">
+    </div>
+
+    <!-- Conditions Section -->
+    <div class="drawer-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <label class="drawer-label" style="margin: 0;">Conditions</label>
+        <button type="button" class="btn-add-condition" onclick="addFilterConditionRow()">+ Add a Condition</button>
+      </div>
+
+      <div class="filter-conditions-list" id="filterConditionsList">
+        <!-- Condition Row: Branch -->
+        <div class="condition-row">
+          <div class="condition-field">
+            <select name="branch" class="form-select form-select-sm">
+              <option value="">Base Branch: All</option>
+              {% for b in branches %}
+              <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>Base Branch is {{ b.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Condition Row: Status -->
+        <div class="condition-row">
+          <div class="condition-field">
+            <select name="status" class="form-select form-select-sm">
+              <option value="">Status: All</option>
+              {% for code, label in statuses %}
+              <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>Status is {{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Condition Row: Source / Channel -->
+        <div class="condition-row">
+          <div class="condition-field">
+            <select name="channel" class="form-select form-select-sm">
+              <option value="">Lead Source 1: All</option>
+              {% for c in channels %}
+              <option value="{{ c.id }}" {% if channel_filter == c.id|stringformat:"i" %}selected{% endif %}>Source 1 is {{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Condition Row: Courses / Product -->
+        <div class="condition-row">
+          <div class="condition-field">
+            <select name="product" class="form-select form-select-sm">
+              <option value="">Courses: All</option>
+              {% for p in products %}
+              <option value="{{ p.id }}" {% if product_filter == p.id|stringformat:"i" %}selected{% endif %}>Courses is {{ p.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Condition Row: Assignee -->
+        <div class="condition-row">
+          <div class="condition-field">
+            <select name="telecaller" class="form-select form-select-sm">
+              <option value="">Assignee: All</option>
+              {% for t in telecallers %}
+              <option value="{{ t.id }}" {% if telecaller_filter == t.id|stringformat:"i" %}selected{% endif %}>Assignee is {{ t.get_full_name|default:t.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Condition Row: Priority Rating -->
+        <div class="condition-row">
+          <div class="condition-field">
+            <select name="rating" class="form-select form-select-sm">
+              <option value="">Priority Rating: All</option>
+              <option value="5" {% if rating_filter == "5" %}selected{% endif %}>Rating is ★★★★★ (5 Stars)</option>
+              <option value="4" {% if rating_filter == "4" %}selected{% endif %}>Rating is ★★★★☆ (4 Stars)</option>
+              <option value="3" {% if rating_filter == "3" %}selected{% endif %}>Rating is ★★★☆☆ (3 Stars)</option>
+              <option value="2" {% if rating_filter == "2" %}selected{% endif %}>Rating is ★★☆☆☆ (2 Stars)</option>
+              <option value="1" {% if rating_filter == "1" %}selected{% endif %}>Rating is ★☆☆☆☆ (1 Star)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Multi-Metric Sort Control -->
+    <div class="drawer-section">
+      <label class="drawer-label">Sort Records By</label>
+      <select name="sort" class="form-select form-select-sm">
+        <option value="-created_at" {% if sort_by == "-created_at" %}selected{% endif %}>Date Added: Newest First</option>
+        <option value="created_at" {% if sort_by == "created_at" %}selected{% endif %}>Date Added: Oldest First</option>
+        <option value="-updated_at" {% if sort_by == "-updated_at" %}selected{% endif %}>Last Modified: Recent First</option>
+        <option value="updated_at" {% if sort_by == "updated_at" %}selected{% endif %}>Last Modified: Oldest First</option>
+        <option value="-rating" {% if sort_by == "-rating" %}selected{% endif %}>Priority Rating: High to Low</option>
+        <option value="name" {% if sort_by == "name" %}selected{% endif %}>Lead Name: A to Z</option>
+        <option value="-name" {% if sort_by == "-name" %}selected{% endif %}>Lead Name: Z to A</option>
+        <option value="status" {% if sort_by == "status" %}selected{% endif %}>Status: A to Z</option>
+      </select>
+    </div>
+
+    <div class="filter-drawer-actions">
+      <a href="{% url 'admin_leads_list' %}?view={{ active_view }}" class="btn btn-secondary" style="flex: 1; text-align: center;">Reset</a>
+      <button type="submit" class="btn btn-primary" style="flex: 1.5; font-weight: 700;">Apply Filters</button>
+    </div>
+  </form>
+</aside>
+
+<!-- CREATE SAVED VIEW MODAL -->
+<div id="createSavedViewModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div class="modal-dialog" style="background: var(--bg-card, #fff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 12px; width: 100%; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden;">
+    <div style="padding: 16px 20px; background: var(--bg-card-hover, #f8fafc); border-bottom: 1px solid var(--border-color, #e2e8f0); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700;">Save Current View</h3>
+      <button type="button" onclick="closeCreateViewModal()" style="background: none; border: none; font-size: 1.3rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+    </div>
+    <div style="padding: 20px;">
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 6px;">View Name</label>
+        <input type="text" id="customViewNameInput" class="form-control" placeholder="e.g., Chennai High Priority Leads">
+      </div>
+      <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0 0 16px 0;">This will save your currently applied search, filters, and sort options as a quick-access tab.</p>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn btn-secondary" onclick="closeCreateViewModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveCustomView()" style="font-weight: 700;">Save View</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openFilterDrawer() {
+  var drawer = document.getElementById('filterDrawer');
+  var overlay = document.getElementById('filterDrawerOverlay');
+  if (drawer && overlay) {
+    drawer.classList.add('active');
+    overlay.style.display = 'block';
+  }
+}
+
+function closeFilterDrawer() {
+  var drawer = document.getElementById('filterDrawer');
+  var overlay = document.getElementById('filterDrawerOverlay');
+  if (drawer) drawer.classList.remove('active');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function openCreateViewModal() {
+  var modal = document.getElementById('createSavedViewModal');
+  if (modal) modal.style.display = 'flex';
+  var inp = document.getElementById('customViewNameInput');
+  if (inp) {
+    inp.value = '';
+    setTimeout(function() { inp.focus(); }, 150);
+  }
+}
+
+function closeCreateViewModal() {
+  var modal = document.getElementById('createSavedViewModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveCustomView() {
+  var inp = document.getElementById('customViewNameInput');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) {
+    alert('Please enter a name for this saved view.');
+    if (inp) inp.focus();
+    return;
+  }
+  // Construct URL with current query parameters
+  var currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.set('view_name', name);
+  closeCreateViewModal();
+  alert('View "' + name + '" saved successfully to your top views bar!');
+}
+
+function addFilterConditionRow() {
+  var list = document.getElementById('filterConditionsList');
+  if (!list) return;
+  var row = document.createElement('div');
+  row.className = 'condition-row';
+  row.innerHTML = `
+    <div class="condition-field">
+      <select class="form-select form-select-sm" onchange="this.name = this.value ? 'filter_' + this.value : ''">
+        <option value="">-- Choose Field --</option>
+        <option value="degree">Degree</option>
+        <option value="passed_out">PassedOut</option>
+        <option value="working_status">Working Status</option>
+        <option value="purpose">Purpose</option>
+        <option value="total_experience">Total Experience</option>
+        <option value="college">College</option>
+      </select>
+    </div>
+    <input type="text" class="form-control form-control-sm" placeholder="Value..." style="flex: 1;" oninput="var sel = this.previousElementSibling.querySelector('select'); if (sel && sel.value) this.name = sel.value;">
+    <button type="button" class="btn-remove-cond" onclick="this.closest('.condition-row').remove()">&times;</button>
+  `;
+  list.appendChild(row);
+}
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+  <div class="page-title-group">
+    <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tp-text-primary); margin: 0 0 6px 0;">All Leads</h1>
+    <p style="font-size: 0.9rem; color: var(--tp-text-muted); margin: 0;">Manage and track all organizational CRM inquiries, allocations, and conversions</p>
+  </div>
+  <div class="page-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    {% if pending_count > 0 %}
+    <a href="{% url 'admin_retry_pending_assignments' %}" class="btn tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #78350f; background: #fde68a; border: 1px solid #fcd34d; border-radius: var(--tp-radius-md);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      Retry Assignments ({{ pending_count }})
+    </a>
+    {% endif %}
+    <a href="{% url 'admin_duplicate_leads' %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      Duplicates
+    </a>
+    <a href="{% url 'admin_enrolled_students' %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+      Enrolled Students
+    </a>
+    <!-- Page Size Dropdown Selector -->
+    <div class="tp-page-size-selector-toolbar" style="display: inline-flex; align-items: center; gap: 8px; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-md); padding: 4px 10px; box-shadow: var(--tp-shadow-sm);">
+      <label for="pageSizeSelectTop" style="font-size: 0.8rem; font-weight: 700; color: var(--tp-text-muted); margin: 0; white-space: nowrap;">Show:</label>
+      <select id="pageSizeSelectTop" class="form-select form-select-sm" onchange="handleLeadPageSizeChange(this.value)" style="height: 28px; padding: 2px 24px 2px 8px; font-size: 0.8rem; font-weight: 700; width: auto; border: 1px solid var(--border-color, #cbd5e1); border-radius: var(--tp-radius-sm, 6px); background-color: var(--bg-card, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">
+        <option value="20" {% if page_size == 20 or not page_size %}selected{% endif %}>20 / page</option>
+        <option value="50" {% if page_size == 50 %}selected{% endif %}>50 / page</option>
+        <option value="100" {% if page_size == 100 %}selected{% endif %}>100 / page</option>
+        <option value="500" {% if page_size == 500 %}selected{% endif %}>500 / page</option>
+      </select>
+    </div>
+    <div style="display: inline-flex; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-md); padding: 3px; box-shadow: var(--tp-shadow-sm);">
+      <span class="btn btn-sm tp-btn-sm" style="padding: 5px 12px; font-weight: 700; color: #ffffff; background: var(--tp-primary-600); border: none; border-radius: var(--tp-radius-sm);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        Table View
+      </span>
+      <a href="{% url 'leads_kanban' %}" class="btn btn-sm tp-btn-sm" style="padding: 5px 12px; font-weight: 600; color: var(--tp-text-muted); background: transparent; border: none; border-radius: var(--tp-radius-sm);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: -2px;"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+        Kanban Board
+      </a>
+    </div>
+    <!-- Actions Dropdown -->
+    <div class="dropdown tp-dropdown" style="position: relative; display: inline-block;">
+      <button type="button" class="btn btn-secondary tp-btn-secondary tp-btn-sm" id="btn-actions-dropdown" onclick="toggleActionsDropdown(event)" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; background: var(--tp-surface-card); border: 1px solid var(--tp-surface-border);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Actions ▾</span>
+      </button>
+      <div id="leadsActionsDropdown" class="tp-dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 6px; min-width: 220px; background: var(--bg-card, #ffffff); color: var(--text-main); border: 1px solid var(--tp-surface-border); border-radius: 10px; box-shadow: var(--tp-shadow-lg); z-index: 1000; padding: 6px 0;">
+        <button type="button" class="tp-dropdown-item" onclick="triggerBulkWhatsAppAction()" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 16px; border: none; background: none; text-align: left; font-size: 0.875rem; font-weight: 700; color: #059669; cursor: pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          Bulk WhatsApp Message
+        </button>
+        <button type="button" class="tp-dropdown-item" onclick="openBulkEditModal()" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 16px; border: none; background: none; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--tp-text-primary); cursor: pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+          Bulk Edit
+        </button>
+        <button type="button" class="tp-dropdown-item" onclick="triggerExportAction()" style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 16px; border: none; background: none; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--tp-text-primary); cursor: pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Export
+        </button>
+      </div>
+    </div>
+    <button type="button" class="btn btn-secondary tp-btn-secondary tp-btn-sm" onclick="openFilterDrawer()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      <span>Edit Filters</span>
+    </button>
+    <a href="{% url 'admin_leads_import' %}" class="btn btn-secondary tp-btn-secondary tp-btn-sm">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Import
+    </a>
+    <a href="{% url 'admin_lead_create' %}" class="btn btn-primary tp-btn-primary tp-btn-sm">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Add Lead
+    </a>
+  </div>
+</div>
+
+<!-- Saved Views Tabs Bar (TeleCRM Phase 2) -->
+<div class="saved-views-tabs-container">
+  <div class="saved-views-tabs-scroll">
+    <a href="?view=all_active{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="saved-view-tab {% if active_view == 'all_active' %}active{% endif %}">
+      <span>All Active Leads</span>
+      <span class="tab-badge">{{ view_counts.all_active }}</span>
+    </a>
+    <a href="?view=all{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="saved-view-tab {% if active_view == 'all' %}active{% endif %}">
+      <span>All Leads</span>
+      <span class="tab-badge">{{ view_counts.all }}</span>
+    </a>
+    <a href="?view=assigned_to_me{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="saved-view-tab {% if active_view == 'assigned_to_me' %}active{% endif %}">
+      <span>Leads Assigned To Me</span>
+      <span class="tab-badge">{{ view_counts.assigned_to_me }}</span>
+    </a>
+    <a href="?view=my_leads{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="saved-view-tab {% if active_view == 'my_leads' %}active{% endif %}">
+      <span>My Leads</span>
+      <span class="tab-badge">{{ view_counts.my_leads }}</span>
+    </a>
+    <a href="?view=tnagar_meta{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="saved-view-tab {% if active_view == 'tnagar_meta' %}active{% endif %}">
+      <span>T Nagar Meta</span>
+      <span class="tab-badge">{{ view_counts.tnagar_meta }}</span>
+    </a>
+    <a href="?view=velachery_meta{% if search_query %}&search={{ search_query }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="saved-view-tab {% if active_view == 'velachery_meta' %}active{% endif %}">
+      <span>Velachery Meta</span>
+      <span class="tab-badge">{{ view_counts.velachery_meta }}</span>
+    </a>
+    <button type="button" class="saved-view-tab-add" onclick="openCreateViewModal()" title="Save Current Filters as Custom View">+</button>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-card">
+  <form method="GET" class="filter-form" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <input type="hidden" name="view" value="{{ active_view }}">
+    {% if status_group %}<input type="hidden" name="status_group" value="{{ status_group }}">{% endif %}
+    {% if sort_by %}<input type="hidden" name="sort" value="{{ sort_by }}">{% endif %}
+    {% if page_size %}<input type="hidden" name="page_size" value="{{ page_size }}">{% endif %}
+    <div class="filter-col" style="flex: 2; min-width: 180px;">
+      <label>Search</label>
+      <input type="text" name="search" class="form-control" placeholder="Search name, phone, email, notes..." value="{{ search_query }}">
+    </div>
+    <!--<div class="filter-col" style="min-width: 130px;">
+      <label>Branch</label>
+      <select name="branch" class="form-select">
+        <option value="">All Branches</option>
+        {% for b in branches %}
+        <option value="{{ b.id }}" {% if branch_filter == b.id|stringformat:"i" %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div> -->
+    <div class="filter-col" style="min-width: 130px;">
+      <label>Status</label>
+      <select name="status" class="form-select">
+        <option value="">All Statuses</option>
+        {% for code, label in statuses %}
+        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="min-width: 140px;">
+      <label>Assignment Status</label>
+      <select name="assignment_status" class="form-select">
+        <option value="">All Assignments</option>
+        {% for code, label in assignment_statuses %}
+        <option value="{{ code }}" {% if assignment_status_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- <div class="filter-col" style="min-width: 140px;">
+      <label>Spreadsheet</label>
+      <select name="spreadsheet" class="form-select">
+        <option value="">All Spreadsheets</option>
+        {% for cs in connected_spreadsheets %}
+        <option value="{{ cs.id }}" {% if spreadsheet_filter == cs.id|stringformat:"i" %}selected{% endif %}>{{ cs.name }}</option>
+        {% endfor %}
+      </select>
+    </div> -->
+    <div class="filter-col" style="min-width: 130px;">
+      <label>Telecaller</label>
+      <select name="telecaller" class="form-select">
+        <option value="">All Telecallers</option>
+        {% for t in telecallers %}
+        <option value="{{ t.id }}" data-branch="{{ t.branch_id|default:'' }}" {% if telecaller_filter == t.id|stringformat:"i" %}selected{% endif %}>{{ t.get_full_name|default:t.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="min-width: 120px;">
+      <label>Channel</label>
+      <select name="channel" class="form-select">
+        <option value="">All Channels</option>
+        {% for c in channels %}
+        <option value="{{ c.id }}" {% if channel_filter == c.id|stringformat:"i" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- <div class="filter-col" style="min-width: 120px;">
+      <label>Product</label>
+      <select name="product" class="form-select">
+        <option value="">All Products</option>
+        {% for p in products %}
+        <option value="{{ p.id }}" {% if product_filter == p.id|stringformat:"i" %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div> -->
+    <div class="filter-col" style="min-width: 130px;">
+      <label>Counselor</label>
+      <select name="counselor" class="form-select">
+        <option value="">All Counselors</option>
+        {% for c in counselors %}
+        <option value="{{ c.id }}" data-branch="{{ c.branch_id|default:'' }}" {% if counselor_filter == c.id|stringformat:"i" %}selected{% endif %}>{{ c.get_full_name|default:c.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-col" style="min-width: 120px;">
+      <label>Category</label>
+      <select name="category" class="form-select">
+        <option value="">All Categories</option>
+        {% for cat_code, cat_label in categories %}
+        <option value="{{ cat_code }}" {% if category_filter == cat_code %}selected{% endif %}>{{ cat_label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- <div class="filter-col" style="min-width: 130px;">
+      <label>Source</label>
+      <input type="text" name="source" class="form-control" placeholder="Source name..." value="{{ source_filter }}">
+    </div> -->
+    <div class="filter-col" style="min-width: 130px;">
+      <label>From Date</label>
+      <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+    </div>
+    <div class="filter-col" style="min-width: 130px;">
+      <label>To Date</label>
+      <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+    </div>
+    <div class="filter-col" style="display: flex; gap: 8px; align-items: flex-end; margin-bottom: 2px;">
+      <a href="{% url 'admin_leads_list' %}{% if active_view %}?view={{ active_view }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}" class="btn btn-secondary tp-btn-secondary" style="height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; font-weight: 600; text-decoration: none;" title="Reset all search filters">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+        Reset
+      </a>
+    </div>
+  </form>
+</div>
+
+{% if status_group %}
+<!-- Active KPI Filter Chip Banner -->
+<div class="active-kpi-banner" style="background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border: 1px solid #c7d2fe; border-radius: 10px; padding: 12px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--tp-shadow-sm);">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <span style="font-size: 1.25rem;">📊</span>
+    <div>
+      <div style="font-size: 0.88rem; font-weight: 700; color: #1e1b4b;">
+        Filtered by KPI Metric: 
+        {% if status_group == 'connected' %}<span style="color: #059669;">Connected / Contacted Leads</span>
+        {% elif status_group == 'prospected' %}<span style="color: #d97706;">Prospected / Follow-up / Converted Leads</span>
+        {% elif status_group == 'not_connected' %}<span style="color: #dc2626;">Call Not Connected / Missed Leads</span>
+        {% else %}<span>{{ status_group|title }}</span>{% endif %}
+      </div>
+      <div style="font-size: 0.78rem; color: #4338ca;">
+        Showing {{ page_obj.paginator.count }} matching lead{{ page_obj.paginator.count|pluralize }} from Executive Report drilldown
+      </div>
+    </div>
+  </div>
+  <a href="{% url 'admin_leads_list' %}?view={{ active_view }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if branch_filter %}&branch={{ branch_filter }}{% endif %}" class="btn btn-sm btn-secondary tp-btn-secondary" style="font-weight: 700; text-decoration: none; padding: 6px 14px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #c7d2fe; color: #4338ca;">
+    ✕ Clear KPI Filter
+  </a>
+</div>
+{% endif %}
+
+<!-- Table -->
+<div class="crm-card">
+  <div id="select-all-matching-banner" style="display: none; background: #eff6ff; border-bottom: 1px solid #bfdbfe; padding: 10px 18px; text-align: center; font-size: 0.86rem; color: #1e40af;">
+    <span>All {{ page_obj|length }} leads on this page are selected. </span>
+    <button type="button" id="btn-select-all-matching" onclick="toggleSelectAllMatching(true)" style="background: none; border: none; font-weight: 700; color: #1d4ed8; text-decoration: underline; cursor: pointer; padding: 0 4px;">
+      Select all {{ page_obj.paginator.count }} leads matching current filters
+    </button>
+    <span id="all-matching-selected-indicator" style="display: none; font-weight: 800; color: #059669; margin-left: 6px;">
+      ✓ All {{ page_obj.paginator.count }} leads selected
+      <button type="button" onclick="toggleSelectAllMatching(false)" style="background: none; border: none; color: #dc2626; text-decoration: underline; font-weight: 600; cursor: pointer; margin-left: 8px;">Clear filter selection</button>
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th style="width: 36px; text-align: center;"><input type="checkbox" id="select-all-leads" title="Select all visible leads"></th>
+          <th style="width: 70px;">Sl No</th>
+          <th>Lead</th>
+          <th>Phone</th>
+          <th>Branch</th>
+          <th>Source</th>
+          <th>Status</th>
+          <th>Assignment</th>
+          <th>Sales Head</th>
+          <th>Telecaller</th>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Duplicate</th>
+          <th>Created</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ld in page_obj %}
+        <tr>
+          <td style="text-align: center;">
+            <input type="checkbox" class="lead-row-select" value="{{ ld.id }}">
+          </td>
+          <td>
+            <span style="font-family: monospace; font-weight: 600; color: #64748b;" title="Database ID: #{{ ld.id }}">{% if page_obj.start_index %}{{ forloop.counter0|add:page_obj.start_index }}{% else %}{{ forloop.counter }}{% endif %}</span>
+          </td>
+          <td>
+            <strong><a href="{% url 'admin_lead_detail' ld.pk %}">{{ ld.name }}</a></strong>
+          </td>
+          <td>
+            <a href="tel:{{ ld.phone }}" style="color: inherit; text-decoration: none; font-weight: 500;" title="Click to call {{ ld.phone }}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 2px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              {{ ld.phone }}
+            </a>
+          </td>
+          <td>
+            {% if ld.branch %}
+            <span class="badge" style="background: #f1f5f9; color: #334155; font-size: 0.775rem;">{{ ld.branch.name }}</span>
+            {% else %}
+            <span style="color: var(--text-muted);">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ld.channel %}
+            <span>{{ ld.channel.name }}</span>
+            {% elif ld.source and ld.source != 'Manual Entry' and ld.source != 'Telecaller Entry' and ld.source != 'Manual' %}
+            <span>{{ ld.source }}</span>
+            {% else %}
+            <span style="color: var(--text-muted);">-</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{{ ld.status|lower|slugify }}">{{ ld.status }}</span>
+          </td>
+          <td>
+            {% if ld.assignment_status == 'Assigned' %}
+            <span style="color: var(--success); font-weight: 600;">Assigned</span>
+            {% elif ld.assignment_status == 'Pending Assignment' %}
+            <span style="color: var(--warning); font-weight: 600;" title="{{ ld.pending_assignment_reason|default:'Awaiting allocation' }}">Pending</span>
+            {% if ld.pending_assignment_reason %}
+            <div style="font-size: 0.7rem; color: var(--warning); max-width: 140px; word-break: break-word;" title="{{ ld.pending_assignment_reason }}">{{ ld.pending_assignment_reason|truncatechars:32 }}</div>
+            {% endif %}
+            {% else %}
+            <span style="color: var(--text-muted); font-weight: 600;">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ld.assigned_manager %}
+            <span>{{ ld.assigned_manager.get_full_name|default:ld.assigned_manager.username }}</span>
+            {% else %}
+            <span style="color: var(--text-muted);">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if ld.assigned_telecaller %}
+            <a href="{% url 'admin_telecaller_detail' ld.assigned_telecaller.pk %}"><strong>{{ ld.assigned_telecaller.get_full_name|default:ld.assigned_telecaller.username }}</strong></a>
+            {% else %}
+            <span style="color: var(--text-muted);">-</span>
+            {% endif %}
+          </td>
+          <td>{{ ld.product.name|default:"-" }}</td>
+          <td>
+            <span class="badge" style="{% if ld.category == 'Placement' %}background:#fef3c7;color:#92400e;border:1px solid #fde68a;{% else %}background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;{% endif %}font-size:0.75rem;font-weight:600;">
+              {{ ld.category|default:'Training' }}
+            </span>
+          </td>
+          <td>
+            {% if ld.has_duplicate_attempts %}
+            <button type="button" class="btn btn-sm" onclick="openDuplicateModal('{{ ld.pk }}')" style="font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 9999px; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; transition: all 0.15s ease;" title="Click to view duplicate intelligence">
+              <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#f59e0b;"></span> Duplicate Alert
+            </button>
+            {% else %}
+            <span style="color: var(--text-muted); font-weight: 500;">-</span>
+            {% endif %}
+          </td>
+          <td>{{ ld.created_at|date:"M d, Y" }}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 4px;">
+              <button type="button" class="btn btn-success btn-sm" onclick="openCallDialer('{{ ld.pk }}', '{{ ld.name|escapejs }}', '{{ ld.phone|escapejs }}')" title="Call Lead">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              </button>
+              <a href="{% url 'admin_lead_detail' ld.pk %}" class="btn btn-secondary btn-sm">View</a>
+              <a href="{% url 'admin_lead_edit' ld.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+              <a href="{% url 'admin_lead_delete' ld.pk %}" class="btn btn-outline-danger btn-sm" data-confirm="Are you sure you want to permanently delete this lead?">Del</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="13">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+              </div>
+              <h4>No Leads Found</h4>
+              <p>Try modifying your filters or click "Add Lead" or "Import Leads" to populate records.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include 'partials/pagination.html' %}
+</div>
+
+<!-- MODAL: DUPLICATE LEAD DETAILS & INTELLIGENCE CENTER (10-Day Rule) -->
+<div id="duplicateLeadModal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+  <div class="modal-dialog" style="background: var(--bg-card, #ffffff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 16px; width: 100%; max-width: 760px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+    
+    <!-- Header -->
+    <div class="modal-header" style="padding: 18px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: #fff7ed; border: 1px solid #ffedd5; display: flex; align-items: center; justify-content: center; color: #ea580c; flex-shrink: 0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <div>
+          <h4 style="margin: 0; font-size: 1.12rem; font-weight: 700; color: #1e293b; letter-spacing: -0.01em;">Duplicate Lead Intelligence</h4>
+          <p id="dupHeaderSubtitle" style="margin: 2px 0 0; font-size: 0.82rem; color: #64748b; font-weight: 500;">
+            Lead ID #<span id="dupHdrLeadId" style="font-weight: 600; color: #0284c7;">-</span> • Match via Primary Phone
+          </p>
+        </div>
+      </div>
+      <button type="button" onclick="closeDuplicateModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; line-height: 1; padding: 4px; border-radius: 6px; transition: color 0.15s;" onmouseover="this.style.color='#1e293b'" onmouseout="this.style.color='#94a3b8'">&times;</button>
+    </div>
+
+    <!-- Body -->
+    <div id="dupModalBody" style="padding: 22px 24px; font-size: 0.88rem; overflow-y: auto; flex: 1;">
+      
+      <!-- Loading State -->
+      <div id="dupLoading" style="text-align: center; padding: 36px 0; color: #64748b;">
+        <div class="spinner-border spinner-border-sm text-primary" role="status" style="margin-bottom: 8px;"></div>
+        <div>Retrieving duplicate history and profile intelligence...</div>
+      </div>
+
+      <!-- Main Content Container -->
+      <div id="dupContent" style="display: none;">
+        
+        <!-- Context Alert Banner -->
+        <div id="dupAlertBanner" style="border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px; background: #fffbeb; border: 1px solid #fde68a;">
+          <div id="dupAlertIcon" style="font-size: 1.25rem; line-height: 1; flex-shrink: 0;">⚡</div>
+          <div style="flex: 1;">
+            <div id="dupAlertTitle" style="font-weight: 700; font-size: 0.88rem; color: #92400e; margin-bottom: 2px;">
+              Active Duplicate Detected (10-Day Policy)
+            </div>
+            <div id="dupAlertMessage" style="font-size: 0.82rem; color: #78350f; line-height: 1.45;">
+              This contact submitted a duplicate enquiry within the active retention window. Original ownership, branch, and activity history are protected.
+            </div>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Comparison Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          
+          <!-- Column 1: Original Active Lead -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #1e40af; display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></span> ORIGINAL LEAD PROFILE
+              </span>
+              <span id="dupOrigStatusBadge" class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.74rem; padding: 3px 8px; border-radius: 6px;">Active</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.84rem;">
+              <div>
+                <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Student Name</span>
+                <span id="dupOrigName" style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">-</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Phone</span>
+                  <span id="dupOrigPhone" style="font-family: monospace; font-weight: 600; color: #334155;">-</span>
+                </div>
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Email</span>
+                  <span id="dupOrigEmail" style="color: #334155; word-break: break-all;">-</span>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Branch</span>
+                  <span id="dupOrigBranch" style="font-weight: 600; color: #334155;">-</span>
+                </div>
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Course Interest</span>
+                  <span id="dupOrigCourse" style="font-weight: 600; color: #334155;">-</span>
+                </div>
+              </div>
+              <div>
+                <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Assigned Staff</span>
+                <span id="dupOrigStaff" style="font-weight: 600; color: #047857; display: flex; align-items: center; gap: 4px;">-</span>
+              </div>
+              <div>
+                <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Original Submission</span>
+                <span id="dupOrigSubmitted" style="color: #475569;">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Incoming Duplicate Attempt -->
+          <div style="background: #fffdfa; border: 1px solid #fed7aa; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #fed7aa; padding-bottom: 8px;">
+              <span style="font-size: 0.76rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #c2410c; display: flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ea580c;"></span> LATEST DUPLICATE ATTEMPT
+              </span>
+              <span id="dupLatestElapsedBadge" class="badge" style="background: #ffedd5; color: #9a3412; font-weight: 700; font-size: 0.74rem; padding: 3px 8px; border-radius: 6px;">Just Now</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.84rem;">
+              <div>
+                <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Incoming Name</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="dupIncomingName" style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">-</span>
+                  <span id="dupNameDiffBadge" style="display: none; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px;">Differs from student</span>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Channel / Source</span>
+                  <span id="dupIncomingSource" style="font-weight: 600; color: #334155;">-</span>
+                </div>
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Target Branch</span>
+                  <span id="dupIncomingBranch" style="font-weight: 600; color: #334155;">-</span>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Enquired Course</span>
+                  <span id="dupIncomingCourse" style="font-weight: 600; color: #334155;">-</span>
+                </div>
+                <div>
+                  <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Attempt Timestamp</span>
+                  <span id="dupIncomingSubmitted" style="color: #475569;">-</span>
+                </div>
+              </div>
+              <div>
+                <span style="color: #64748b; font-size: 0.76rem; font-weight: 600; text-transform: uppercase; display: block;">Detection Rule & Note</span>
+                <div id="dupIncomingReason" style="background: #fff7ed; border-left: 3px solid #f97316; padding: 6px 10px; border-radius: 0 6px 6px 0; font-size: 0.8rem; color: #9a3412; font-weight: 500;">
+                  -
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Timeline Container (if > 1 records) -->
+        <div id="dupTimelineSection" style="display: none; border-top: 1px dashed #e2e8f0; pt: 16px; margin-top: 16px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            <span>Chronological Duplicate Attempts</span>
+            <span id="dupTotalCountChip" style="background: #e2e8f0; color: #334155; font-size: 0.72rem; padding: 1px 7px; border-radius: 9999px;">0</span>
+          </div>
+          <div id="dupTimelineList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+            <!-- Timeline items populated via JS -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeDuplicateModal()" style="font-weight: 600; padding: 6px 16px; border-radius: 8px;">
+        Close
+      </button>
+      
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <!-- Quick WhatsApp Button -->
+        <a id="dupWhatsAppBtn" href="#" target="_blank" class="btn btn-sm btn-success" style="font-weight: 600; padding: 6px 14px; border-radius: 8px; background: #16a34a; border: none; color: #ffffff; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          WhatsApp Lead
+        </a>
+
+        <!-- Notify Counselor Button -->
+        <button type="button" id="dupNotifyBtn" class="btn btn-sm btn-outline-primary" onclick="notifyCounselorFromModal()" style="font-weight: 600; padding: 6px 14px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span id="dupNotifyText">Notify Counselor</span>
+        </button>
+
+        <!-- View Full Profile Button -->
+        <a id="dupOrigLeadLink" href="#" class="btn btn-sm btn-primary" style="font-weight: 700; padding: 6px 18px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+          <span>View Lead Profile</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let currentModalLeadId = null;
+
+function openDuplicateModal(leadId) {
+  currentModalLeadId = leadId;
+  const modal = document.getElementById('duplicateLeadModal');
+  const loading = document.getElementById('dupLoading');
+  const content = document.getElementById('dupContent');
+
+  modal.style.display = 'flex';
+  loading.style.display = 'block';
+  content.style.display = 'none';
+
+  // Reset Notify Button state
+  const notifyBtn = document.getElementById('dupNotifyBtn');
+  const notifyText = document.getElementById('dupNotifyText');
+  if (notifyBtn) {
+    notifyBtn.disabled = false;
+    notifyText.textContent = "Notify Counselor";
+    notifyBtn.className = "btn btn-sm btn-outline-primary";
+  }
+
+  fetch(`/admin/leads/${leadId}/duplicate-info/`, {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(res => {
+    if (!res.ok) {
+      throw new Error('Server returned HTTP ' + res.status);
+    }
+    return res.json();
+  })
+  .then(data => {
+    loading.style.display = 'none';
+    if (!data.success) {
+      alert(data.error || 'Failed to load duplicate information.');
+      closeDuplicateModal();
+      return;
+    }
+
+    const ld = data.lead;
+    const summary = data.summary || {};
+    const dups = data.duplicate_records || [];
+    const latestDup = dups.length > 0 ? dups[0] : null;
+
+    // Safe DOM helper functions preventing any null property errors
+    const safeText = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = (val !== null && val !== undefined && val !== '') ? val : '-';
+    };
+    const safeHtml = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = val || '';
+    };
+    const safeHref = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.href = val || '#';
+    };
+    const safeDisplay = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = val;
+    };
+
+    // Header info (update subtitle directly without overwriting inner spans)
+    safeHtml('dupHeaderSubtitle', `Lead ID #<strong>${ld.id}</strong> • Phone: <span style="font-family:monospace; font-weight:600;">${ld.phone}</span> • Match via Primary Phone`);
+
+    // Original lead column
+    safeText('dupOrigName', ld.name || `Lead #${ld.id}`);
+    safeText('dupOrigPhone', ld.phone);
+    safeText('dupOrigEmail', ld.email || 'N/A');
+    safeText('dupOrigBranch', ld.branch || 'All / Unassigned');
+    safeText('dupOrigCourse', ld.course || 'Not Specified');
+    safeText('dupOrigStaff', ld.assigned_staff || 'Unassigned');
+    safeText('dupOrigSubmitted', ld.submitted);
+    
+    // Original status badge
+    const statusBadge = document.getElementById('dupOrigStatusBadge');
+    if (statusBadge) {
+      statusBadge.textContent = ld.status || 'Active';
+      if (ld.status === 'Enrolled') {
+        statusBadge.style.background = '#dcfce7';
+        statusBadge.style.color = '#15803d';
+      } else if (ld.status === 'Lost' || ld.status === 'Not Interested') {
+        statusBadge.style.background = '#fee2e2';
+        statusBadge.style.color = '#b91c1c';
+      } else {
+        statusBadge.style.background = '#e0f2fe';
+        statusBadge.style.color = '#0369a1';
+      }
+    }
+
+    // Action URLs
+    safeHref('dupOrigLeadLink', ld.detail_url);
+    const cleanPh = (ld.phone || '').replace(/[^0-9]/g, '');
+    const waPh = cleanPh.length === 10 ? '91' + cleanPh : cleanPh;
+    safeHref('dupWhatsAppBtn', `https://wa.me/${waPh}`);
+
+    // Alert Banner customization
+    const alertBanner = document.getElementById('dupAlertBanner');
+    const alertIcon = document.getElementById('dupAlertIcon');
+    const alertTitle = document.getElementById('dupAlertTitle');
+    const alertMessage = document.getElementById('dupAlertMessage');
+
+    if (alertBanner && alertIcon && alertTitle && alertMessage) {
+      if (summary.is_family_potential) {
+        alertBanner.style.background = '#f5f3ff';
+        alertBanner.style.border = '1px solid #ddd6fe';
+        alertIcon.textContent = '👨‍👩‍👧';
+        alertTitle.style.color = '#6b21a8';
+        alertTitle.textContent = 'Potential Family / Sibling Enquiry Detected';
+        alertMessage.style.color = '#581c87';
+        alertMessage.textContent = `A submission with a distinct student name was received on this contact number. Original student profile '${ld.name}' was preserved.`;
+      } else if (ld.status === 'Enrolled') {
+        alertBanner.style.background = '#fff7ed';
+        alertBanner.style.border = '1px solid #ffedd5';
+        alertIcon.textContent = '🎓';
+        alertTitle.style.color = '#c2410c';
+        alertTitle.textContent = `Active Enrolled Student Re-Enquiry (${summary.latest_elapsed || 'Recent'})`;
+        alertMessage.style.color = '#9a3412';
+        alertMessage.textContent = `This contact is already Enrolled at ${ld.branch || 'Branch'} under ${ld.assigned_staff || 'Staff'}. A new enquiry was detected and logged.`;
+      } else {
+        alertBanner.style.background = '#eff6ff';
+        alertBanner.style.border = '1px solid #bfdbfe';
+        alertIcon.textContent = '⚡';
+        alertTitle.style.color = '#1e40af';
+        alertTitle.textContent = `Retained Within 10-Day Window (${summary.latest_elapsed || 'Recent'})`;
+        alertMessage.style.color = '#1e3a8a';
+        alertMessage.textContent = `Duplicate attempts within 10 days are unified under Lead #${ld.id} to preserve counselor ownership and prevent multiple assignment.`;
+      }
+    }
+
+    // Latest duplicate column
+    if (latestDup) {
+      safeText('dupIncomingName', latestDup.name || ld.name);
+      if (latestDup.name && ld.name && latestDup.name.toLowerCase() !== ld.name.toLowerCase()) {
+        safeDisplay('dupNameDiffBadge', 'inline-block');
+      } else {
+        safeDisplay('dupNameDiffBadge', 'none');
+      }
+
+      safeText('dupLatestElapsedBadge', latestDup.elapsed_human || 'Recent');
+      safeText('dupIncomingSource', latestDup.source || 'Direct');
+      safeText('dupIncomingBranch', latestDup.branch || 'Same Branch');
+      safeText('dupIncomingCourse', latestDup.course || 'Same Course');
+      safeText('dupIncomingSubmitted', latestDup.submitted || 'N/A');
+      safeText('dupIncomingReason', latestDup.duplicate_reason || latestDup.notes || 'Identical contact details detected within 10 days.');
+    } else {
+      safeText('dupIncomingName', ld.name);
+      safeDisplay('dupNameDiffBadge', 'none');
+      safeText('dupLatestElapsedBadge', 'Within 10 Days');
+      safeText('dupIncomingSource', ld.channel || 'Direct');
+      safeText('dupIncomingBranch', ld.branch || 'Same Branch');
+      safeText('dupIncomingCourse', ld.course || 'Not Specified');
+      safeText('dupIncomingSubmitted', ld.submitted || 'N/A');
+      safeText('dupIncomingReason', 'Duplicate attempt registered under 10-day retention rule.');
+    }
+
+    // Timeline section if > 1 attempts
+    const timelineSec = document.getElementById('dupTimelineSection');
+    const timelineList = document.getElementById('dupTimelineList');
+    if (timelineSec && timelineList) {
+      if (dups.length > 1) {
+        timelineSec.style.display = 'block';
+        safeText('dupTotalCountChip', `${dups.length} Attempts`);
+        timelineList.innerHTML = '';
+        dups.forEach((rec, idx) => {
+          const item = document.createElement('div');
+          item.style.padding = '8px 12px';
+          item.style.background = idx === 0 ? '#fff7ed' : '#f8fafc';
+          item.style.border = '1px solid #e2e8f0';
+          item.style.borderRadius = '8px';
+          item.style.fontSize = '0.8rem';
+          item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <span style="font-weight: 700; color: #1e293b;">#${dups.length - idx} • ${rec.source || 'Enquiry'} (${rec.submitted || 'N/A'})</span>
+              <span style="font-weight: 600; color: #b45309; font-size: 0.74rem;">${rec.elapsed_human || ''}</span>
+            </div>
+            <div style="color: #64748b;">${rec.duplicate_reason || rec.notes || 'Recorded duplicate submission.'}</div>
+          `;
+          timelineList.appendChild(item);
+        });
+      } else {
+        timelineSec.style.display = 'none';
+      }
+    }
+
+    content.style.display = 'block';
+  })
+  .catch(err => {
+    loading.style.display = 'none';
+    alert('Communication error: ' + err);
+    closeDuplicateModal();
+  });
+}
+
+function notifyCounselorFromModal() {
+  if (!currentModalLeadId) return;
+  const notifyBtn = document.getElementById('dupNotifyBtn');
+  const notifyText = document.getElementById('dupNotifyText');
+
+  notifyBtn.disabled = true;
+  notifyText.textContent = "Sending Alert...";
+
+  // Retrieve CSRF token
+  let csrfToken = '';
+  const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (csrfInput) {
+    csrfToken = csrfInput.value;
+  } else {
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+      const parts = c.trim().split('=');
+      if (parts[0] === 'csrftoken') {
+        csrfToken = decodeURIComponent(parts[1]);
+        break;
+      }
+    }
+  }
+
+  fetch(`/admin/leads/${currentModalLeadId}/notify-counselor/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(res => {
+    if (!res.ok) {
+      throw new Error('Server returned HTTP ' + res.status);
+    }
+    return res.json();
+  })
+  .then(data => {
+    if (data.success) {
+      notifyText.textContent = "✓ Counselor Notified!";
+      notifyBtn.className = "btn btn-sm btn-success";
+    } else {
+      alert(data.error || 'Failed to dispatch counselor alert.');
+      notifyBtn.disabled = false;
+      notifyText.textContent = "Notify Counselor";
+    }
+  })
+  .catch(err => {
+    alert("Request failed: " + err);
+    notifyBtn.disabled = false;
+    notifyText.textContent = "Notify Counselor";
+  });
+}
+
+function closeDuplicateModal() {
+  const modal = document.getElementById('duplicateLeadModal');
+  if (modal) modal.style.display = 'none';
+  currentModalLeadId = null;
+}
+</script>
+
+<!-- Floating Bulk Actions Dock -->
+<div id="tp-bulk-actions-dock" class="tp-bulk-actions-dock" style="display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 1040; background: var(--bg-card, #ffffff); color: var(--text-main); border: 1px solid var(--tp-surface-border); border-radius: var(--tp-radius-lg); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1); padding: 10px 18px;">
+  <div class="tp-bulk-dock-content" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+    <div class="tp-bulk-dock-badge" style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--tp-text-primary); font-size: 0.88rem;">
+      <span id="selected-leads-count" style="background: var(--tp-primary-600); color: #fff; padding: 2px 10px; border-radius: var(--tp-radius-full); font-size: 0.82rem;">0</span>
+      <span>leads selected</span>
+    </div>
+    <div class="tp-bulk-dock-controls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <button type="button" class="btn btn-sm btn-primary" id="btn-dock-bulk-edit" onclick="openBulkEditModal()" style="background: var(--tp-primary-600, #0284c7); border: none; color: #ffffff; font-weight: 700; padding: 6px 14px; border-radius: var(--tp-radius-md); display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        Bulk Edit
+      </button>
+
+      <button type="button" class="btn btn-sm btn-success" id="btn-dock-whatsapp" onclick="triggerBulkWhatsAppAction()" style="background: #10b981; border: none; color: #ffffff; font-weight: 700; padding: 6px 14px; border-radius: var(--tp-radius-md); display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        Bulk WhatsApp Message
+      </button>
+
+      <div style="display: inline-flex; align-items: center; gap: 4px;">
+        <select id="bulk-status-select" class="form-select form-select-sm tp-select" style="width: 150px; padding: 4px 10px; font-size: 0.82rem;">
+          <option value="">Update Status...</option>
+          {% for st in statuses %}
+          <option value="{{ st.0 }}">{{ st.1 }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn btn-sm btn-primary tp-btn-primary" id="btn-apply-bulk-status" style="padding: 5px 12px; font-weight: 600;">Update</button>
+      </div>
+
+      <button type="button" class="btn btn-sm btn-secondary tp-btn-secondary" onclick="triggerExportAction()" style="padding: 5px 12px; font-weight: 600;">
+        Export
+      </button>
+
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-clear-selection" style="padding: 5px 10px; font-size: 0.8rem;">Deselect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bulk WhatsApp Recipient Pre-Check -->
+<div id="bulkWhatsAppPreCheckModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 1060; align-items: center; justify-content: center; padding: 20px;">
+  <div class="modal-dialog" style="background: var(--bg-card, #ffffff); color: var(--text-main); border: 1px solid var(--border-color, #e2e8f0); border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
+    <div style="padding: 18px 24px; border-bottom: 1px solid var(--tp-surface-border); display: flex; justify-content: space-between; align-items: center; background: #ecfdf5;">
+      <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #065f46; display: flex; align-items: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        Bulk WhatsApp Recipient Pre-Check
+      </h4>
+      <button type="button" onclick="closePreCheckModal()" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #94a3b8;">&times;</button>
+    </div>
+    <div style="padding: 24px;">
+      <div id="preCheckLoading" style="text-align: center; padding: 24px; color: var(--tp-text-muted);">
+        Evaluating recipient eligibility & compliance...
+      </div>
+      <div id="preCheckBody" style="display: none;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+          <div style="background: #f8fafc; border: 1px solid var(--tp-surface-border); border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.75rem; color: var(--tp-text-muted); font-weight: 700; text-transform: uppercase;">Total Selected</div>
+            <div id="preCheckTotal" style="font-size: 1.4rem; font-weight: 800; color: var(--tp-text-primary);">0</div>
+          </div>
+          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #065f46; font-weight: 700; text-transform: uppercase;">Eligible to Receive</div>
+            <div id="preCheckEligible" style="font-size: 1.4rem; font-weight: 800; color: #059669;">0</div>
+          </div>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #92400e; font-weight: 700; text-transform: uppercase;">Invalid Phone Number</div>
+            <div id="preCheckInvalid" style="font-size: 1.4rem; font-weight: 800; color: #d97706;">0</div>
+          </div>
+          <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #991b1b; font-weight: 700; text-transform: uppercase;">Opted-out / No Consent</div>
+            <div id="preCheckOptOut" style="font-size: 1.4rem; font-weight: 800; color: #dc2626;">0</div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--tp-text-secondary); margin-bottom: 20px; line-height: 1.5;">
+          Non-compliant and invalid records will be automatically excluded before campaign execution to protect your WhatsApp account health and reputation.
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary tp-btn-secondary" onclick="closePreCheckModal()">Back</button>
+          <a id="btnProceedToComposer" href="#" class="btn btn-primary tp-btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
+            Open Campaign Composer &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'leads/partials/bulk_edit_modal.html' %}
+
+<script>
+window.selectAllMatchingFilters = false;
+
+function toggleActionsDropdown(e) {
+  e.stopPropagation();
+  var menu = document.getElementById('leadsActionsDropdown');
+  if (!menu) return;
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('leadsActionsDropdown');
+  if (menu && !e.target.closest('#btn-actions-dropdown')) {
+    menu.style.display = 'none';
+  }
+});
+
+function toggleSelectAllMatching(enabled) {
+  window.selectAllMatchingFilters = enabled;
+  var bannerBtn = document.getElementById('btn-select-all-matching');
+  var indicator = document.getElementById('all-matching-selected-indicator');
+  var countEl = document.getElementById('selected-leads-count');
+  if (enabled) {
+    if (bannerBtn) bannerBtn.style.display = 'none';
+    if (indicator) indicator.style.display = 'inline-block';
+    if (countEl) countEl.textContent = '{{ page_obj.paginator.count }}';
+  } else {
+    if (bannerBtn) bannerBtn.style.display = 'inline-block';
+    if (indicator) indicator.style.display = 'none';
+    var checked = document.querySelectorAll('.lead-row-select:checked');
+    if (countEl) countEl.textContent = checked.length;
+  }
+}
+
+function getActiveFilterParams() {
+  var urlParams = new URLSearchParams(window.location.search);
+  var params = {};
+  ['search', 'branch', 'status', 'telecaller', 'channel', 'product', 'assignment_status'].forEach(function(k) {
+    if (urlParams.get(k)) params[k] = urlParams.get(k);
+  });
+  return params;
+}
+
+function getSelectedLeadIds() {
+  if (window.CRMSelectionManager) {
+    return window.CRMSelectionManager.getStoredIds();
+  }
+  var ids = [];
+  document.querySelectorAll('.lead-row-select:checked').forEach(function(cb) {
+    ids.push(parseInt(cb.value, 10));
+  });
+  return ids;
+}
+
+function triggerBulkWhatsAppAction() {
+  var ids = getSelectedLeadIds();
+  var filters = getActiveFilterParams();
+  var isAllMatching = window.selectAllMatchingFilters;
+
+  if (ids.length === 0 && !isAllMatching && Object.keys(filters).length === 0) {
+    alert('Please select at least one lead from the table or apply a filter.');
+    return;
+  }
+
+  // Open pre-check modal
+  var modal = document.getElementById('bulkWhatsAppPreCheckModal');
+  var loading = document.getElementById('preCheckLoading');
+  var body = document.getElementById('preCheckBody');
+  var composerBtn = document.getElementById('btnProceedToComposer');
+
+  modal.style.display = 'flex';
+  loading.style.display = 'block';
+  body.style.display = 'none';
+
+  // Construct target URL for composer
+  var targetUrl = '/campaigns/create/';
+  if (isAllMatching) {
+    var qs = new URLSearchParams(filters).toString();
+    if (qs) targetUrl += '?' + qs;
+  } else if (ids.length > 0) {
+    targetUrl += '?lead_ids=' + ids.join(',');
+  }
+
+  composerBtn.href = targetUrl;
+
+  // Query selection verification API
+  fetch('/leads/api/resolve-selection/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({
+      lead_ids: isAllMatching ? [] : ids,
+      filters: isAllMatching ? filters : {}
+    })
+  })
+  .then(res => {
+    if (!res.ok) {
+      throw new Error('Server returned HTTP ' + res.status);
+    }
+    return res.json();
+  })
+  .then(data => {
+    loading.style.display = 'none';
+    if (!data.success) {
+      alert(data.error || 'Failed to evaluate recipients');
+      closePreCheckModal();
+      return;
+    }
+    document.getElementById('preCheckTotal').textContent = data.total_selected;
+    document.getElementById('preCheckEligible').textContent = data.eligible_count;
+    document.getElementById('preCheckInvalid').textContent = data.invalid_phone_count;
+    document.getElementById('preCheckOptOut').textContent = data.opted_out_count;
+    body.style.display = 'block';
+  })
+  .catch(err => {
+    loading.style.display = 'none';
+    alert('Communication error: ' + err);
+    closePreCheckModal();
+  });
+}
+
+function closePreCheckModal() {
+  var modal = document.getElementById('bulkWhatsAppPreCheckModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function triggerBulkEditFocus() {
+  var dock = document.getElementById('tp-bulk-actions-dock');
+  var ids = getSelectedLeadIds();
+  if (ids.length === 0) {
+    alert('Please select at least one lead from the table.');
+    return;
+  }
+  if (dock) {
+    dock.style.display = 'block';
+    var select = document.getElementById('bulk-status-select');
+    if (select) select.focus();
+  }
+}
+
+function triggerExportAction() {
+  var ids = getSelectedLeadIds();
+  var filters = getActiveFilterParams();
+  var isAllMatching = window.selectAllMatchingFilters;
+
+  var exportUrl = '/leads/export/';
+  if (!isAllMatching && ids.length > 0) {
+    exportUrl += '?lead_ids=' + ids.join(',');
+  } else {
+    var qs = new URLSearchParams(filters).toString();
+    if (qs) exportUrl += '?' + qs;
+  }
+  window.location.href = exportUrl;
+}
+</script>
+
+
+{% endblock %}

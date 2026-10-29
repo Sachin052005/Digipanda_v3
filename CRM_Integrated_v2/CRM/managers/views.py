@@ -193,13 +193,19 @@ def admin_manager_toggle_status(request, pk):
 @admin_required
 def admin_manager_change_password(request, pk):
     manager = get_object_or_404(User, pk=pk, role=UserRole.SALES_HEAD)
+    from accounts.permissions import can_manage_user
+    if not can_manage_user(request.user, manager):
+        raise PermissionDenied("You do not have permission to manage this Sales Head's password.")
+
     if request.method == 'POST':
         form = SetPasswordForm(manager, request.POST)
         if form.is_valid():
             form.save()
+            manager.must_change_password = False
+            manager.save(update_fields=['must_change_password'])
             log_activity(
                 user=request.user,
-                action="Password Reset by Admin",
+                action="Administrator Set Password",
                 description=f"Admin reset password for Sales Head '{manager.username}'.",
                 object_type="User",
                 object_id=manager.pk,
@@ -291,60 +297,77 @@ def manager_dashboard(request):
     manager = request.user
     today = timezone.localdate()
 
-    period = request.GET.get('period', 'all').strip()
-    start_date = request.GET.get('start_date', '').strip()
-    end_date = request.GET.get('end_date', '').strip()
+    from leads.utils_date_filter import extract_normalized_date_range
+    _date_info = extract_normalized_date_range(request, default_period='all')
+    start_date = _date_info['start_date']
+    end_date = _date_info['end_date']
+    period = _date_info['period']
+    start_dt = _date_info['start_dt']
+    end_dt = _date_info['end_dt']
 
-    start_dt, end_dt = None, None
-    if period == 'today':
-        start_dt = timezone.make_aware(datetime.combine(today, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'week':
-        start_of_week = today - timedelta(days=today.weekday())
-        start_dt = timezone.make_aware(datetime.combine(start_of_week, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'month':
-        start_of_month = today.replace(day=1)
-        start_dt = timezone.make_aware(datetime.combine(start_of_month, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'custom' and start_date and end_date:
-        try:
-            s_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            e_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            start_dt = timezone.make_aware(datetime.combine(s_date, time.min))
-            end_dt = timezone.make_aware(datetime.combine(e_date, time.max))
-        except ValueError:
-            start_dt, end_dt = None, None
+    all_branch_ids = get_accessible_branch_ids(manager)
+    my_branches = Branch.objects.filter(id__in=all_branch_ids)
 
-    branch_ids = get_accessible_branch_ids(manager)
-    my_branches = Branch.objects.filter(id__in=branch_ids)
+    branch_filter = request.GET.get('branch', '').strip()
+    selected_branch_id = None
+    if branch_filter and branch_filter.isdigit() and int(branch_filter) in all_branch_ids:
+        selected_branch_id = int(branch_filter)
+        branch_ids = [selected_branch_id]
+    else:
+        branch_ids = all_branch_ids
+
+    selected_branch = my_branches.filter(id=selected_branch_id).first() if selected_branch_id else None
 
     # Telecallers within this Sales Head's accessible branches
     telecallers = User.objects.filter(role=UserRole.TELECALLER, branch_id__in=branch_ids)
     telecaller_ids = list(telecallers.values_list('id', flat=True))
 
-    # Real database metrics scoped to Sales Head
-    leads_base = Lead.objects.filter(
-        Q(assigned_sales_head=manager) | Q(assigned_telecaller_id__in=telecaller_ids)
-    )
+    # Real database metrics scoped to Sales Head and selected branch
+    if selected_branch_id:
+        leads_base = Lead.objects.filter(branch_id=selected_branch_id).filter(
+            Q(assigned_sales_head=manager) | Q(assigned_telecaller_id__in=telecaller_ids) | Q(branch_id__in=all_branch_ids)
+        ).distinct()
+    else:
+        leads_base = Lead.objects.filter(
+            Q(branch_id__in=all_branch_ids) | Q(assigned_sales_head=manager) | Q(assigned_telecaller_id__in=telecaller_ids)
+        ).distinct()
+
     if start_dt and end_dt:
         leads_base = leads_base.filter(created_at__range=(start_dt, end_dt))
 
     my_leads_count = leads_base.count()
     my_telecallers_count = telecallers.count()
 
-    calls_base = CallHistory.objects.filter(
-        Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
-    )
+    if selected_branch_id:
+        calls_base = CallHistory.objects.filter(
+            Q(lead__branch_id=selected_branch_id) | Q(telecaller_id__in=telecaller_ids)
+        ).filter(
+            Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
+        ).distinct()
+    else:
+        calls_base = CallHistory.objects.filter(
+            Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
+        ).distinct()
+
     if start_dt and end_dt:
         calls_base = calls_base.filter(call_started_at__range=(start_dt, end_dt))
 
-    todays_calls_count = calls_base.filter(call_started_at__date=today).count() if not (start_dt and end_dt) else calls_base.count()
+    today_start = timezone.make_aware(datetime.combine(today, time.min))
+    today_end = timezone.make_aware(datetime.combine(today, time.max))
+    todays_calls_count = calls_base.filter(call_started_at__range=(today_start, today_end)).count() if not (start_dt and end_dt) else calls_base.count()
     completed_calls_count = calls_base.filter(call_status='Completed').count()
 
-    followups_base = FollowUp.objects.filter(
-        Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
-    )
+    if selected_branch_id:
+        followups_base = FollowUp.objects.filter(
+            Q(lead__branch_id=selected_branch_id) | Q(telecaller_id__in=telecaller_ids)
+        ).filter(
+            Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
+        ).distinct()
+    else:
+        followups_base = FollowUp.objects.filter(
+            Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
+        ).distinct()
+
     if start_dt and end_dt:
         followups_base = followups_base.filter(follow_up_date__range=(start_dt.date(), end_dt.date()))
 
@@ -366,13 +389,24 @@ def manager_dashboard(request):
     status_counts = leads_base.values('status').annotate(total=Count('id'))
     status_dict = {item['status']: item['total'] for item in status_counts}
 
-    recent_calls = CallHistory.objects.filter(
-        Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
-    ).select_related('lead', 'caller', 'telecaller')[:8]
+    if selected_branch_id:
+        recent_calls = CallHistory.objects.filter(
+            Q(lead__branch_id=selected_branch_id) | Q(telecaller_id__in=telecaller_ids)
+        ).filter(
+            Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
+        ).select_related('lead', 'caller', 'telecaller')[:8]
 
-    recent_activities = Activity.objects.filter(
-        Q(user=manager) | Q(user_id__in=telecaller_ids)
-    ).select_related('user')[:8]
+        recent_activities = Activity.objects.filter(
+            Q(user=manager) | Q(user_id__in=telecaller_ids)
+        ).select_related('user')[:8]
+    else:
+        recent_calls = CallHistory.objects.filter(
+            Q(manager=manager) | Q(telecaller_id__in=telecaller_ids)
+        ).select_related('lead', 'caller', 'telecaller')[:8]
+
+        recent_activities = Activity.objects.filter(
+            Q(user=manager) | Q(user_id__in=telecaller_ids)
+        ).select_related('user')[:8]
 
     return render(request, 'manager_dashboard/dashboard.html', {
         'period': period,
@@ -389,6 +423,9 @@ def manager_dashboard(request):
         'status_dict': status_dict,
         'recent_calls': recent_calls,
         'recent_activities': recent_activities,
+        'selected_branch_id': selected_branch_id,
+        'selected_branch': selected_branch,
+        'branch_filter': branch_filter,
     })
 
 @sales_head_required

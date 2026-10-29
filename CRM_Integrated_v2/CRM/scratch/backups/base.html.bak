@@ -1,0 +1,905 @@
+{% load static %}
+{% load calls_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}">
+  <title>{% block title %}DigipandaCRM{% endblock %}</title>
+  <!-- Google Fonts: Plus Jakarta Sans (Brand/Headings) + Inter (Interface) + JetBrains Mono (Data/Code) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Early Theme Attribution (Zero-FOUC) -->
+  <script src="{% static 'js/theme-manager.js' %}?v=20261022_dropdown_fix"></script>
+  <link rel="stylesheet" href="{% static 'css/crm.css' %}?v=20261024_zoom100_v3">
+  <link rel="stylesheet" href="{% static 'css/design-system.css' %}?v=20261024_zoom100_v3">
+  <link rel="stylesheet" href="{% static 'css/lead-details-modern.css' %}?v=20261015_aura">
+  <link rel="stylesheet" href="{% static 'css/modern-saas-core.css' %}?v=20261025_saas">
+  <!-- Chart.js and Custom Enterprise Theme Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="{% static 'js/chart-theme.js' %}?v=20261016_glossy" defer></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    {% if user.is_authenticated %}
+    <!-- Reusable Collapsible Sidebar -->
+    <aside class="app-sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <a href="{% url 'login_redirect' %}" class="brand-logo" style="display: flex; align-items: center; gap: 8px; text-decoration: none;">
+          <img src="{% static 'images/digipanda_symbol.png' %}" alt="Digipanda" width="28" height="31" style="object-fit: contain; flex-shrink: 0;" class="brand-symbol">
+          <div class="brand-full-logo-wrap" style="display: flex; align-items: center; gap: 6px;">
+            <img src="{% static 'images/digipanda_logo.svg' %}" alt="digipanda" class="brand-logo-light" style="height: 26px; width: auto; object-fit: contain;">
+            <img src="{% static 'images/digipanda_logo_dark.svg' %}" alt="digipanda" class="brand-logo-dark" style="height: 26px; width: auto; object-fit: contain; display: none;">
+            <span class="part-crm" style="color: #2bb34b; font-weight: 800; font-size: 0.76rem; letter-spacing: 0.04em; background: rgba(43, 179, 75, 0.12); border: 1px solid rgba(43, 179, 75, 0.3); padding: 1px 5px; border-radius: 5px;">CRM</span>
+          </div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        {% if is_admin %}
+        <!-- ADMIN NAVIGATION -->
+        <div class="nav-section-title">Core Operations</div>
+        <a href="{% url 'admin_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="{% url 'leads_kanban' %}" class="nav-item {% if request.resolver_match.url_name == 'leads_kanban' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+          <span class="nav-text">Pipeline (Kanban)</span>
+        </a>
+        <a href="{% url 'admin_reports' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_reports' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span class="nav-text">Reports & Analytics</span>
+        </a>
+
+        <!-- GROUP: Team & Staff -->
+        <div class="nav-group" id="nav-group-admin-team">
+          <div class="nav-group-header" data-target="admin-team-nav">
+            <div class="nav-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <span>Team & Staff</span>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="nav-group-children" id="admin-team-nav">
+            <!-- <a href="{% url 'admin_user_create' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_user_create' %}active{% endif %}" style="color: var(--primary); font-weight: 600;">
+              <span class="nav-text">+ Add Team Member</span>
+            </a> -->
+            <a href="{% url 'admin_managers_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_managers_list admin_manager_create admin_manager_detail admin_manager_edit admin_manager_delete' %}active{% endif %}">
+              <span class="nav-text">Sales Heads</span>
+            </a>
+            <a href="{% url 'admin_branch_heads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_branch_heads_list admin_branch_head_create admin_branch_head_detail admin_branch_head_edit admin_branch_head_delete' %}active{% endif %}">
+              <span class="nav-text">Branch Heads</span>
+            </a>
+            <a href="{% url 'admin_branch_admins_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_branch_admins_list admin_branch_admin_create admin_branch_admin_detail admin_branch_admin_edit' %}active{% endif %}">
+              <span class="nav-text">Branch Admins</span>
+            </a>
+            <a href="{% url 'admin_counselors_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_counselors_list admin_counselor_create admin_counselor_detail admin_counselor_change_password' %}active{% endif %}">
+              <span class="nav-text">Counselors</span>
+            </a>
+            <a href="{% url 'admin_telecallers_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_telecallers_list admin_telecaller_create admin_telecaller_detail admin_telecaller_edit admin_telecaller_assign admin_telecaller_change_password' %}active{% endif %}">
+              <span class="nav-text">Telecallers</span>
+            </a>
+            <a href="{% url 'admin_receptionists_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_receptionists_list admin_receptionist_create admin_receptionist_change_password' %}active{% endif %}">
+              <span class="nav-text">Receptionists</span>
+            </a>
+            <a href="{% url 'admin_accountants_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_accountants_list' %}active{% endif %}">
+              <span class="nav-text">Accountants</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- GROUP: Lead Operations -->
+        <a href="{% url 'admin_leads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_leads_list admin_lead_create admin_lead_detail admin_lead_edit admin_lead_delete admin_leads_import admin_lead_update_status admin_lead_duplicate_info admin_retry_pending_assignments admin_interested_leads admin_demo_scheduled_leads admin_converted_leads admin_lost_leads admin_later_leads admin_discussion_leads admin_new_leads admin_lead_queues admin_walkin_desk admin_duplicate_leads admin_duplicate_leads_keep_single admin_enrolled_students' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+          <span class="nav-text">All Leads</span>
+        </a>
+
+        <!-- GROUP: Calls & Omnichannel -->
+        <div class="nav-group" id="nav-group-admin-comms">
+          <div class="nav-group-header" data-target="admin-comms-nav">
+            <div class="nav-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              <span>Calls & WhatsApp</span>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="nav-group-children" id="admin-comms-nav">
+            <a href="{% url 'admin_followups_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_followups_list admin_followup_create admin_followup_edit admin_followup_reschedule' %}active{% endif %}">
+              <span class="nav-text">Follow-ups</span>
+            </a>
+            <a href="{% url 'missed_calls_list' %}" class="nav-item {% if request.resolver_match.url_name == 'missed_calls_list' %}active{% endif %}">
+              <span class="nav-text">Missed Calls{% missed_callbacks_count as missed_cb %}{% if missed_cb %} <span class="badge" style="background:#dc2626;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:10px;">{{ missed_cb }}</span>{% endif %}</span>
+            </a>
+            <a href="{% url 'inbox' %}" class="nav-item {% if request.resolver_match.url_name == 'inbox' %}active{% endif %}">
+              <span class="nav-text">WhatsApp Chats</span>
+            </a>
+            <a href="{% url 'whatsapp_campaigns_list' %}" class="nav-item {% if request.resolver_match.url_name in 'whatsapp_campaigns_list whatsapp_campaign_create whatsapp_campaign_detail' %}active{% endif %}">
+              <span class="nav-text">WhatsApp Campaigns</span>
+            </a>
+            <a href="{% url 'automation-list' %}" class="nav-item {% if request.resolver_match.url_name in 'automation-list flow-builder flow-builder-detail' %}active{% endif %}">
+              <span class="nav-text">WhatsApp Automations</span>
+            </a>
+            <a href="{% url 'fb_leads:facebook_leads' %}" class="nav-item {% if request.resolver_match.namespace == 'fb_leads' and request.resolver_match.url_name == 'facebook_leads' %}active{% endif %}">
+              <span class="nav-text">Facebook Leads</span>
+            </a>
+            <a href="{% url 'telecaller_rnr_report' %}" class="nav-item {% if request.resolver_match.url_name == 'telecaller_rnr_report' %}active{% endif %}">
+              <span class="nav-text">Telecaller RNR Report</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- GROUP: Finance & Accounts -->
+        <div class="nav-group" id="nav-group-admin-finance">
+          <div class="nav-group-header" data-target="admin-finance-nav">
+            <div class="nav-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+              <span>Finance & Accounts</span>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="nav-group-children" id="admin-finance-nav">
+            <a href="{% url 'accountant_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'accountant_dashboard' %}active{% endif %}">
+              <span class="nav-text">Financial Dashboard</span>
+            </a>
+            <a href="{% url 'accountant_payment_verification' %}" class="nav-item {% if request.resolver_match.url_name == 'accountant_payment_verification' %}active{% endif %}">
+              <span class="nav-text">Payment Verification</span>
+            </a>
+            <a href="{% url 'admin_enrolled_students' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_enrolled_students' %}active{% endif %}">
+              <span class="nav-text">Student Enrollments</span>
+            </a>
+            <a href="{% url 'accountant_monthly_report_excel' %}" class="nav-item">
+              <span class="nav-text">Financial Report (Excel)</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- GROUP: Master Setup & System -->
+        <div class="nav-group" id="nav-group-admin-setup">
+          <div class="nav-group-header" data-target="admin-setup-nav">
+            <div class="nav-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              <span>Master Setup</span>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="nav-group-children" id="admin-setup-nav">
+            <a href="{% url 'admin_branches_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_branches_list admin_branch_create admin_branch_edit admin_branch_delete' %}active{% endif %}">
+              <span class="nav-text">Branches</span>
+            </a>
+            <a href="{% url 'admin_channels_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_channels_list admin_channel_create admin_channel_edit admin_channel_delete' %}active{% endif %}">
+              <span class="nav-text">Channels</span>
+            </a>
+            <a href="{% url 'admin_products_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_products_list admin_product_edit' %}active{% endif %}">
+              <span class="nav-text">Courses & Programs</span>
+            </a>
+            <a href="{% url 'admin_pipeline_statuses' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_pipeline_statuses admin_pipeline_status_edit' %}active{% endif %}">
+              <span class="nav-text">Pipeline Statuses</span>
+            </a>
+            <a href="{% url 'admin_offline_leads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_offline_leads admin_offline_leads_list admin_google_sheet_connect admin_google_sheet_history admin_offline_leads_upload admin_google_sheet_edit' %}active{% endif %}">
+              <span class="nav-text">Offline / Google Sheets</span>
+            </a>
+            <a href="{% url 'fb_leads:fb_accounts' %}" class="nav-item {% if request.resolver_match.url_name == 'fb_accounts' %}active{% endif %}">
+              <span class="nav-text">Facebook Connections</span>
+            </a>
+            <a href="{% url 'admin_walkin_forms_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_walkin_forms_list admin_walkin_form_create admin_walkin_form_edit walkin_form_qr_standee' %}active{% endif %}">
+              <span class="nav-text">Walk-in Enquiry Form</span>
+            </a>
+            <a href="{% url 'admin_lead_setup' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_lead_setup' %}active{% endif %}">
+              <span class="nav-text">Lead Allocation Setup</span>
+            </a>
+            <a href="{% url 'admin_activities_list' %}" class="nav-item {% if request.resolver_match.url_name in 'admin_activities_list admin_activity_detail' %}active{% endif %}">
+              <span class="nav-text">Audit Activities</span>
+            </a>
+          </div>
+        </div>
+
+        {% elif is_manager %}
+        <!-- MANAGER NAVIGATION -->
+        <div class="nav-section-title">Sales Head Portal</div>
+        <a href="{% url 'manager_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'manager_dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="{% url 'manager_telecallers_list' %}" class="nav-item {% if request.resolver_match.url_name in 'manager_telecallers_list manager_telecaller_detail manager_telecaller_create' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">My Telecallers</span>
+        </a>
+        <a href="{% url 'sales_head_branch_heads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'sales_head_branch_heads_list sales_head_branch_head_detail' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">Branch Heads</span>
+        </a>
+        <a href="{% url 'manager_leads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'manager_leads_list manager_lead_create manager_lead_detail manager_lead_edit manager_lead_import' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">Leads</span>
+        </a>
+        <a href="{% url 'leads_kanban' %}" class="nav-item {% if request.resolver_match.url_name == 'leads_kanban' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+          <span class="nav-text">Pipeline (Kanban)</span>
+        </a>
+        <a href="{% url 'manager_followups_list' %}" class="nav-item {% if request.resolver_match.url_name in 'manager_followups_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span class="nav-text">Follow-ups</span>
+        </a>
+        <a href="{% url 'missed_calls_list' %}" class="nav-item {% if request.resolver_match.url_name == 'missed_calls_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path><line x1="23" y1="1" x2="17" y2="7"></line><line x1="17" y1="1" x2="23" y2="7"></line></svg>
+          <span class="nav-text">Missed Calls{% missed_callbacks_count as missed_cb %}{% if missed_cb %} <span class="badge" style="background:#dc2626;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:10px;">{{ missed_cb }}</span>{% endif %}</span>
+        </a>
+
+        <a href="{% url 'inbox' %}" class="nav-item {% if request.resolver_match.url_name == 'inbox' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          <span class="nav-text">WhatsApp Chats</span>
+        </a>
+        <a href="{% url 'whatsapp_campaigns_list' %}" class="nav-item {% if request.resolver_match.url_name in 'whatsapp_campaigns_list whatsapp_campaign_create whatsapp_campaign_detail' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          <span class="nav-text">WhatsApp Campaigns</span>
+        </a>
+        <a href="{% url 'automation-list' %}" class="nav-item {% if request.resolver_match.url_name in 'automation-list flow-builder flow-builder-detail' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span class="nav-text">WhatsApp Automations</span>
+        </a>
+        <a href="{% url 'fb_leads:facebook_leads' %}" class="nav-item {% if request.resolver_match.namespace == 'fb_leads' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+          <span class="nav-text">Facebook Leads</span>
+        </a>
+        <a href="{% url 'manager_reports' %}" class="nav-item {% if request.resolver_match.url_name == 'manager_reports' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          <span class="nav-text">Reports</span>
+        </a>
+        <a href="{% url 'manager_activities_list' %}" class="nav-item {% if request.resolver_match.url_name in 'manager_activities_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <span class="nav-text">Activities</span>
+        </a>
+        <a href="{% url 'admin_lead_setup' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_lead_setup' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span class="nav-text">Lead Allocation Setup</span>
+        </a>
+        <a href="{% url 'admin_enrolled_students' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_enrolled_students' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+          <span class="nav-text">Student Enrollments</span>
+        </a>
+
+        {% elif is_branch_admin %}
+        <!-- BRANCH ADMIN NAVIGATION -->
+        <div class="nav-section-title">Branch Admin Portal</div>
+        <a href="{% url 'admin_enrolled_students' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_enrolled_students' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+          <span class="nav-text">Student Enrollments</span>
+        </a>
+        <a href="{% url 'branch_head_leads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'branch_head_leads_list branch_head_lead_detail' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">Branch Leads</span>
+        </a>
+        <a href="{% url 'leads_kanban' %}" class="nav-item {% if request.resolver_match.url_name == 'leads_kanban' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+          <span class="nav-text">Pipeline (Kanban)</span>
+        </a>
+        <a href="{% url 'admin_lead_setup' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_lead_setup' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span class="nav-text">Lead Allocation Setup</span>
+        </a>
+
+        {% elif is_branch_head %}
+        <!-- BRANCH HEAD NAVIGATION -->
+        <div class="nav-section-title">Branch Head Portal</div>
+        <a href="{% url 'branch_head_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'branch_head_dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="{% url 'admin_enrolled_students' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_enrolled_students' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+          <span class="nav-text">Student Enrollments</span>
+        </a>
+        <a href="{% url 'branch_head_leads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'branch_head_leads_list branch_head_lead_detail' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">Leads</span>
+        </a>
+        <a href="{% url 'leads_kanban' %}" class="nav-item {% if request.resolver_match.url_name == 'leads_kanban' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+          <span class="nav-text">Pipeline (Kanban)</span>
+        </a>
+        <a href="{% url 'branch_head_counselors_list' %}" class="nav-item {% if request.resolver_match.url_name in 'branch_head_counselors_list branch_head_counselor_detail' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+          <span class="nav-text">Counselors</span>
+        </a>
+        <a href="{% url 'branch_head_telecallers_list' %}" class="nav-item {% if request.resolver_match.url_name in 'branch_head_telecallers_list branch_head_telecaller_detail' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <span class="nav-text">Telecallers</span>
+        </a>
+        <a href="{% url 'missed_calls_list' %}" class="nav-item {% if request.resolver_match.url_name == 'missed_calls_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path><line x1="23" y1="1" x2="17" y2="7"></line><line x1="17" y1="1" x2="23" y2="7"></line></svg>
+          <span class="nav-text">Missed Calls{% missed_callbacks_count as missed_cb %}{% if missed_cb %} <span class="badge" style="background:#dc2626;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:10px;">{{ missed_cb }}</span>{% endif %}</span>
+        </a>
+        <a href="{% url 'admin_lead_setup' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_lead_setup' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span class="nav-text">Lead Allocation Setup</span>
+        </a>
+
+        {% elif is_counselor %}
+        <!-- COUNSELOR NAVIGATION -->
+        <div class="nav-section-title">Counselor Portal</div>
+        <a href="{% url 'counselor_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'counselor_dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="{% url 'counselor_leads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'counselor_leads_list counselor_lead_detail counselor_lead_update_status' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">My Leads</span>
+        </a>
+        <a href="{% url 'leads_kanban' %}" class="nav-item {% if request.resolver_match.url_name == 'leads_kanban' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+          <span class="nav-text">Pipeline (Kanban)</span>
+        </a>
+        <a href="{% url 'counselor_telecallers_list' %}" class="nav-item {% if request.resolver_match.url_name in 'counselor_telecallers_list counselor_telecaller_leads' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <span class="nav-text">My Telecallers</span>
+        </a>
+        <a href="{% url 'counselor_followups_list' %}" class="nav-item {% if request.resolver_match.url_name in 'counselor_followups_list counselor_followup_reschedule' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span class="nav-text">Follow-ups</span>
+        </a>
+        <a href="{% url 'counselor_rnr_leads' %}" class="nav-item {% if request.resolver_match.url_name == 'counselor_rnr_leads' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <span class="nav-text">RNR Follow-up</span>
+        </a>
+        <a href="{% url 'counselor_unpicked_recalls' %}" class="nav-item {% if request.resolver_match.url_name == 'counselor_unpicked_recalls' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span class="nav-text">Unpicked Recalls</span>
+        </a>
+        <a href="{% url 'missed_calls_list' %}" class="nav-item {% if request.resolver_match.url_name == 'missed_calls_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path><line x1="23" y1="1" x2="17" y2="7"></line><line x1="17" y1="1" x2="23" y2="7"></line></svg>
+          <span class="nav-text">Missed Calls{% missed_callbacks_count as missed_cb %}{% if missed_cb %} <span class="badge" style="background:#dc2626;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:10px;">{{ missed_cb }}</span>{% endif %}</span>
+        </a>
+
+
+        {% elif is_telecaller %}
+        <!-- TELECALLER NAVIGATION -->
+        <div class="nav-section-title">Workspace</div>
+        <a href="{% url 'telecaller_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'telecaller_dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="{% url 'telecaller_leads_list' %}" class="nav-item {% if request.resolver_match.url_name in 'telecaller_leads_list telecaller_lead_create telecaller_lead_detail telecaller_lead_edit telecaller_lead_import' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">My Leads</span>
+        </a>
+        <a href="{% url 'leads_kanban' %}" class="nav-item {% if request.resolver_match.url_name == 'leads_kanban' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"></rect><rect x="14" y="3" width="7" height="10"></rect></svg>
+          <span class="nav-text">Pipeline (Kanban)</span>
+        </a>
+        <a href="{% url 'telecaller_followups_list' %}" class="nav-item {% if request.resolver_match.url_name in 'telecaller_followups_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span class="nav-text">Follow-ups</span>
+        </a>
+
+        <div class="nav-section-title">Communication</div>
+        <a href="{% url 'missed_calls_list' %}" class="nav-item {% if request.resolver_match.url_name == 'missed_calls_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path><line x1="23" y1="1" x2="17" y2="7"></line><line x1="17" y1="1" x2="23" y2="7"></line></svg>
+          <span class="nav-text">Missed Calls{% missed_callbacks_count as missed_cb %}{% if missed_cb %} <span class="badge" style="background:#dc2626;color:#fff;font-size:0.7rem;padding:1px 6px;border-radius:10px;">{{ missed_cb }}</span>{% endif %}</span>
+        </a>
+
+        <div class="nav-section-title">Insights & Audit</div>
+        <a href="{% url 'telecaller_activities_list' %}" class="nav-item {% if request.resolver_match.url_name in 'telecaller_activities_list' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <span class="nav-text">Activities</span>
+        </a>
+
+        {% elif is_receptionist %}
+        <!-- RECEPTIONIST NAVIGATION -->
+        <div class="nav-section-title">Front Desk</div>
+        <a href="{% url 'receptionist_dashboard' %}" class="nav-item {% if request.resolver_match.url_name in 'receptionist_dashboard receptionist_lead_history' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span class="nav-text">Walk-in Desk</span>
+        </a>
+
+        {% elif is_accountant %}
+        <!-- ACCOUNTANT NAVIGATION -->
+        <div class="nav-section-title">Finance & Accounts</div>
+        <a href="{% url 'accountant_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'accountant_dashboard' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span class="nav-text">Financial Dashboard</span>
+        </a>
+        <a href="{% url 'accountant_payment_verification' %}" class="nav-item {% if request.resolver_match.url_name == 'accountant_payment_verification' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          <span class="nav-text">Payment Verification</span>
+        </a>
+        <a href="{% url 'admin_enrolled_students' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_enrolled_students' %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <span class="nav-text">Student Enrollments</span>
+        </a>
+        <a href="{% url 'accountant_monthly_report_excel' %}" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span class="nav-text">Financial Report (Excel)</span>
+        </a>
+        {% endif %}
+      </nav>
+    </aside>
+    <!-- Responsive Mobile/Tablet Sidebar Backdrop -->
+    <div class="tp-sidebar-backdrop" id="sidebar-backdrop"></div>
+    {% endif %}
+
+    <!-- Main Content Container -->
+    <div class="app-main">
+      {% if user.is_authenticated %}
+      <!-- Top Application Header (Polished Responsive 3-Zone Architecture) -->
+      <header class="app-header">
+        <div class="header-left">
+          <button type="button" class="btn-sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation" title="Toggle Navigation">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+          <a href="{% url 'login_redirect' %}" class="header-brand-link" style="display: flex; align-items: center; gap: 6px; text-decoration: none;">
+            <img src="{% static 'images/digipanda_logo.svg' %}" alt="digipanda" class="brand-logo-light" style="height: 24px; width: auto; object-fit: contain;">
+            <img src="{% static 'images/digipanda_logo_dark.svg' %}" alt="digipanda" class="brand-logo-dark" style="height: 24px; width: auto; object-fit: contain; display: none;">
+            <span class="part-crm" style="color: #2bb34b; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.04em; background: rgba(43, 179, 75, 0.12); border: 1px solid rgba(43, 179, 75, 0.3); padding: 1px 5px; border-radius: 5px;">CRM</span>
+          </a>
+        </div>
+
+        <div class="header-center">
+          <!-- Global Quick Search Trigger (Phase 1) -->
+          <button type="button" class="tp-search-trigger-btn" id="tp-search-trigger-btn" title="Global Quick Search (Ctrl + K)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span class="tp-search-trigger-text">Search leads...</span>
+            <span class="tp-kbd-shortcut">Ctrl K</span>
+          </button>
+        </div>
+
+        <div class="header-right">
+          {% if is_admin %}
+          <!-- Global Admin Branch Selector (Section 2, 3) -->
+          <form method="POST" action="{% url 'set_active_branch' %}" id="admin-branch-select-form" class="tp-header-branch-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="tp-nav-branch-picker">
+              <span class="branch-label" style="font-size: 0.775rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; flex-shrink: 0;">Branch:</span>
+              <div style="min-width: 130px; max-width: 190px;">
+                <select name="branch_id" class="form-select tp-custom-select" onchange="this.form.submit()" style="padding: 4px 10px; font-size: 0.8125rem; font-weight: 600; color: var(--text-main); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer; height: 32px;">
+                  <option value="all" {% if not selected_branch %}selected{% endif %}>All Branches</option>
+                  {% for b in admin_branches %}
+                  <option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </form>
+          {% endif %}
+
+          <!-- 3D Isometric Theme Toggle Coin -->
+          <button type="button" class="theme-toggle-btn tp-3d-theme-toggle" id="theme-toggle" aria-label="Switch Theme" title="Toggle Light / Dark theme">
+            <div class="tp-3d-coin">
+              <div class="tp-coin-face tp-coin-front icon-moon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              </div>
+              <div class="tp-coin-face tp-coin-back icon-sun">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+              </div>
+            </div>
+          </button>
+
+          <!-- Database-Backed Notifications (Section 9) -->
+          <div class="notification-dropdown-wrapper" style="position: relative;">
+            <button type="button" class="notification-badge" id="notification-bell-btn" title="Notifications" aria-expanded="false" style="background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; position: relative;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              <span class="badge-count" id="notif-badge-count" {% if unread_notifications_count == 0 %}style="display: none;"{% endif %}>{{ unread_notifications_count }}</span>
+            </button>
+
+            <!-- Interactive Notification Dropdown Panel -->
+            <div id="notification-panel" style="display: none; position: absolute; right: 0; top: calc(100% + 12px); width: 340px; max-height: 440px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 1050; flex-direction: column; overflow: hidden;">
+              <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 0.9rem; color: var(--text-main);">Notifications</strong>
+                <button type="button" id="mark-all-read-btn" style="background: none; border: none; font-size: 0.75rem; color: var(--primary); cursor: pointer; font-weight: 600; padding: 0;">Mark all read</button>
+              </div>
+              <div id="notification-items-container" style="overflow-y: auto; max-height: 350px; padding: 0; margin: 0;">
+                <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">Loading notifications...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Profile Chip (Navigates to Profile & Security) -->
+          <a href="{% url 'user_profile' %}" class="user-profile-pill" style="text-decoration: none; color: inherit; cursor: pointer;" title="View Profile & Change Password">
+            <div class="user-avatar">{{ user.username|slice:":1"|upper }}</div>
+            <div class="user-info-text">
+              <strong>{{ user.get_full_name|default:user.username }}</strong>
+              <span class="badge {% if is_superadmin or is_admin or is_branch_admin %}badge-admin{% elif is_manager or is_branch_head or is_counselor %}badge-manager{% elif is_accountant %}badge-success{% elif is_receptionist %}badge-running{% else %}badge-telecaller{% endif %}" style="margin-left: 4px;">
+                {{ user_role }}
+              </span>
+            </div>
+          </a>
+
+          <!-- Logout Button with Dedicated Exit Animation -->
+          <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm tp-logout-trigger" title="Log out" style="display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>Logout</span>
+          </a>
+        </div>
+      </header>
+      {% endif %}
+
+      <!-- Content Area -->
+      <main class="content-wrapper {% block content_wrapper_class %}{% endblock %}">
+        <!-- Messages & Alerts -->
+        {% if messages %}
+        <div class="alert-container">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Global Live Call Execution Modal (Section 48, 49) -->
+  <div id="call-dialer-overlay" class="dialer-overlay">
+    <div class="dialer-card">
+      <!-- Window Controls for Minimizable Floating Dock -->
+      <div class="tp-dock-header-controls">
+        <button type="button" id="btn-minimize-call-dock" class="btn-dock-control" title="Minimize to floating call dock" aria-label="Minimize">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button type="button" id="btn-maximize-call-dock" class="btn-dock-control" title="Maximize call modal" aria-label="Maximize" style="display: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+        </button>
+        <button type="button" id="btn-close-call-dock" class="btn-dock-control" onclick="closeCallDialer()" title="Close" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div id="dialer-calling-state">
+        <div class="dialer-pulse">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </div>
+        <p id="dialer-state-badge" style="text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; color: var(--primary); font-weight: 700;">Connecting Call…</p>
+        <h3 id="dialer-lead-name" style="margin: 6px 0 2px; font-size: 1.35rem; color: var(--text-main);">Lead Name</h3>
+        <p id="dialer-lead-phone" style="font-size: 1.05rem; color: var(--text-muted); margin-bottom: 6px;">+91 98765 43210</p>
+        <div id="dialer-sync-status" style="margin-bottom: 12px; display: inline-flex; align-items: center; gap: 8px; background: var(--bg-body, #f0fdf4); border: 1px solid #bbf7d0; border-radius: 6px; padding: 7px 14px; font-size: 0.82rem; color: #15803d; font-weight: 600;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          <span id="dialer-sync-status-text">Dialing on your phone via CRM Call Sync…</span>
+        </div>
+        <div id="dialer-timer-display" class="dialer-timer">00:00</div>
+        
+        <!-- Minimized Floating Dock Quick Actions -->
+        <div class="tp-minimized-actions" style="display: none;">
+          <button type="button" class="btn-end-minimized" onclick="endActiveCall()" title="End Active Call">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            End
+          </button>
+        </div>
+
+        <div style="margin-top: 20px;" class="tp-full-modal-actions">
+          <button type="button" class="btn btn-danger" style="padding: 10px 24px; font-weight: 600;" onclick="endActiveCall()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            END CALL
+          </button>
+        </div>
+      </div>
+
+      <!-- Modern Full Lead-Details Completion Interface (Faithfully Matches Lead Detail Page) -->
+      <div id="dialer-completion-form" style="display: none; text-align: left; width: 100%;">
+        <div class="lead-detail-wrapper modal-lead-detail" id="modalLeadDetailContainer">
+
+          <!-- Sticky In-Call Live Execution Bar (Active during call) -->
+          <div id="modal-incall-top-bar" class="lead-top-ribbon" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 10px 20px; border-bottom: 2px solid #3b82f6; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; z-index: 25; position: sticky; top: 0;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span class="active-call-pulse-dot" id="incall-pulse-dot" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); animation: pulseRing 1.5s infinite;"></span>
+              <span id="incall-status-badge" style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(34, 197, 94, 0.4);">
+                Call Connected
+              </span>
+              <span id="incall-sync-status-text" style="font-size: 0.8rem; color: #cbd5e1;">
+                Conversation in progress — fill lead qualification details below
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 1.35rem; font-weight: 700; color: #f8fafc; letter-spacing: 0.05em; background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span id="incall-timer-display">00:00</span>
+              </div>
+              <button type="button" class="btn btn-danger btn-sm" id="btn-incall-end" onclick="endActiveCall()" style="font-weight: 700; padding: 6px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4); cursor: pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span>END CALL</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Top Notification Ribbon -->
+          <div class="lead-top-ribbon" id="modal-default-top-ribbon" style="display: none;">
+            <div class="lead-notification-banner">
+              <span>🔔 Stay on top of your pipeline — fill qualification fields while on call.</span>
+            </div>
+            <div class="lead-nav-controls">
+              <span class="lead-record-counter" id="modal-lead-counter">Active Call Record</span>
+              <a href="#" id="modal-open-full-page-btn" target="_blank" class="lead-nav-btn" style="font-weight: 700; color: #2563eb; background: #eff6ff; border-color: #bfdbfe; margin-left: 10px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                <span>Open Full Lead Page</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Sticky Main Header -->
+          <header class="lead-main-header">
+            <div class="lead-header-left">
+              <div class="lead-header-title-row">
+                <h1 class="lead-name-heading" id="completion-lead-name">Lead Name</h1>
+                <a href="#" id="modal-title-view-link" target="_blank" class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; font-size: 0.75rem; padding: 4px 10px; font-weight: 600; text-decoration: none; border-radius: 6px;" title="Open this lead page in new tab">
+                  Open Lead Page &nearr;
+                </a>
+              </div>
+              <div class="lead-header-subrow">
+                <!-- Status Pill Dropdown -->
+                <div class="lead-status-pill-wrap">
+                  <div class="lead-status-pill" id="modalStatusPill">
+                    <span id="modalStatusLabel">Contacted</span>
+                    <span class="pill-chevron">▼</span>
+                    <select class="lead-status-select-hidden" id="modalStatusSelect" onchange="updateModalStatusPill(this.value)">
+                      <option value="New">New</option>
+                      <option value="Contacted" selected>Contacted</option>
+                      <option value="Interested">Interested</option>
+                      <option value="Follow-up">Follow-up</option>
+                      <option value="Demo Scheduled">Demo Scheduled</option>
+                      <option value="Institute Visit">Institute Visit</option>
+                      <option value="Converted">Converted</option>
+                      <option value="Enrolled">Enrolled</option>
+                      <option value="Lost">Lost</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- 5-Star Rating Control -->
+                <div class="lead-star-rating" id="modalStarRating" title="Click to rate lead priority">
+                  <span class="star filled" data-rating="1">★</span>
+                  <span class="star filled" data-rating="2">★</span>
+                  <span class="star filled" data-rating="3">★</span>
+                  <span class="star" data-rating="4">★</span>
+                  <span class="star" data-rating="5">★</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Header Right Actions & Assignee Info -->
+            <div class="lead-header-right">
+              <div class="lead-action-icons-group">
+                <a href="#" id="modal-whatsapp-btn" target="_blank" rel="noopener noreferrer" class="lead-action-icon-btn whatsapp-btn" title="WhatsApp Chat">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.54 1.769.834 2.79.834 3.183 0 5.77-2.587 5.77-5.767 0-3.181-2.587-5.619-5.769-5.619zm3.376 8.082c-.141.396-.713.731-1.012.775-.299.043-.687.062-2.155-.544-1.874-.775-3.085-2.678-3.178-2.802-.093-.124-.761-1.013-.761-1.932 0-.919.48-1.371.65-1.558.17-.187.371-.233.495-.233.124 0 .248.001.356.006.113.006.265-.043.415.318.155.372.531 1.297.577 1.39.047.094.078.203.016.327-.062.124-.093.203-.186.311-.093.11-.196.245-.28.329-.093.093-.19.195-.082.381.109.186.483.799 1.036 1.292.712.635 1.312.832 1.498.925.186.093.295.078.404-.047.109-.124.466-.543.59-.73.124-.187.248-.155.419-.093.17.062 1.085.512 1.271.605.186.093.31.14.356.218.047.078.047.45-.094.846z"/></svg>
+                </a>
+                <a href="#" id="modal-email-btn" class="lead-action-icon-btn" title="Email Lead">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></svg>
+                </a>
+                <span class="lead-action-icon-btn" id="modal-source-tag" title="Lead Source">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                </span>
+              </div>
+              <div class="lead-assignee-badge">
+                <span class="lead-assignee-name" id="modal-assignee-name">{{ user.get_full_name|default:user.username }}</span>
+                <div class="lead-assignee-avatar" id="modal-assignee-avatar">
+                  {{ user.username|slice:":2"|upper }}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <!-- Scrollable Body with Two-Column Balanced Grid -->
+          <div class="lead-details-body">
+            <div class="lead-fields-grid" id="modal-lead-fields-grid">
+              <!-- Dynamic Column 1 (Left Column) -->
+              <div class="lead-col" id="modal-col1">
+                <div style="text-align: center; padding: 20px; color: var(--ld-text-muted);">
+                  Loading lead details...
+                </div>
+              </div>
+
+              <!-- Dynamic Column 2 (Right Column) -->
+              <div class="lead-col" id="modal-col2">
+                <div style="text-align: center; padding: 20px; color: var(--ld-text-muted);">
+                  Loading lead details...
+                </div>
+              </div>
+            </div>
+
+            <!-- Hide Empty Fields Toggle Divider -->
+            <div class="lead-empty-toggle-divider">
+              <button type="button" class="lead-empty-toggle-btn" id="modalBtnToggleEmpty" onclick="toggleModalEmptyFields()">
+                <span id="modalEmptyToggleLabel">Hide Empty Fields</span>
+                <span class="toggle-chevron" id="modalEmptyToggleChevron">▲ Show less</span>
+              </button>
+            </div>
+
+            <!-- Integrated Call Logging Form (Preserves Section 48 & 49 atomic workflow) -->
+            <section class="lead-call-logging-card" style="margin-top: 24px;">
+              <div class="lead-call-logging-header">
+                <h3 class="lead-call-logging-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span>Log Call Outcome &amp; Notes</span>
+                </h3>
+                <span class="lead-call-duration-chip">
+                  Duration: <span id="completion-lead-duration">00:00</span>
+                </span>
+              </div>
+
+              <form id="call-notes-completion-form" method="POST" action="{% url 'complete_call_record' %}">
+                {% csrf_token %}
+                <input type="hidden" name="call_id" id="call-form-call-id" value="">
+                <input type="hidden" name="lead_id" id="call-form-lead-id" value="">
+                <input type="hidden" name="duration" id="call-form-duration" value="0">
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label class="form-label" style="font-weight: 600;">Call Notes <span class="required" style="color: #dc2626;">*</span></label>
+                  <textarea name="notes" id="call-form-notes" rows="3" class="form-control" required placeholder="What was discussed during the call? (Mandatory for record completion)..."></textarea>
+                  <div id="call-form-notes-error" style="display: none; color: #dc2626; font-size: 0.8125rem; margin-top: 4px; font-weight: 600;">Call Notes are required before completing this call.</div>
+                </div>
+
+                <div class="lead-call-form-grid">
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight: 600;">Call Outcome <span class="required" style="color: #dc2626;">*</span></label>
+                    <select name="call_outcome" id="call-form-outcome" class="form-select" required>
+                      <option value="Interested">Interested</option>
+                      <option value="Not Interested">Not Interested</option>
+                      <option value="Follow-up Required" selected>Follow-up Required</option>
+                      <option value="Callback Requested">Callback Requested</option>
+                      <option value="Converted">Converted</option>
+                      <option value="No Answer">No Answer</option>
+                      <option value="Busy">Busy</option>
+                      <option value="RNR">RNR (Ring No Response)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight: 600;">Update Lead Status</label>
+                    <select name="lead_status" id="call-form-lead-status" class="form-select">
+                      <option value="">-- Keep Current Status --</option>
+                      <option value="Contacted">Contacted</option>
+                      <option value="Interested">Interested</option>
+                      <option value="Follow-up">Follow-up</option>
+                      <option value="Demo Scheduled">Demo Scheduled</option>
+                      <option value="Institute Visit">Institute Visit</option>
+                      <option value="Converted">Converted</option>
+                      <option value="Enrolled">Enrolled</option>
+                      <option value="Lost">Lost</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight: 600;">Next Follow-up</label>
+                    <div style="display: flex; gap: 8px;">
+                      <input type="date" name="follow_up_date" id="call-form-followup-date" class="form-control" placeholder="Date">
+                      <input type="time" name="follow_up_time" id="call-form-followup-time" class="form-control" placeholder="Time">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="call-logging-actions" style="margin-top: 18px; display: flex; justify-content: flex-end; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary" style="padding: 9px 18px;" onclick="closeCallDialer()">
+                    Close
+                  </button>
+                  <a href="#" id="modal-btn-open-lead-page" class="btn btn-secondary" target="_blank" style="padding: 9px 18px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                    <span>Open Full Lead Page</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </a>
+                  <button type="submit" id="save-call-notes-btn" class="btn btn-primary" style="padding: 9px 24px; font-weight: 700;">
+                    Save Call Notes &amp; Outcome
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <!-- Recent Call History & Audio Player Inside Modal -->
+            <div id="modal-recent-calls-wrap" style="margin-top: 24px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Call Notes Required Modal (Section 14) -->
+  <div id="call-notes-required-modal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--bg-card, #ffffff); border-radius: 12px; width: 100%; max-width: 480px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color, #e2e8f0); overflow: hidden; margin: 20px;">
+      <div style="background: #fef2f2; border-bottom: 1px solid #fee2e2; padding: 16px 20px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.3rem;">⚠️</span>
+        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #991b1b; letter-spacing: 0.02em;">CALL NOTES REQUIRED</h3>
+      </div>
+      <div style="padding: 20px;">
+        <p style="color: var(--text-main, #0f172a); font-weight: 600; font-size: 0.95rem; margin-top: 0; margin-bottom: 14px;">
+          You have a completed call that still requires notes.
+        </p>
+        <div style="background: var(--bg-body, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;">
+          <div style="font-size: 0.9rem; margin-bottom: 6px;"><strong>Lead:</strong> <span id="lock-modal-lead-name">-</span></div>
+          <div style="font-size: 0.9rem;"><strong>Phone:</strong> <span id="lock-modal-lead-phone">-</span></div>
+        </div>
+        <p style="color: var(--text-muted, #64748b); font-size: 0.9rem; margin-bottom: 20px;">
+          Please enter and save the call notes before calling another lead.
+        </p>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('call-notes-required-modal').style.display='none'">Close</button>
+          <button type="button" class="btn btn-primary" id="lock-modal-add-notes-btn" style="background: #2563eb; border-color: #2563eb; color: #fff; font-weight: 600;">
+            Add Call Notes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Command Palette Modal (Ctrl + K / Cmd + K) -->
+  <div id="tp-command-palette" class="tp-command-palette-backdrop" role="dialog" aria-modal="true" aria-label="Command Palette">
+    <div class="tp-command-palette-modal">
+      <div class="tp-palette-search-wrapper">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="tp-palette-input" class="tp-palette-input" placeholder="Search leads, phone, email, or navigation..." autocomplete="off" spellcheck="false">
+        <button type="button" id="tp-palette-close-btn" class="btn-dock-control" title="Close (Esc)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div id="tp-palette-body" class="tp-palette-body">
+        <!-- Dynamically rendered -->
+      </div>
+      <div class="tp-palette-footer">
+        <div class="tp-palette-footer-keys">
+          <span><span class="tp-kbd-shortcut">↑</span> <span class="tp-kbd-shortcut">↓</span> Navigate</span>
+          <span><span class="tp-kbd-shortcut">↵</span> Open</span>
+          <span><span class="tp-kbd-shortcut">Esc</span> Close</span>
+        </div>
+        <span class="brand-wordmark-colored theme-light" style="font-size: 0.82rem;"><span class="part-digi">Digi</span><span class="part-p">p</span><span class="part-anda">anda</span><span class="part-crm">CRM</span></span>
+      </div>
+    </div>
+  <!-- Dedicated Animated Logout Exit Overlay (Modern Glassmorphic UI) -->
+  <div id="tp-logout-overlay" class="tp-logout-overlay" role="dialog" aria-modal="true" aria-label="Logging out">
+    <div class="tp-logout-modal">
+      <div class="tp-logout-spinner-wrap">
+        <div class="tp-logout-spinner-ring"></div>
+        <div class="tp-logout-spinner-ring-inner"></div>
+        <div class="tp-logout-spinner-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--tp-text-primary, #0f172a); margin: 0 0 6px 0; letter-spacing: -0.01em;">
+        Securing Workspace
+      </h3>
+      <p style="font-size: 0.88rem; color: var(--tp-text-muted, #64748b); margin: 0; line-height: 1.45;">
+        Saving session state and signing out cleanly...
+      </p>
+      <div class="tp-logout-progress-bar">
+        <div id="tp-logout-progress-fill" class="tp-logout-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'js/crm.js' %}?v=20261024_pwd_ui_cure"></script>
+  <script src="{% static 'js/command-palette.js' %}"></script>
+  <script src="{% static 'js/audio-player.js' %}?v=20261012_audio"></script>
+  <script src="{% static 'js/password_security.js' %}"></script>
+  <script src="{% static 'js/auto-filter.js' %}?v=20261012"></script>
+  <script src="{% static 'js/custom-dropdown.js' %}?v=20261024_pwd_ui_cure"></script>
+  <script src="{% static 'js/modern-saas-core.js' %}?v=20261025_saas"></script>
+  <script src="{% static 'js/data-tables-enhanced.js' %}?v=20261027_bulk_persist"></script>
+  <script>
+    window.getCookie = window.getCookie || function(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    };
+    window.getCsrfToken = window.getCsrfToken || function() {
+      var input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      if (input && input.value) return input.value;
+      return window.getCookie('csrftoken') || '';
+    };
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

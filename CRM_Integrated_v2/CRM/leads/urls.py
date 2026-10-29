@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, api_google_sheets, views_enrollment, views_bulk
+from . import views, api_google_sheets, views_enrollment, views_bulk, views_accountant, views_walkin
 
 urlpatterns = [
     # Admin Lead routes
@@ -12,6 +12,9 @@ urlpatterns = [
     path('admin/leads/<int:pk>/status/', views.admin_lead_update_status, name='admin_lead_update_status'),
     path('admin/duplicate-leads/', views.admin_duplicate_leads_view, name='admin_duplicate_leads'),
     path('admin/duplicate-leads/keep-single/', views.admin_duplicate_leads_keep_single, name='admin_duplicate_leads_keep_single'),
+    path('admin/duplicate-leads/export/', views.admin_duplicate_leads_export, name='admin_duplicate_leads_export'),
+    path('admin/duplicate-leads/<int:rec_id>/payload/', views.admin_duplicate_lead_payload, name='admin_duplicate_lead_payload'),
+    path('admin/duplicate-leads/<int:rec_id>/promote/', views.admin_duplicate_lead_promote, name='admin_duplicate_lead_promote'),
     path('admin/leads/new/', views.admin_new_leads, name='admin_new_leads'),
     path('admin/leads/interested/', views.admin_interested_leads, name='admin_interested_leads'),
     path('admin/leads/demo-scheduled/', views.admin_demo_scheduled_leads, name='admin_demo_scheduled_leads'),
@@ -21,8 +24,13 @@ urlpatterns = [
     path('admin/leads/discussion/', views.admin_discussion_leads, name='admin_discussion_leads'),
 
     path('admin/leads/<int:pk>/duplicate-info/', views.admin_lead_duplicate_info, name='admin_lead_duplicate_info'),
+    path('admin/leads/<int:pk>/notify-counselor/', views.admin_lead_notify_duplicate_counselor, name='admin_lead_notify_duplicate_counselor'),
     path('admin/leads/retry-pending/', views.admin_retry_pending_assignments, name='admin_retry_pending_assignments'),
     path('admin/settings/lead-setup/', views.admin_lead_setup, name='admin_lead_setup'),
+    path('admin/settings/pipeline-statuses/', views.admin_pipeline_statuses_list, name='admin_pipeline_statuses'),
+    path('admin/settings/pipeline-statuses/<int:pk>/edit/', views.admin_pipeline_status_edit, name='admin_pipeline_status_edit'),
+    path('admin/settings/pipeline-statuses/<int:pk>/toggle/', views.admin_pipeline_status_toggle, name='admin_pipeline_status_toggle'),
+    path('admin/settings/pipeline-statuses/<int:pk>/delete/', views.admin_pipeline_status_delete, name='admin_pipeline_status_delete'),
 
     # Admin Offline Leads & Google Sheets / Google Form
     path('admin/offline-leads/', views.admin_offline_leads_list, name='admin_offline_leads'),
@@ -52,6 +60,9 @@ urlpatterns = [
     path('api/google-sheets/connect/', api_google_sheets.api_google_sheets_connect, name='api_google_sheets_connect'),
     path('api/google-sheets/<int:connection_id>/', api_google_sheets.api_google_sheets_detail, name='api_google_sheets_detail'),
     path('api/google-sheets/<int:connection_id>/sync/', api_google_sheets.api_google_sheets_sync, name='api_google_sheets_sync'),
+    path('api/google-sheets/inspect-mapping/', api_google_sheets.api_google_sheets_inspect_mapping, name='api_google_sheets_inspect_mapping'),
+    path('api/google-sheets/preview-sync/', api_google_sheets.api_google_sheets_preview_sync, name='api_google_sheets_preview_sync'),
+    path('api/google-sheets/<int:connection_id>/save-mapping/', api_google_sheets.api_google_sheets_save_mapping, name='api_google_sheets_save_mapping'),
 
 
     # Manager Lead routes
@@ -117,7 +128,23 @@ urlpatterns = [
     path('admin/leads/walk-in/', views.admin_walkin_desk, name='admin_walkin_desk'),
     path('admin/leads/walk-in/create/', views.admin_walkin_create, name='admin_walkin_create'),
     path('admin/leads/walk-in/<int:pk>/assign-counselor/', views.admin_walkin_assign_counselor, name='admin_walkin_assign_counselor'),
+    path('admin/leads/walk-in/bulk-assign/', views.admin_walkin_bulk_assign_counselor, name='admin_walkin_bulk_assign_counselor'),
     path('admin/leads/walk-in/<int:pk>/status/', views.admin_walkin_update_status, name='admin_walkin_update_status'),
+    path('enquiry/', views_walkin.public_student_enquiry_form, name='public_student_enquiry_form'),
+    path('enquiry/<int:branch_id>/', views_walkin.public_student_enquiry_form, name='public_student_enquiry_branch'),
+    path('enquiry/f/<str:slug>/', views_walkin.public_student_enquiry_form_by_slug, name='public_student_enquiry_slug'),
+    path('enquiry/f/<str:slug>/<int:branch_id>/', views_walkin.public_student_enquiry_form_by_slug, name='public_student_enquiry_slug_branch'),
+    path('admin/branches/<int:branch_id>/qr-standee/', views_walkin.branch_qr_standee_view, name='branch_qr_standee'),
+    path('receptionist/qr-standee/', views_walkin.receptionist_qr_standee_view, name='receptionist_qr_standee'),
+
+    # Admin Walk-in Form Studio & Field Editor
+    path('admin/walkin-forms/', views_walkin.admin_walkin_forms_list, name='admin_walkin_forms_list'),
+    path('admin/walkin-forms/create/', views_walkin.admin_walkin_form_create, name='admin_walkin_form_create'),
+    path('admin/walkin-forms/<int:pk>/edit/', views_walkin.admin_walkin_form_edit, name='admin_walkin_form_edit'),
+    path('admin/walkin-forms/<int:pk>/duplicate/', views_walkin.admin_walkin_form_duplicate, name='admin_walkin_form_duplicate'),
+    path('admin/walkin-forms/<int:pk>/toggle-status/', views_walkin.admin_walkin_form_toggle_status, name='admin_walkin_form_toggle_status'),
+    path('admin/walkin-forms/<int:pk>/delete/', views_walkin.admin_walkin_form_delete, name='admin_walkin_form_delete'),
+    path('admin/walkin-forms/<int:pk>/qr-standee/', views_walkin.walkin_form_qr_standee_view, name='walkin_form_qr_standee'),
 
     # Enrollment & Student Payment Lifecycle (Phase 7)
     path('admin/enrolled-students/', views_enrollment.admin_enrolled_students, name='admin_enrolled_students'),
@@ -130,6 +157,15 @@ urlpatterns = [
     path('enrollments/api/<int:enrollment_id>/details/', views_enrollment.api_enrollment_details, name='api_enrollment_details'),
     path('enrollments/api/calculate-gst/', views_enrollment.api_calculate_gst_preview, name='api_calculate_gst_preview'),
     path('enrollments/reminders/trigger/', views_enrollment.trigger_installment_reminders, name='trigger_installment_reminders'),
+    path('enrollments/payments/<int:payment_id>/resubmit/', views_enrollment.enrollment_resubmit_payment, name='enrollment_resubmit_payment'),
+
+    # Accountant Portal, Dashboard, Verification Queue, Proofs & Reports
+    path('accountant/dashboard/', views_accountant.accountant_dashboard, name='accountant_dashboard'),
+    path('accountant/verification/', views_accountant.accountant_payment_verification, name='accountant_payment_verification'),
+    path('accountant/verification/<int:payment_id>/approve/', views_accountant.accountant_approve_payment, name='accountant_approve_payment'),
+    path('accountant/verification/<int:payment_id>/reject/', views_accountant.accountant_reject_payment, name='accountant_reject_payment'),
+    path('accountant/proofs/<int:payment_id>/', views_accountant.accountant_payment_proof_view, name='accountant_payment_proof_view'),
+    path('accountant/reports/monthly/excel/', views_accountant.accountant_monthly_report_excel, name='accountant_monthly_report_excel'),
 ]
 
 

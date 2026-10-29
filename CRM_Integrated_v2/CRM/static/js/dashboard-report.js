@@ -11,12 +11,12 @@
   var outcomesBar = null;
 
   var CHANNEL_COLORS = {
-    'Meta WhatsApp': '#059669',
+    'Meta WhatsApp': '#25D366',
     'Meta Lead Form': '#0284c7',
     'Website (Google Ad)': '#f59e0b',
     'Website (Google SEO)': '#8b5cf6',
     'Instagram': '#ec4899',
-    'Google Calls': '#10b981',
+    'Google Calls': '#06b6d4',
     'Influencer': '#6366f1',
     'Other': '#64748b',
   };
@@ -347,7 +347,40 @@
         '<td class="td-status-normal">' + (bt.missed_leads || 0) + '</td>';
     }
 
-    // 7. Update Charts
+    // 7. Update Dynamic Drilldown Links on KPI Cards and Channels
+    var leadsBaseUrl = data.leads_url || 
+                       (document.getElementById('kpiLinkTotal') && document.getElementById('kpiLinkTotal').getAttribute('data-base-url')) || 
+                       '/admin/leads/';
+    if (leadsBaseUrl.indexOf('/admin/reports/') !== -1 || leadsBaseUrl.indexOf('/manager/reports/') !== -1) {
+      leadsBaseUrl = leadsBaseUrl.replace('/reports/', '/leads/');
+    }
+
+    var qParams = ['view=all'];
+    if (data.start_date) qParams.push('date_from=' + encodeURIComponent(data.start_date));
+    if (data.end_date) qParams.push('date_to=' + encodeURIComponent(data.end_date));
+    if (data.branch_filter) qParams.push('branch=' + encodeURIComponent(data.branch_filter));
+    var baseQuery = '?' + qParams.join('&');
+
+    var linkTotal = document.getElementById('kpiLinkTotal');
+    if (linkTotal) linkTotal.href = leadsBaseUrl + baseQuery;
+
+    var linkConnected = document.getElementById('kpiLinkConnected');
+    if (linkConnected) linkConnected.href = leadsBaseUrl + (baseQuery ? baseQuery + '&status_group=connected' : '?status_group=connected');
+
+    var linkProspected = document.getElementById('kpiLinkProspected');
+    if (linkProspected) linkProspected.href = leadsBaseUrl + (baseQuery ? baseQuery + '&status_group=prospected' : '?status_group=prospected');
+
+    var linkNotConnected = document.getElementById('kpiLinkNotConnected');
+    if (linkNotConnected) linkNotConnected.href = leadsBaseUrl + (baseQuery ? baseQuery + '&status_group=not_connected' : '?status_group=not_connected');
+
+    var chanLinks = document.querySelectorAll('[data-chan-link]');
+    chanLinks.forEach(function (a) {
+      var chan = a.getAttribute('data-chan-link');
+      var chanQuery = (baseQuery ? baseQuery + '&channel=' : '?channel=') + encodeURIComponent(chan);
+      a.href = leadsBaseUrl + chanQuery;
+    });
+
+    // 8. Update Charts
     if (data.donut_chart) renderChannelDonut(data.donut_chart);
     if (data.stacked_chart) renderBranchStacked(data.stacked_chart);
     if (data.outcomes_chart) renderOutcomesBar(data.outcomes_chart);
@@ -467,9 +500,7 @@
     if (dataScript) {
       try {
         var initialData = JSON.parse(dataScript.textContent);
-        if (initialData.donut_chart) renderChannelDonut(initialData.donut_chart);
-        if (initialData.stacked_chart) renderBranchStacked(initialData.stacked_chart);
-        if (initialData.outcomes_chart) renderOutcomesBar(initialData.outcomes_chart);
+        updateDashboardUI(initialData);
       } catch (e) {
         console.error('Error parsing initial report data:', e);
       }
@@ -480,9 +511,18 @@
     if (dateSelect) {
       dateSelect.addEventListener('change', function () {
         if (this.value === 'custom') {
-          var modal = document.getElementById('customDateModal');
-          if (modal) modal.style.display = 'flex';
+          var container = document.getElementById('reportSmartDateContainer');
+          if (container) {
+            container.style.display = 'inline-flex';
+            var trig = container.querySelector('.tp-smart-date-trigger');
+            if (trig) trig.click();
+          } else {
+            var modal = document.getElementById('customDateModal');
+            if (modal) modal.style.display = 'flex';
+          }
         } else {
+          var container = document.getElementById('reportSmartDateContainer');
+          if (container) container.style.display = 'none';
           fetchDashboardData();
         }
       });

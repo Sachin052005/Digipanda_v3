@@ -31,8 +31,9 @@ def _branch_head_context(branch_head):
     total_leads = Lead.objects.filter(branch_id=branch_head.branch_id).count()
     total_calls = CallHistory.objects.filter(telecaller__branch_id=branch_head.branch_id).count()
     pending_followups = FollowUp.objects.filter(
-        telecaller__branch_id=branch_head.branch_id, status=FollowUpStatus.PENDING
-    ).count()
+        Q(lead__branch_id=branch_head.branch_id) | Q(telecaller__branch_id=branch_head.branch_id) | Q(assigned_user__branch_id=branch_head.branch_id),
+        status=FollowUpStatus.PENDING
+    ).distinct().count()
     recent_activities = Activity.objects.filter(user=branch_head)[:10]
     recent_calls = CallHistory.objects.filter(
         telecaller__branch_id=branch_head.branch_id
@@ -184,13 +185,18 @@ def admin_branch_head_toggle_status(request, pk):
 @admin_required
 def admin_branch_head_change_password(request, pk):
     branch_head = get_object_or_404(User, pk=pk, role=UserRole.BRANCH_HEAD)
+    if not can_manage_user(request.user, branch_head):
+        raise PermissionDenied("You do not have permission to manage this Branch Head's password.")
+
     if request.method == 'POST':
         form = SetPasswordForm(branch_head, request.POST)
         if form.is_valid():
             form.save()
+            branch_head.must_change_password = False
+            branch_head.save(update_fields=['must_change_password'])
             log_activity(
                 user=request.user,
-                action="Password Reset by Admin",
+                action="Administrator Set Password",
                 description=f"Admin reset password for Branch Head '{branch_head.username}'.",
                 object_type="User",
                 object_id=branch_head.pk,
@@ -375,32 +381,14 @@ def branch_head_dashboard(request):
     branch_head = request.user
     branch_id = branch_head.branch_id
 
-    period = request.GET.get('period', 'all').strip().lower()
-    start_date_str = request.GET.get('start_date', '').strip()
-    end_date_str = request.GET.get('end_date', '').strip()
-
+    from leads.utils_date_filter import extract_normalized_date_range
+    _date_info = extract_normalized_date_range(request, default_period='all')
+    start_date_str = _date_info['start_date']
+    end_date_str = _date_info['end_date']
+    period = _date_info['period']
     today = timezone.localdate()
-    start_dt, end_dt = None, None
-
-    if period == 'today':
-        start_dt = timezone.make_aware(datetime.combine(today, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'week':
-        start_of_week = today - timedelta(days=today.weekday())
-        start_dt = timezone.make_aware(datetime.combine(start_of_week, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'month':
-        start_of_month = today.replace(day=1)
-        start_dt = timezone.make_aware(datetime.combine(start_of_month, time.min))
-        end_dt = timezone.make_aware(datetime.combine(today, time.max))
-    elif period == 'custom' and start_date_str and end_date_str:
-        try:
-            s_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            e_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            start_dt = timezone.make_aware(datetime.combine(s_date, time.min))
-            end_dt = timezone.make_aware(datetime.combine(e_date, time.max))
-        except ValueError:
-            start_dt, end_dt = None, None
+    start_dt = _date_info['start_dt']
+    end_dt = _date_info['end_dt']
 
     # Base leads queryset
     leads_qs = Lead.objects.filter(branch_id=branch_id)
@@ -416,9 +404,13 @@ def branch_head_dashboard(request):
     joined_count = leads_qs.filter(status__in=[LeadStatus.JOINED, LeadStatus.ENROLLED]).count()
     rnr_leads_count = leads_qs.filter(rnr_lead_q).distinct().count()
 
-    pending_followups_count = FollowUp.objects.filter(
-        telecaller__branch_id=branch_id, status=FollowUpStatus.PENDING
-    ).count()
+    followups_base = FollowUp.objects.filter(
+        Q(lead__branch_id=branch_id) | Q(telecaller__branch_id=branch_id) | Q(assigned_user__branch_id=branch_id),
+        status=FollowUpStatus.PENDING
+    )
+    if start_dt and end_dt:
+        followups_base = followups_base.filter(follow_up_date__range=(start_dt.date(), end_dt.date()))
+    pending_followups_count = followups_base.distinct().count()
 
     # Counselor Performance Breakdown
     counselor_rnr_q = Q(counselor_leads__calls__call_outcome__in=['RNR', 'No Answer', 'Busy']) | Q(counselor_leads__calls__call_status__in=['No Answer', 'Busy', 'Missed', 'Failed'])

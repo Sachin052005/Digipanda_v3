@@ -15,10 +15,22 @@ function initPasswordToggles() {
   passwordInputs.forEach(input => {
     // Avoid double initialization
     if (input.dataset.toggleInitialized) return;
+
+    // Skip if input is already inside a dedicated wrapper or already has a toggle button
+    const parent = input.parentElement;
+    if (parent && (
+      parent.classList.contains('tp-password-field-wrapper') ||
+      parent.classList.contains('pwd-toggle-wrapper') ||
+      parent.querySelector('.tp-password-toggle-btn, .pwd-toggle-btn') ||
+      input.closest('.tp-password-field-wrapper')
+    )) {
+      input.dataset.toggleInitialized = 'true';
+      return;
+    }
+
     input.dataset.toggleInitialized = 'true';
 
     // Wrap in a relative container if not already styled for positioning
-    const parent = input.parentElement;
     if (parent && !parent.classList.contains('pwd-toggle-wrapper')) {
       const wrapper = document.createElement('div');
       wrapper.className = 'pwd-toggle-wrapper';

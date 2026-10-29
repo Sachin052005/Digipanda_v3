@@ -1,4 +1,4 @@
-<!-- ADVANCED BULK EDIT MODAL COMPONENT (TECHPANDA CRM) -->
+<!-- ADVANCED BULK EDIT MODAL COMPONENT (DIGIPANDA CRM) -->
 <div id="tpBulkEditModal" class="tp-bulk-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="bulkModalTitle" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 1065; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
   <div class="tp-bulk-modal-dialog" style="background: #ffffff; border-radius: 16px; width: 100%; max-width: 780px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; border: 1px solid var(--tp-surface-border, #e2e8f0);">
     {% csrf_token %}
@@ -952,6 +952,9 @@ function submitBulkExecution() {
     }
 
     closeBulkEditModal();
+    if (window.CRMSelectionManager) {
+      window.CRMSelectionManager.clear();
+    }
     if (typeof showToast === 'function') {
       showToast(res.message, false);
     } else {
